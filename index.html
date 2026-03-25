@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Zoek de Pot</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  background: #000;
+  position: fixed;
+  top: 0; left: 0;
+}
+canvas { display: block; width: 100%; height: 100%; }
+#ui {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 10;
+  font-family: 'Georgia', serif;
+}
+#title {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  color: #fff; font-size: 22px; font-weight: bold;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+  letter-spacing: 2px;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+#score {
+  position: absolute; top: 12px; right: 16px;
+  color: #fff; font-size: 16px;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.4); padding: 8px 14px; border-radius: 20px;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
+}
+#hintBtn {
+  position: absolute; top: 12px; left: 16px;
+  pointer-events: auto; cursor: pointer;
+  background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.3);
+  padding: 8px 16px; border-radius: 20px; font-size: 14px; font-family: 'Georgia', serif;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
+}
+#hintBtn:active { background: rgba(255,255,255,0.3); }
+#crosshair {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 20px; height: 20px; opacity: 0.4;
+}
+#crosshair::before, #crosshair::after {
+  content: ''; position: absolute; background: #fff;
+}
+#crosshair::before { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
+#crosshair::after { width: 100%; height: 2px; top: 50%; transform: translateY(-50%); }
+#joystickArea {
+  position: absolute; bottom: 30px; left: 30px;
+  width: 120px; height: 120px; pointer-events: auto;
+  border-radius: 50%; background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.3);
+}
+#joystickKnob {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 50px; height: 50px; border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  border: 2px solid rgba(255,255,255,0.6);
+}
+#introOverlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.88); z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #fff; font-family: 'Georgia', serif; text-align: center;
+  padding: 20px;
+}
+#introOverlay h1 { font-size: 36px; margin-bottom: 20px; letter-spacing: 3px; }
+#introOverlay p { font-size: 18px; max-width: 500px; line-height: 1.6; margin-bottom: 10px; }
+#startBtn {
+  margin-top: 30px; padding: 16px 40px; font-size: 20px;
+  background: #d42828; color: #fff; border: none; border-radius: 8px;
+  cursor: pointer; font-family: 'Georgia', serif; letter-spacing: 1px;
+}
+#startBtn:active { background: #a01e1e; }
+#winOverlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.88); z-index: 100;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  color: #fff; font-family: 'Georgia', serif; text-align: center;
+  padding: 20px;
+}
+#winOverlay h1 { font-size: 30px; margin-bottom: 20px; color: #FFD700; }
+#winOverlay p { font-size: 18px; }
+#foundMsg {
+  position: absolute; top: 45%; left: 50%; transform: translate(-50%,-50%);
+  color: #FFD700; font-size: 28px; font-weight: bold;
+  text-shadow: 0 0 20px rgba(255,215,0,0.8), 0 2px 8px rgba(0,0,0,0.8);
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+.mobile-controls { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .mobile-controls { display: block !important; }
+  .desktop-controls { display: none !important; }
+}
+</style>
+</head>
+<body>
+<div id="introOverlay">
+  <h1>Zoek de Pot</h1>
+  <p>Loop door het museum en zoek de bloempot in elk schilderij!</p>
+  <p style="font-size:14px; opacity:0.7;" class="mobile-controls">Joystick links = lopen, veeg rechts = rondkijken</p>
+  <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis = rondkijken, klik = zoek de pot</p>
+  <button id="startBtn">Start!</button>
+</div>
+<div id="winOverlay">
+  <h1>Gefeliciteerd!</h1>
+  <p>Je hebt alle bloempotten gevonden!</p>
+</div>
+<div id="ui">
+  <div id="title">Zoek de Pot</div>
+  <div id="score">Gevonden: 0/8</div>
+  <button id="hintBtn">Hint</button>
+  <div id="crosshair" class="desktop-controls"></div>
+  <div id="joystickArea" class="mobile-controls">
+    <div id="joystickKnob"></div>
+  </div>
+  <div id="foundMsg"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+/* ===== CONSTANTS ===== */
+const WALL_HEIGHT = 4.0;
+const WALL_THICK = 0.3;
+const PLAYER_H = 1.6;
+const PLAYER_R = 0.4;
+const MOVE_SPEED = 3.8;
+const LOOK_SPEED = 0.003;
+const NUM_PAINTINGS = 8;
+const PW = 1.8;   // painting width
+const PH = 1.4;   // painting height
+
+/* ===== STATE ===== */
+let camera, scene, renderer, clock;
+const playerPos = new THREE.Vector3(0, PLAYER_H, 0);
+let yaw = 0, pitch = 0;
+let moveF = 0, moveR = 0;
+const paintings = [];
+let foundCount = 0;
+let gameStarted = false;
+const wallSegs = [];
+const particles = [];
+let hintActive = false;
+let hintTimer = null;
+
+/* Keyboard state */
+const keys = {};
+
+/* Touch state */
+let lookTouchId = null, lookLastX = 0, lookLastY = 0;
+let joystickTouchId = null, joystickActive = false;
+let jsCenterX = 0, jsCenterY = 0;
+const touchStarts = {};
+
+const isMobile = 'ontouchstart' in window;
+const joystickEl = document.getElementById('joystickArea');
+const knobEl = document.getElementById('joystickKnob');
+
+/* ===== INIT ===== */
+function init() {
+  clock = new THREE.Clock();
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1a1e);
+  scene.fog = new THREE.Fog(0x1a1a1e, 12, 30);
+
+  camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 50);
+  camera.position.copy(playerPos);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  document.body.insertBefore(renderer.domElement, document.getElementById('ui'));
+
+  buildMuseum();
+  setupLights();
+  placePaintings();
+  setupInput();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+
+  // Prevent all default touch behaviors on document
+  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('gesturechange', e => e.preventDefault());
+
+  animate();
+}
+
+/* ===== MUSEUM GEOMETRY ===== */
+function makeWallMat() {
+  return new THREE.MeshStandardMaterial({ color: 0xf0ece4, roughness: 0.92, metalness: 0 });
+}
+
+function addWall(x1, z1, x2, z2) {
+  const dx = x2 - x1, dz = z2 - z1;
+  const len = Math.sqrt(dx * dx + dz * dz);
+  if (len < 0.01) return;
+  const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
+  const angle = Math.atan2(dx, dz);
+
+  const geo = new THREE.BoxGeometry(WALL_THICK, WALL_HEIGHT, len);
+  const wall = new THREE.Mesh(geo, makeWallMat());
+  wall.position.set(cx, WALL_HEIGHT / 2, cz);
+  wall.rotation.y = angle;
+  scene.add(wall);
+
+  // Baseboard
+  const bbGeo = new THREE.BoxGeometry(WALL_THICK + 0.05, 0.12, len + 0.02);
+  const bb = new THREE.Mesh(bbGeo, new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.7 }));
+  bb.position.set(cx, 0.06, cz);
+  bb.rotation.y = angle;
+  scene.add(bb);
+
+  // Crown molding
+  const cmGeo = new THREE.BoxGeometry(WALL_THICK + 0.04, 0.08, len + 0.02);
+  const cm = new THREE.Mesh(cmGeo, new THREE.MeshStandardMaterial({ color: 0xe0dcd4, roughness: 0.8 }));
+  cm.position.set(cx, WALL_HEIGHT - 0.04, cz);
+  cm.rotation.y = angle;
+  scene.add(cm);
+
+  wallSegs.push({ x1, z1, x2, z2, len, angle });
+}
+
+function buildMuseum() {
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.55, metalness: 0.05 });
+  const ceilMat = new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: 0.95 });
+
+  // Room definitions: center x, center z, width, depth
+  const rooms = [
+    { x: 0, z: 0, w: 20, d: 8 },     // Main hall
+    { x: -6, z: -8, w: 8, d: 8 },     // Left wing
+    { x: 6, z: -8, w: 8, d: 8 },      // Right wing
+    { x: 0, z: 8, w: 12, d: 6 },      // Back gallery
+  ];
+
+  rooms.forEach(r => {
+    const fg = new THREE.PlaneGeometry(r.w, r.d);
+    const floor = new THREE.Mesh(fg, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(r.x, 0, r.z);
+    scene.add(floor);
+
+    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(r.w, r.d), ceilMat);
+    ceil.rotation.x = Math.PI / 2;
+    ceil.position.set(r.x, WALL_HEIGHT, r.z);
+    scene.add(ceil);
+  });
+
+  // Floor pattern - darker strips for wood planks effect
+  const stripMat = new THREE.MeshStandardMaterial({ color: 0x7a6548, roughness: 0.6, metalness: 0.05 });
+  for (let i = -12; i < 14; i += 0.8) {
+    const strip = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 30), stripMat);
+    strip.rotation.x = -Math.PI / 2;
+    strip.position.set(i, 0.001, 0);
+    scene.add(strip);
+  }
+
+  // Walls
+  // Main hall
+  addWall(-10, -4, -2, -4);    // front left
+  addWall(2, -4, 10, -4);      // front right
+  addWall(-10, 4, -6, 4);      // back left
+  addWall(6, 4, 10, 4);        // back right
+  addWall(-10, -4, -10, 4);    // left wall
+  addWall(10, -4, 10, 4);      // right wall
+
+  // Left wing
+  addWall(-10, -4, -10, -12);
+  addWall(-2, -4, -2, -12);
+  addWall(-10, -12, -2, -12);
+
+  // Right wing
+  addWall(2, -4, 2, -12);
+  addWall(10, -4, 10, -12);
+  addWall(2, -12, 10, -12);
+
+  // Back gallery
+  addWall(-6, 4, -6, 11);
+  addWall(6, 4, 6, 11);
+  addWall(-6, 11, 6, 11);
+}
+
+/* ===== LIGHTING ===== */
+function setupLights() {
+  scene.add(new THREE.AmbientLight(0xfff5e6, 0.5));
+
+  // Room overhead lights
+  [[0, 0], [-6, -8], [6, -8], [0, 8]].forEach(([x, z]) => {
+    const pl = new THREE.PointLight(0xfff0d0, 0.6, 16);
+    pl.position.set(x, WALL_HEIGHT - 0.2, z);
+    scene.add(pl);
+  });
+
+  // Hemisphere for soft fill
+  scene.add(new THREE.HemisphereLight(0xfff8f0, 0x8B7355, 0.2));
+}
+
+/* ===== MONDRIAAN GENERATOR ===== */
+function generateMondriaan(cw, ch, potInfo) {
+  const c = document.createElement('canvas');
+  c.width = cw; c.height = ch;
+  const ctx = c.getContext('2d');
+
+  ctx.fillStyle = '#FAFAF5';
+  ctx.fillRect(0, 0, cw, ch);
+
+  const M = 8; // margin
+  const LW = 3 + Math.random() * 5; // line width
+
+  // Generate horizontal split points
+  const hSplits = [M];
+  const nh = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < nh; i++) {
+    const minGap = 40;
+    let y = M + minGap + Math.random() * (ch - 2 * M - 2 * minGap);
+    hSplits.push(Math.round(y));
+  }
+  hSplits.push(ch - M);
+  hSplits.sort((a, b) => a - b);
+
+  // Remove too-close splits
+  for (let i = hSplits.length - 2; i >= 1; i--) {
+    if (hSplits[i] - hSplits[i - 1] < 25) hSplits.splice(i, 1);
+  }
+
+  // Generate vertical split points
+  const vSplits = [M];
+  const nv = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < nv; i++) {
+    const minGap = 40;
+    let x = M + minGap + Math.random() * (cw - 2 * M - 2 * minGap);
+    vSplits.push(Math.round(x));
+  }
+  vSplits.push(cw - M);
+  vSplits.sort((a, b) => a - b);
+  for (let i = vSplits.length - 2; i >= 1; i--) {
+    if (vSplits[i] - vSplits[i - 1] < 25) vSplits.splice(i, 1);
+  }
+
+  // Mondriaan palette with weights
+  const palette = [
+    { color: '#FAFAF5', weight: 50 },
+    { color: '#D42828', weight: 12 },
+    { color: '#1A3F8F', weight: 12 },
+    { color: '#F2C41A', weight: 10 },
+    { color: '#F0EDE2', weight: 16 },
+  ];
+  function pickColor() {
+    const total = palette.reduce((s, p) => s + p.weight, 0);
+    let r = Math.random() * total;
+    for (const p of palette) {
+      r -= p.weight;
+      if (r <= 0) return p.color;
+    }
+    return '#FAFAF5';
+  }
+
+  // Fill cells
+  const cells = [];
+  for (let i = 0; i < hSplits.length - 1; i++) {
+    for (let j = 0; j < vSplits.length - 1; j++) {
+      const x = vSplits[j], y = hSplits[i];
+      const w = vSplits[j + 1] - x, h = hSplits[i + 1] - y;
+      const col = pickColor();
+      ctx.fillStyle = col;
+      ctx.fillRect(x, y, w, h);
+      cells.push({ x, y, w, h, color: col });
+    }
+  }
+
+  // Draw black grid lines
+  ctx.strokeStyle = '#0A0A0A';
+  ctx.lineWidth = LW;
+  ctx.lineCap = 'butt';
+
+  // Horizontal lines
+  hSplits.forEach((y, idx) => {
+    const isEdge = idx === 0 || idx === hSplits.length - 1;
+    let sx = vSplits[0], ex = vSplits[vSplits.length - 1];
+    if (!isEdge && Math.random() < 0.15) sx = vSplits[1] || sx;
+    if (!isEdge && Math.random() < 0.15) ex = vSplits[vSplits.length - 2] || ex;
+    ctx.beginPath();
+    ctx.moveTo(sx, y); ctx.lineTo(ex, y);
+    ctx.stroke();
+  });
+
+  // Vertical lines
+  vSplits.forEach((x, idx) => {
+    const isEdge = idx === 0 || idx === vSplits.length - 1;
+    let sy = hSplits[0], ey = hSplits[hSplits.length - 1];
+    if (!isEdge && Math.random() < 0.15) sy = hSplits[1] || sy;
+    if (!isEdge && Math.random() < 0.15) ey = hSplits[hSplits.length - 2] || ey;
+    ctx.beginPath();
+    ctx.moveTo(x, sy); ctx.lineTo(x, ey);
+    ctx.stroke();
+  });
+
+  // Draw the hidden flower pot
+  drawPot(ctx, cw, ch, LW, potInfo, cells);
+
+  return c;
+}
+
+function drawPot(ctx, cw, ch, lw, potInfo, cells) {
+  // Pick a cell big enough
+  const big = cells.filter(c => c.w > 50 && c.h > 60);
+  const cell = big.length ? big[Math.floor(Math.random() * big.length)] : cells[Math.floor(Math.random() * cells.length)];
+
+  const potColors = ['#D42828', '#1A3F8F', '#F2C41A', '#0A0A0A'];
+  const pc = potColors[Math.floor(Math.random() * potColors.length)];
+  const fc = potColors.filter(c => c !== pc)[Math.floor(Math.random() * 3)];
+
+  // Pot geometry in pixels
+  const potW = Math.min(cell.w * 0.45, 55);
+  const potTotalH = Math.min(cell.h * 0.6, 70);
+  const cx = cell.x + cell.w * 0.3 + Math.random() * cell.w * 0.3;
+  const baseY = cell.y + cell.h * 0.55 + Math.random() * cell.h * 0.15;
+
+  const rimW = potW * 0.9;
+  const rimH = potTotalH * 0.1;
+  const bodyW = potW * 0.7;
+  const bodyH = potTotalH * 0.35;
+  const baseW = potW * 0.5;
+  const baseH = potTotalH * 0.08;
+  const stemW = Math.max(2, lw * 0.5);
+  const stemH = potTotalH * 0.25;
+  const leafW = potW * 0.4;
+  const leafH = potTotalH * 0.18;
+
+  const rimY = baseY - rimH;
+  const stemTop = rimY - stemH;
+  const leafTop = stemTop - leafH;
+
+  // Draw leaf (geometric rectangles)
+  ctx.fillStyle = fc;
+  ctx.fillRect(cx - leafW / 2, leafTop, leafW, leafH);
+  // Accent rectangles on leaf
+  const ac = potColors.filter(c => c !== pc && c !== fc)[0] || '#F2C41A';
+  ctx.fillStyle = ac;
+  ctx.fillRect(cx - leafW * 0.55, leafTop + leafH * 0.1, leafW * 0.3, leafH * 0.5);
+  ctx.fillRect(cx + leafW * 0.25, leafTop + leafH * 0.2, leafW * 0.3, leafH * 0.4);
+
+  // Stem
+  ctx.fillStyle = '#0A0A0A';
+  ctx.fillRect(cx - stemW / 2, stemTop, stemW, stemH);
+
+  // Rim
+  ctx.fillStyle = pc;
+  ctx.fillRect(cx - rimW / 2, rimY, rimW, rimH);
+
+  // Body
+  ctx.fillRect(cx - bodyW / 2, baseY, bodyW, bodyH);
+
+  // Base
+  ctx.fillRect(cx - baseW / 2, baseY + bodyH, baseW, baseH);
+
+  // Black outlines (Mondriaan style)
+  ctx.strokeStyle = '#0A0A0A';
+  ctx.lineWidth = Math.max(1.5, lw * 0.35);
+  ctx.strokeRect(cx - rimW / 2, rimY, rimW, rimH);
+  ctx.strokeRect(cx - bodyW / 2, baseY, bodyW, bodyH);
+  ctx.strokeRect(cx - leafW / 2, leafTop, leafW, leafH);
+
+  // Store pot bounding box in UV (0..1) coordinates
+  const px0 = cx - rimW / 2;
+  const py0 = leafTop;
+  const pw = rimW;
+  const ph = (baseY + bodyH + baseH) - leafTop;
+
+  potInfo.u0 = px0 / cw;
+  potInfo.v0 = py0 / ch;
+  potInfo.u1 = (px0 + pw) / cw;
+  potInfo.v1 = (py0 + ph) / ch;
+}
+
+/* ===== PLACE PAINTINGS ===== */
+function placePaintings() {
+  // Positions: x, z, rotation (facing direction)
+  const spots = [
+    { x: -9.75, z: -2, ry: Math.PI / 2 },     // main hall left wall
+    { x: -9.75, z: 2, ry: Math.PI / 2 },      // main hall left wall
+    { x: 9.75, z: -2, ry: -Math.PI / 2 },     // main hall right wall
+    { x: 9.75, z: 2, ry: -Math.PI / 2 },      // main hall right wall
+    { x: -6, z: -11.75, ry: 0 },               // left wing back wall
+    { x: 6, z: -11.75, ry: 0 },                // right wing back wall
+    { x: -2, z: 10.75, ry: Math.PI },          // back gallery
+    { x: 2, z: 10.75, ry: Math.PI },           // back gallery
+  ];
+
+  spots.forEach((s, idx) => {
+    const potInfo = { u0: 0, v0: 0, u1: 0, v1: 0 };
+    const paintCanvas = generateMondriaan(512, 400, potInfo);
+
+    const tex = new THREE.CanvasTexture(paintCanvas);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.colorSpace = THREE.SRGBColorSpace;
+
+    // Painting mesh
+    const pGeo = new THREE.PlaneGeometry(PW, PH);
+    const pMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.25, metalness: 0 });
+    const pMesh = new THREE.Mesh(pGeo, pMat);
+    // Position painting slightly forward so it's visible (not embedded in wall)
+    pMesh.position.z = 0.02;
+
+    // Frame group
+    const group = new THREE.Group();
+
+    // Golden frame pieces - frame sits around the painting
+    const fMat = new THREE.MeshStandardMaterial({ color: 0xc8a84e, roughness: 0.35, metalness: 0.6 });
+    const fw = PW + 0.14, fh = PH + 0.14, fd = 0.08;
+    const fz = 0.02; // same plane as painting
+
+    const mkBar = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+    const topBar = new THREE.Mesh(mkBar(fw, 0.07, fd), fMat);
+    topBar.position.set(0, PH / 2 + 0.035, fz);
+    group.add(topBar);
+
+    const botBar = new THREE.Mesh(mkBar(fw, 0.07, fd), fMat);
+    botBar.position.set(0, -PH / 2 - 0.035, fz);
+    group.add(botBar);
+
+    const leftBar = new THREE.Mesh(mkBar(0.07, fh, fd), fMat);
+    leftBar.position.set(-PW / 2 - 0.035, 0, fz);
+    group.add(leftBar);
+
+    const rightBar = new THREE.Mesh(mkBar(0.07, fh, fd), fMat);
+    rightBar.position.set(PW / 2 + 0.035, 0, fz);
+    group.add(rightBar);
+
+    // Inner frame shadow (dark inset)
+    const inMat = new THREE.MeshStandardMaterial({ color: 0x3a3020, roughness: 0.8 });
+    const inTop = new THREE.Mesh(mkBar(PW + 0.02, 0.02, fd * 0.5), inMat);
+    inTop.position.set(0, PH / 2 + 0.005, fz);
+    group.add(inTop);
+    const inBot = new THREE.Mesh(mkBar(PW + 0.02, 0.02, fd * 0.5), inMat);
+    inBot.position.set(0, -PH / 2 - 0.005, fz);
+    group.add(inBot);
+
+    group.add(pMesh);
+
+    const yPos = PLAYER_H + 0.15;
+    group.position.set(s.x, yPos, s.z);
+    group.rotation.y = s.ry;
+    scene.add(group);
+
+    // Spotlight on painting
+    const spot = new THREE.SpotLight(0xfff5e0, 2.0, 5, Math.PI / 7, 0.6);
+    const off = new THREE.Vector3(0, 1.8, 1.0);
+    off.applyAxisAngle(new THREE.Vector3(0, 1, 0), s.ry);
+    spot.position.set(s.x + off.x, yPos + off.y, s.z + off.z);
+    // Create a separate target object (don't use pMesh, scene.add would reparent it!)
+    const spotTarget = new THREE.Object3D();
+    spotTarget.position.set(s.x, yPos, s.z);
+    spot.target = spotTarget;
+    scene.add(spot);
+    scene.add(spotTarget);
+
+    // Small visible light fixture
+    const fixGeo = new THREE.BoxGeometry(0.3, 0.05, 0.1);
+    const fixMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
+    const fix = new THREE.Mesh(fixGeo, fixMat);
+    fix.position.copy(spot.position);
+    fix.position.y += 0.05;
+    fix.rotation.y = s.ry;
+    scene.add(fix);
+
+    paintings.push({
+      mesh: pMesh,
+      group,
+      potInfo,
+      found: false,
+      worldPos: new THREE.Vector3(s.x, yPos, s.z),
+      index: idx,
+    });
+  });
+}
+
+/* ===== WALL COLLISION ===== */
+function wallCollide(nx, nz) {
+  for (const w of wallSegs) {
+    const dx = w.x2 - w.x1, dz = w.z2 - w.z1;
+    const L = w.len;
+    const dirX = dx / L, dirZ = dz / L;
+    const normX = -dirZ, normZ = dirX;
+
+    const px = nx - w.x1, pz = nz - w.z1;
+    const along = px * dirX + pz * dirZ;
+    const dist = px * normX + pz * normZ;
+    const threshold = WALL_THICK / 2 + PLAYER_R;
+
+    if (along >= -PLAYER_R && along <= L + PLAYER_R && Math.abs(dist) < threshold) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/* ===== INPUT ===== */
+function setupInput() {
+  // Keyboard
+  addEventListener('keydown', e => { keys[e.code] = true; });
+  addEventListener('keyup', e => { keys[e.code] = false; });
+
+  // Pointer lock (desktop)
+  let isLocked = false;
+  renderer.domElement.addEventListener('click', () => {
+    if (!gameStarted) return;
+    if (!isMobile && !isLocked) {
+      renderer.domElement.requestPointerLock();
+    }
+    if (isLocked) {
+      checkPaintingClick(innerWidth / 2, innerHeight / 2);
+    }
+  });
+  document.addEventListener('pointerlockchange', () => {
+    isLocked = document.pointerLockElement === renderer.domElement;
+  });
+  document.addEventListener('mousemove', e => {
+    if (isLocked) {
+      yaw -= e.movementX * LOOK_SPEED;
+      pitch = Math.max(-1, Math.min(1, pitch - e.movementY * LOOK_SPEED));
+    }
+  });
+
+  // Touch: right side = look + tap
+  renderer.domElement.addEventListener('touchstart', e => {
+    if (!gameStarted) return;
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.clientX > innerWidth * 0.35 && lookTouchId === null) {
+        lookTouchId = t.identifier;
+        lookLastX = t.clientX;
+        lookLastY = t.clientY;
+        touchStarts[t.identifier] = { t: Date.now(), x: t.clientX, y: t.clientY };
+      }
+    }
+  }, { passive: false });
+
+  renderer.domElement.addEventListener('touchmove', e => {
+    if (!gameStarted) return;
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === lookTouchId) {
+        yaw -= (t.clientX - lookLastX) * LOOK_SPEED * 1.3;
+        pitch = Math.max(-1, Math.min(1, pitch - (t.clientY - lookLastY) * LOOK_SPEED * 1.3));
+        lookLastX = t.clientX;
+        lookLastY = t.clientY;
+      }
+    }
+  }, { passive: false });
+
+  renderer.domElement.addEventListener('touchend', e => {
+    if (!gameStarted) return;
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === lookTouchId) {
+        const s = touchStarts[t.identifier];
+        if (s && Date.now() - s.t < 300 && Math.hypot(t.clientX - s.x, t.clientY - s.y) < 15) {
+          checkPaintingClick(t.clientX, t.clientY);
+        }
+        delete touchStarts[t.identifier];
+        lookTouchId = null;
+      }
+    }
+  }, { passive: false });
+
+  renderer.domElement.addEventListener('touchcancel', e => {
+    for (const t of e.changedTouches) {
+      if (t.identifier === lookTouchId) { lookTouchId = null; delete touchStarts[t.identifier]; }
+    }
+  }, { passive: false });
+
+  // Joystick
+  joystickEl.addEventListener('touchstart', e => {
+    e.preventDefault(); e.stopPropagation();
+    const t = e.changedTouches[0];
+    joystickTouchId = t.identifier;
+    joystickActive = true;
+    const r = joystickEl.getBoundingClientRect();
+    jsCenterX = r.left + r.width / 2;
+    jsCenterY = r.top + r.height / 2;
+    updateJoystick(t.clientX, t.clientY);
+  }, { passive: false });
+
+  joystickEl.addEventListener('touchmove', e => {
+    e.preventDefault(); e.stopPropagation();
+    for (const t of e.changedTouches) {
+      if (t.identifier === joystickTouchId) updateJoystick(t.clientX, t.clientY);
+    }
+  }, { passive: false });
+
+  const endJoystick = e => {
+    e.preventDefault(); e.stopPropagation();
+    for (const t of e.changedTouches) {
+      if (t.identifier === joystickTouchId) {
+        joystickActive = false;
+        joystickTouchId = null;
+        moveF = 0; moveR = 0;
+        knobEl.style.transform = 'translate(-50%,-50%)';
+      }
+    }
+  };
+  joystickEl.addEventListener('touchend', endJoystick, { passive: false });
+  joystickEl.addEventListener('touchcancel', endJoystick, { passive: false });
+
+  // Hint
+  document.getElementById('hintBtn').addEventListener('click', e => { e.stopPropagation(); showHint(); });
+
+  // Start button
+  document.getElementById('startBtn').addEventListener('click', () => {
+    gameStarted = true;
+    document.getElementById('introOverlay').style.display = 'none';
+  });
+}
+
+function updateJoystick(tx, ty) {
+  let dx = tx - jsCenterX, dy = ty - jsCenterY;
+  const max = 45, d = Math.sqrt(dx * dx + dy * dy);
+  if (d > max) { dx = dx / d * max; dy = dy / d * max; }
+  knobEl.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  moveF = -dy / max;
+  moveR = dx / max;
+}
+
+/* ===== PAINTING CLICK ===== */
+function checkPaintingClick(sx, sy) {
+  const rc = new THREE.Raycaster();
+  rc.setFromCamera(new THREE.Vector2((sx / innerWidth) * 2 - 1, -(sy / innerHeight) * 2 + 1), camera);
+  rc.far = 4.0;
+
+  const meshes = paintings.filter(p => !p.found).map(p => p.mesh);
+  const hits = rc.intersectObjects(meshes);
+  if (hits.length === 0) return;
+
+  const hit = hits[0];
+  const painting = paintings.find(p => p.mesh === hit.object);
+  if (!painting || painting.found || !hit.uv) return;
+
+  const u = hit.uv.x;
+  const v = 1 - hit.uv.y; // flip V
+  const pi = painting.potInfo;
+  const pad = 0.035;
+
+  if (u >= pi.u0 - pad && u <= pi.u1 + pad && v >= pi.v0 - pad && v <= pi.v1 + pad) {
+    onFoundPot(painting);
+  }
+}
+
+function onFoundPot(p) {
+  p.found = true;
+  foundCount++;
+  document.getElementById('score').textContent = `Gevonden: ${foundCount}/${NUM_PAINTINGS}`;
+
+  // Flash message
+  const msg = document.getElementById('foundMsg');
+  msg.textContent = 'Bloempot gevonden!';
+  msg.style.opacity = '1';
+  setTimeout(() => { msg.style.opacity = '0'; }, 1800);
+
+  // Glow on painting
+  p.mesh.material.emissive = new THREE.Color(0x44CC44);
+  p.mesh.material.emissiveIntensity = 0.4;
+  setTimeout(() => { p.mesh.material.emissiveIntensity = 0.12; }, 2500);
+
+  // Particles
+  spawnParticles(p.worldPos);
+
+  // Win check
+  if (foundCount >= NUM_PAINTINGS) {
+    setTimeout(() => {
+      document.getElementById('winOverlay').style.display = 'flex';
+    }, 2500);
+  }
+}
+
+function spawnParticles(pos) {
+  const cols = [0xFFD700, 0xFF4444, 0x44FF44, 0x4488FF, 0xFF8800];
+  for (let i = 0; i < 25; i++) {
+    const g = new THREE.BoxGeometry(0.04, 0.04, 0.04);
+    const m = new THREE.MeshBasicMaterial({ color: cols[Math.floor(Math.random() * cols.length)] });
+    const mesh = new THREE.Mesh(g, m);
+    mesh.position.set(
+      pos.x + (Math.random() - 0.5) * 0.4,
+      pos.y + (Math.random() - 0.5) * 0.4,
+      pos.z + (Math.random() - 0.5) * 0.4
+    );
+    const vel = new THREE.Vector3(
+      (Math.random() - 0.5) * 3.5,
+      Math.random() * 4 + 2,
+      (Math.random() - 0.5) * 3.5
+    );
+    scene.add(mesh);
+    particles.push({ mesh, vel, life: 2.0 });
+  }
+}
+
+/* ===== HINT ===== */
+function showHint() {
+  if (hintActive) return;
+  const unfound = paintings.filter(p => !p.found);
+  if (!unfound.length) return;
+
+  let nearest = unfound[0], nd = playerPos.distanceTo(nearest.worldPos);
+  for (const p of unfound) {
+    const d = playerPos.distanceTo(p.worldPos);
+    if (d < nd) { nd = d; nearest = p; }
+  }
+
+  hintActive = true;
+  nearest.mesh.material.emissive = new THREE.Color(0xFFD700);
+  nearest.mesh.material.emissiveIntensity = 0.6;
+
+  if (hintTimer) clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => {
+    if (!nearest.found) {
+      nearest.mesh.material.emissive.setHex(0x000000);
+      nearest.mesh.material.emissiveIntensity = 0;
+    }
+    hintActive = false;
+  }, 2500);
+}
+
+/* ===== GAME LOOP ===== */
+function animate() {
+  requestAnimationFrame(animate);
+  if (!gameStarted) { renderer.render(scene, camera); return; }
+
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  // Input
+  let kf = 0, kr = 0;
+  if (keys['KeyW'] || keys['ArrowUp']) kf += 1;
+  if (keys['KeyS'] || keys['ArrowDown']) kf -= 1;
+  if (keys['KeyA'] || keys['ArrowLeft']) kr -= 1;
+  if (keys['KeyD'] || keys['ArrowRight']) kr += 1;
+
+  const fwd = joystickActive ? moveF : kf;
+  const rgt = joystickActive ? moveR : kr;
+
+  const sy = Math.sin(yaw), cy = Math.cos(yaw);
+  const dx = (sy * fwd + cy * rgt) * MOVE_SPEED * dt;
+  const dz = (cy * fwd - sy * rgt) * MOVE_SPEED * dt;
+
+  const nx = playerPos.x - dx;
+  const nz = playerPos.z - dz;
+
+  if (!wallCollide(nx, playerPos.z)) playerPos.x = nx;
+  if (!wallCollide(playerPos.x, nz)) playerPos.z = nz;
+
+  // Bounds
+  playerPos.x = Math.max(-11.5, Math.min(11.5, playerPos.x));
+  playerPos.z = Math.max(-13.5, Math.min(12.5, playerPos.z));
+
+  camera.position.copy(playerPos);
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = yaw;
+  camera.rotation.x = pitch;
+
+  // Particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life -= dt;
+    p.vel.y -= 9.8 * dt;
+    p.mesh.position.x += p.vel.x * dt;
+    p.mesh.position.y += p.vel.y * dt;
+    p.mesh.position.z += p.vel.z * dt;
+    p.mesh.rotation.x += dt * 3;
+    p.mesh.rotation.z += dt * 2;
+    p.mesh.material.opacity = Math.max(0, p.life / 2);
+    p.mesh.material.transparent = true;
+    if (p.life <= 0) {
+      scene.remove(p.mesh);
+      p.mesh.geometry.dispose();
+      p.mesh.material.dispose();
+      particles.splice(i, 1);
+    }
+  }
+
+  renderer.render(scene, camera);
+}
+
+/* ===== START ===== */
+init();
+</script>
+</body>
+</html>
