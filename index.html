@@ -248,6 +248,62 @@ function addWall(x1, z1, x2, z2) {
   wallSegs.push({ x1, z1, x2, z2, len, angle });
 }
 
+function addDoorFrame(x1, z1, x2, z2) {
+  const dx = x2 - x1, dz = z2 - z1;
+  const len = Math.sqrt(dx * dx + dz * dz);
+  const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
+  const angle = Math.atan2(dx, dz);
+
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.5, metalness: 0.1 });
+  const archMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.5, metalness: 0.15 });
+
+  // Left pillar
+  const pillarH = WALL_HEIGHT * 0.85;
+  const pillarW = 0.18;
+  const pillarD = WALL_THICK + 0.1;
+  const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(pillarD, pillarH, pillarW), frameMat);
+  leftPillar.position.set(x1, pillarH / 2, z1);
+  leftPillar.rotation.y = angle;
+  scene.add(leftPillar);
+
+  // Right pillar
+  const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(pillarD, pillarH, pillarW), frameMat);
+  rightPillar.position.set(x2, pillarH / 2, z2);
+  rightPillar.rotation.y = angle;
+  scene.add(rightPillar);
+
+  // Top beam (lintel)
+  const lintelH = 0.25;
+  const lintel = new THREE.Mesh(
+    new THREE.BoxGeometry(WALL_THICK + 0.12, lintelH, len + pillarW),
+    archMat
+  );
+  lintel.position.set(cx, pillarH + lintelH / 2, cz);
+  lintel.rotation.y = angle;
+  scene.add(lintel);
+
+  // Decorative keystone at center top
+  const keystone = new THREE.Mesh(
+    new THREE.BoxGeometry(WALL_THICK + 0.08, 0.12, 0.25),
+    new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.4, metalness: 0.2 })
+  );
+  keystone.position.set(cx, pillarH + lintelH + 0.06, cz);
+  keystone.rotation.y = angle;
+  scene.add(keystone);
+
+  // Wall above door (fill gap between lintel and ceiling)
+  const aboveH = WALL_HEIGHT - pillarH - lintelH;
+  if (aboveH > 0.05) {
+    const above = new THREE.Mesh(
+      new THREE.BoxGeometry(WALL_THICK, aboveH, len + pillarW),
+      makeWallMat()
+    );
+    above.position.set(cx, pillarH + lintelH + aboveH / 2, cz);
+    above.rotation.y = angle;
+    scene.add(above);
+  }
+}
+
 function buildMuseum() {
   const floorMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.55, metalness: 0.05 });
   const ceilMat = new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: 0.95 });
@@ -257,7 +313,7 @@ function buildMuseum() {
     { x: 0, z: 0, w: 20, d: 8 },     // Main hall
     { x: -6, z: -8, w: 8, d: 8 },     // Left wing
     { x: 6, z: -8, w: 8, d: 8 },      // Right wing
-    { x: 0, z: 8, w: 12, d: 6 },      // Back gallery
+    { x: 0, z: 7.5, w: 12, d: 7 },   // Back gallery (z: 4 to 11)
   ];
 
   rooms.forEach(r => {
@@ -283,11 +339,17 @@ function buildMuseum() {
   }
 
   // Walls
-  // Main hall
-  addWall(-10, -4, -2, -4);    // front left
-  addWall(2, -4, 10, -4);      // front right
-  addWall(-10, 4, -6, 4);      // back left
-  addWall(6, 4, 10, 4);        // back right
+  // Main hall - front wall with openings to left & right wings
+  addWall(-10, -4, -8, -4);    // front far-left
+  addWall(-4, -4, 4, -4);      // front center
+  addWall(8, -4, 10, -4);      // front far-right
+  // Openings: (-8,-4)→(-4,-4) to left wing, (4,-4)→(8,-4) to right wing
+
+  // Main hall - back wall with opening to back gallery
+  addWall(-10, 4, -3, 4);      // back left
+  addWall(3, 4, 10, 4);        // back right
+  // Opening: (-3,4)→(3,4) to back gallery
+
   addWall(-10, -4, -10, 4);    // left wall
   addWall(10, -4, 10, 4);      // right wall
 
@@ -305,6 +367,11 @@ function buildMuseum() {
   addWall(-6, 4, -6, 11);
   addWall(6, 4, 6, 11);
   addWall(-6, 11, 6, 11);
+
+  // Door frames at each opening
+  addDoorFrame(-8, -4, -4, -4);   // Left wing entrance
+  addDoorFrame(4, -4, 8, -4);     // Right wing entrance
+  addDoorFrame(-3, 4, 3, 4);      // Back gallery entrance
 }
 
 /* ===== LIGHTING ===== */
