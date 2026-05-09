@@ -193,7 +193,9 @@ const FRAME_DARK_MAT = new THREE.MeshStandardMaterial({ color: 0x3a3020, roughne
 const PANEL_MAT = new THREE.MeshStandardMaterial({ color: 0x6a4a30, roughness: 0.55, metalness: 0.05 });
 const PLINTH_MAT = new THREE.MeshStandardMaterial({ color: 0xcdbfa3, roughness: 0.6, metalness: 0.05 });
 const FIXTURE_MAT = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
+const WINDOW_FRAME_MAT = new THREE.MeshStandardMaterial({ color: 0x4a3826, roughness: 0.7 });
 const BULB_MAT = new THREE.MeshBasicMaterial({ color: 0xffd9a3 });
+let forestTex = null;
 const raycaster = new THREE.Raycaster();
 const obstacles = [];
 
@@ -359,6 +361,118 @@ function setupTextures() {
   walnutTex.anisotropy = aniso;
   PANEL_MAT.map = walnutTex;
   PANEL_MAT.needsUpdate = true;
+
+  // Forest scene viewed through a window — daylit, painted top-to-bottom
+  // (sky → distant haze → mid trees → foreground trunks). Used as both the
+  // diffuse and emissive map so windows glow against the dim gallery.
+  forestTex = makeTexture((ctx, w, h) => {
+    // Sky band — top ~38% — gradient from soft blue to warm horizon.
+    const skyH = h * 0.38;
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, skyH);
+    skyGrad.addColorStop(0, '#a8c8e8');
+    skyGrad.addColorStop(0.7, '#cfd9d4');
+    skyGrad.addColorStop(1, '#e8d8b8');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, skyH);
+
+    // Wispy clouds — low-alpha horizontal ellipses
+    for (let i = 0; i < 6; i++) {
+      const cx = Math.random() * w;
+      const cy = skyH * (0.15 + Math.random() * 0.55);
+      const rx = 30 + Math.random() * 90;
+      const ry = 4 + Math.random() * 8;
+      ctx.fillStyle = `rgba(255,255,255,${0.15 + Math.random() * 0.18})`;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Distant tree line — middle ~22% — atmospheric haze blobs.
+    const distTop = skyH;
+    const distH = h * 0.22;
+    for (let i = 0; i < 60; i++) {
+      const cx = Math.random() * w;
+      const cy = distTop + Math.random() * distH * 0.9;
+      const r = 12 + Math.random() * 28;
+      ctx.fillStyle = `rgba(90, 120, 96, ${0.18 + Math.random() * 0.22})`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Mid-ground trees — ~25% — conifers (triangles) and deciduous (round).
+    const midTop = distTop + distH;
+    const midH = h * 0.25;
+    const midGreens = ['#3d5a3d', '#4a6b3a', '#355032', '#42613f'];
+    for (let i = 0; i < 22; i++) {
+      const baseX = Math.random() * w;
+      const baseY = midTop + midH * (0.3 + Math.random() * 0.7);
+      const treeH = 40 + Math.random() * 80;
+      const treeW = 24 + Math.random() * 36;
+      ctx.fillStyle = midGreens[i % midGreens.length];
+      if (i % 2 === 0) {
+        // conifer triangle
+        ctx.beginPath();
+        ctx.moveTo(baseX, baseY - treeH);
+        ctx.lineTo(baseX - treeW / 2, baseY);
+        ctx.lineTo(baseX + treeW / 2, baseY);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // deciduous rounded
+        ctx.beginPath();
+        ctx.ellipse(baseX, baseY - treeH * 0.5, treeW * 0.55, treeH * 0.55, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Foreground trunks + forest floor — bottom ~15%.
+    const fgTop = midTop + midH;
+    const fgH = h - fgTop;
+    // Forest floor band
+    const floorGrad = ctx.createLinearGradient(0, fgTop, 0, h);
+    floorGrad.addColorStop(0, '#3a4a2a');
+    floorGrad.addColorStop(1, '#2a1d10');
+    ctx.fillStyle = floorGrad;
+    ctx.fillRect(0, fgTop, w, fgH);
+    // Dappled sunlight flecks
+    for (let i = 0; i < 60; i++) {
+      ctx.fillStyle = `rgba(220, 200, 110, ${0.08 + Math.random() * 0.12})`;
+      const fx = Math.random() * w;
+      const fy = fgTop + Math.random() * fgH;
+      ctx.beginPath();
+      ctx.arc(fx, fy, 2 + Math.random() * 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Foreground trunks running off the bottom
+    const trunkCount = 4;
+    for (let i = 0; i < trunkCount; i++) {
+      const tx = (i + 0.3 + Math.random() * 0.4) * (w / trunkCount);
+      const tw = 14 + Math.random() * 18;
+      const top = midTop + midH * (0.3 + Math.random() * 0.4);
+      ctx.fillStyle = '#2a1d10';
+      ctx.fillRect(tx - tw / 2, top, tw, h - top);
+      // Bark highlight
+      ctx.fillStyle = 'rgba(120, 90, 60, 0.25)';
+      ctx.fillRect(tx - tw / 2 + 2, top, 3, h - top);
+    }
+
+    // Sun rays — diagonal low-alpha streaks in the upper canopy.
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 5; i++) {
+      const sx = Math.random() * w;
+      ctx.strokeStyle = `rgba(255, 240, 200, ${0.08 + Math.random() * 0.07})`;
+      ctx.lineWidth = 6 + Math.random() * 14;
+      ctx.beginPath();
+      ctx.moveTo(sx, 0);
+      ctx.lineTo(sx + 60 + Math.random() * 80, midTop + midH * 0.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }, 512, 768, 1, 1);
+  forestTex.wrapS = forestTex.wrapT = THREE.ClampToEdgeWrapping;
+  forestTex.anisotropy = aniso;
 }
 
 /* ===== MUSEUM GEOMETRY ===== */
@@ -480,29 +594,62 @@ function addDoorFrame(x1, z1, x2, z2) {
   }
 }
 
-/* Wood-panelled wainscot panel with a thin gold trim border. Placed
- * decoratively on otherwise-blank stretches of wall between paintings. */
+/* Window looking out onto a daylit forest. Replaces the old wainscot panel:
+ * an emissive forest texture behind a 2x3 mullion grid, framed by a wooden
+ * casing and sill. Placed on otherwise-blank stretches of wall. */
 function addWallPanel(x, z, ry, w = 1.0, h = 2.4) {
   const group = new THREE.Group();
 
-  const panel = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.025), PANEL_MAT);
-  group.add(panel);
+  // Glass plane with the forest as both diffuse + emissive map so it appears
+  // self-lit against the dim gallery.
+  const glassMat = new THREE.MeshStandardMaterial({
+    map: forestTex,
+    emissive: 0xffffff,
+    emissiveMap: forestTex,
+    emissiveIntensity: 0.85,
+    roughness: 0.4,
+    metalness: 0.0,
+  });
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.02), glassMat);
+  group.add(glass);
 
-  const t = 0.025; // trim thickness
-  const td = 0.03; // trim depth
-  const trimZ = 0.005;
-  const top = new THREE.Mesh(new THREE.BoxGeometry(w + t * 2, t, td), FRAME_GOLD_MAT);
-  top.position.set(0, h / 2 + t / 2, trimZ);
-  group.add(top);
-  const bot = new THREE.Mesh(new THREE.BoxGeometry(w + t * 2, t, td), FRAME_GOLD_MAT);
-  bot.position.set(0, -h / 2 - t / 2, trimZ);
-  group.add(bot);
-  const lt = new THREE.Mesh(new THREE.BoxGeometry(t, h, td), FRAME_GOLD_MAT);
-  lt.position.set(-w / 2 - t / 2, 0, trimZ);
-  group.add(lt);
-  const rt = new THREE.Mesh(new THREE.BoxGeometry(t, h, td), FRAME_GOLD_MAT);
-  rt.position.set(w / 2 + t / 2, 0, trimZ);
-  group.add(rt);
+  // Mullions — 1 vertical + 2 horizontal, dividing the window into a 2x3 grid.
+  const mullionZ = 0.012;
+  const mD = 0.025;
+  const mT = 0.04;
+  const vM = new THREE.Mesh(new THREE.BoxGeometry(mT, h, mD), WINDOW_FRAME_MAT);
+  vM.position.set(0, 0, mullionZ);
+  group.add(vM);
+  for (const sy of [-h / 6, h / 6]) {
+    const hM = new THREE.Mesh(new THREE.BoxGeometry(w, mT, mD), WINDOW_FRAME_MAT);
+    hM.position.set(0, sy, mullionZ);
+    group.add(hM);
+  }
+
+  // Window casing — chunky wooden frame around the perimeter.
+  const cT = 0.08;
+  const cD = 0.05;
+  const casingZ = 0.018;
+  const casingTop = new THREE.Mesh(new THREE.BoxGeometry(w + cT * 2, cT, cD), WINDOW_FRAME_MAT);
+  casingTop.position.set(0, h / 2 + cT / 2, casingZ);
+  group.add(casingTop);
+  const casingBot = new THREE.Mesh(new THREE.BoxGeometry(w + cT * 2, cT, cD), WINDOW_FRAME_MAT);
+  casingBot.position.set(0, -h / 2 - cT / 2, casingZ);
+  group.add(casingBot);
+  const casingL = new THREE.Mesh(new THREE.BoxGeometry(cT, h, cD), WINDOW_FRAME_MAT);
+  casingL.position.set(-w / 2 - cT / 2, 0, casingZ);
+  group.add(casingL);
+  const casingR = new THREE.Mesh(new THREE.BoxGeometry(cT, h, cD), WINDOW_FRAME_MAT);
+  casingR.position.set(w / 2 + cT / 2, 0, casingZ);
+  group.add(casingR);
+
+  // Sill — protrudes a bit further than the casing.
+  const sill = new THREE.Mesh(
+    new THREE.BoxGeometry(w + cT * 2 + 0.04, 0.05, 0.09),
+    WINDOW_FRAME_MAT
+  );
+  sill.position.set(0, -h / 2 - cT - 0.025, 0.025);
+  group.add(sill);
 
   group.position.set(x, 1.45, z);
   group.rotation.y = ry;
