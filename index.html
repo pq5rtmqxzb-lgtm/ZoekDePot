@@ -99,6 +99,13 @@ canvas { display: block; width: 100%; height: 100%; }
   opacity: 0; transition: opacity 0.3s;
   pointer-events: none;
 }
+#missMsg {
+  position: absolute; top: 45%; left: 50%; transform: translate(-50%,-50%);
+  color: #ff6b6b; font-size: 22px; font-weight: bold;
+  text-shadow: 0 0 16px rgba(255,80,80,0.7), 0 2px 6px rgba(0,0,0,0.8);
+  opacity: 0; transition: opacity 0.18s;
+  pointer-events: none;
+}
 .mobile-controls { display: none; }
 @media (hover: none) and (pointer: coarse) {
   .mobile-controls { display: block !important; }
@@ -121,13 +128,14 @@ canvas { display: block; width: 100%; height: 100%; }
 </div>
 <div id="ui">
   <div id="title">Zoek de Pot</div>
-  <div id="score">Gevonden: 0/8</div>
+  <div id="score">Gevonden: 0/?</div>
   <button id="hintBtn">Hint</button>
   <div id="crosshair" class="desktop-controls"></div>
   <div id="joystickArea" class="mobile-controls">
     <div id="joystickKnob"></div>
   </div>
   <div id="foundMsg"></div>
+  <div id="missMsg">Geen pot</div>
 </div>
 
 <script type="importmap">
@@ -158,6 +166,8 @@ let yaw = 0, pitch = 0;
 let moveF = 0, moveR = 0;
 const paintings = [];
 let foundCount = 0;
+let totalPots = 0;
+const shakingGroups = [];
 let gameStarted = false;
 const wallSegs = [];
 const particles = [];
@@ -610,11 +620,14 @@ function addWallPanel(x, z, ry, w = 1.0, h = 2.4) {
     roughness: 0.4,
     metalness: 0.0,
   });
-  const glass = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.02), glassMat);
+  // PlaneGeometry (single-sided) at a clear forward offset prevents the
+  // glass back-face from co-planing with the wall surface (z-fighting).
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(w, h), glassMat);
+  glass.position.z = 0.018;
   group.add(glass);
 
   // Mullions — 1 vertical + 2 horizontal, dividing the window into a 2x3 grid.
-  const mullionZ = 0.012;
+  const mullionZ = 0.030;
   const mD = 0.025;
   const mT = 0.04;
   const vM = new THREE.Mesh(new THREE.BoxGeometry(mT, h, mD), WINDOW_FRAME_MAT);
@@ -629,7 +642,7 @@ function addWallPanel(x, z, ry, w = 1.0, h = 2.4) {
   // Window casing — chunky wooden frame around the perimeter.
   const cT = 0.08;
   const cD = 0.05;
-  const casingZ = 0.018;
+  const casingZ = 0.040;
   const casingTop = new THREE.Mesh(new THREE.BoxGeometry(w + cT * 2, cT, cD), WINDOW_FRAME_MAT);
   casingTop.position.set(0, h / 2 + cT / 2, casingZ);
   group.add(casingTop);
@@ -648,7 +661,7 @@ function addWallPanel(x, z, ry, w = 1.0, h = 2.4) {
     new THREE.BoxGeometry(w + cT * 2 + 0.04, 0.05, 0.09),
     WINDOW_FRAME_MAT
   );
-  sill.position.set(0, -h / 2 - cT - 0.025, 0.025);
+  sill.position.set(0, -h / 2 - cT - 0.025, 0.045);
   group.add(sill);
 
   group.position.set(x, 1.45, z);
@@ -778,8 +791,14 @@ function setupLights() {
   scene.add(dir);
 }
 
-/* ===== MONDRIAAN GENERATOR ===== */
-function generateMondriaan(cw, ch, potInfo) {
+/* ===== MONDRIAAN GENERATOR =====
+ * If hasPot is true, the painting's grid is constrained so that a region of
+ * its rectangles forms a pot silhouette in Mondriaan style: a wide rim slab,
+ * a narrower body slab below it, and a still-narrower base slab. Surrounding
+ * cells inside a halo are forced cream so the pot pops. If hasPot is false,
+ * we generate a plain Mondriaan with no pot. potInfo's UV bbox is set only
+ * when hasPot is true. */
+function generateMondriaan(cw, ch, potInfo, hasPot) {
   const c = document.createElement('canvas');
   c.width = cw; c.height = ch;
   const ctx = c.getContext('2d');
@@ -789,6 +808,32 @@ function generateMondriaan(cw, ch, potInfo) {
 
   const M = 8; // margin
   const LW = 3 + Math.random() * 5; // line width
+
+  // Compute pot silhouette geometry (pixel coords) when this painting is
+  // marked as a pot painting. These split positions get injected into the
+  // grid below, guaranteeing the pot is composed of grid-aligned rectangles.
+  let pot = null;
+  if (hasPot) {
+    const rimSpanFrac = 0.36 + Math.random() * 0.10;     // 36–46% of width
+    const rimSpan = Math.round(rimSpanFrac * cw);
+    const cxFrac = 0.42 + Math.random() * 0.16;          // mostly centered
+    const cx = Math.round(cxFrac * cw);
+    const xOuterL = cx - Math.round(rimSpan / 2);
+    const xOuterR = cx + Math.round(rimSpan / 2);
+    const innerHalf = Math.round(rimSpan * 0.62 / 2);
+    const xInnerL = cx - innerHalf;
+    const xInnerR = cx + innerHalf;
+
+    const yRimTop = Math.round((0.20 + Math.random() * 0.08) * ch);
+    const rimH = Math.round(0.07 * ch);
+    const yRimBot = yRimTop + rimH;
+    const bodyH = Math.round((0.34 + Math.random() * 0.10) * ch);
+    const yBodyBot = yRimBot + bodyH;
+    const baseH = Math.round(0.05 * ch);
+    const yBaseBot = Math.min(ch - M - 12, yBodyBot + baseH);
+
+    pot = { xOuterL, xOuterR, xInnerL, xInnerR, yRimTop, yRimBot, yBodyBot, yBaseBot };
+  }
 
   // Generate horizontal split points
   const hSplits = [M];
@@ -820,7 +865,29 @@ function generateMondriaan(cw, ch, potInfo) {
     if (vSplits[i] - vSplits[i - 1] < 25) vSplits.splice(i, 1);
   }
 
-  // Mondriaan palette with weights
+  // Inject pot's required split lines and protect them from pruning.
+  if (pot) {
+    const protH = [pot.yRimTop, pot.yRimBot, pot.yBodyBot, pot.yBaseBot];
+    const protV = [pot.xOuterL, pot.xOuterR, pot.xInnerL, pot.xInnerR];
+    for (let i = hSplits.length - 2; i >= 1; i--) {
+      if (protH.some(p => Math.abs(hSplits[i] - p) < 18)) hSplits.splice(i, 1);
+    }
+    hSplits.push(...protH);
+    hSplits.sort((a, b) => a - b);
+    for (let i = hSplits.length - 1; i >= 1; i--) {
+      if (hSplits[i] === hSplits[i - 1]) hSplits.splice(i, 1);
+    }
+    for (let i = vSplits.length - 2; i >= 1; i--) {
+      if (protV.some(p => Math.abs(vSplits[i] - p) < 18)) vSplits.splice(i, 1);
+    }
+    vSplits.push(...protV);
+    vSplits.sort((a, b) => a - b);
+    for (let i = vSplits.length - 1; i >= 1; i--) {
+      if (vSplits[i] === vSplits[i - 1]) vSplits.splice(i, 1);
+    }
+  }
+
+  // Mondriaan palette with weights (used for non-pot, non-halo cells)
   const palette = [
     { color: '#FAFAF5', weight: 50 },
     { color: '#D42828', weight: 12 },
@@ -838,13 +905,48 @@ function generateMondriaan(cw, ch, potInfo) {
     return '#FAFAF5';
   }
 
+  // Pot color scheme — rim and body get distinct bold Mondriaan colors so
+  // they read as a single figure; base is always black for visual weight.
+  let potRimColor = null, potBodyColor = null;
+  let haloX0 = 0, haloX1 = 0, haloY0 = 0, haloY1 = 0;
+  if (pot) {
+    const bolds = ['#D42828', '#1A3F8F', '#F2C41A'];
+    const r0 = Math.floor(Math.random() * bolds.length);
+    let r1 = Math.floor(Math.random() * (bolds.length - 1));
+    if (r1 >= r0) r1++;
+    potRimColor = bolds[r0];
+    potBodyColor = bolds[r1];
+    haloX0 = pot.xOuterL - 30; haloX1 = pot.xOuterR + 30;
+    haloY0 = pot.yRimTop - 30; haloY1 = pot.yBaseBot + 30;
+  }
+
+  function classifyCell(x, y, w, h) {
+    if (!pot) return 'background';
+    const cxm = x + w / 2, cym = y + h / 2;
+    if (cym >= pot.yRimTop && cym <= pot.yRimBot &&
+        cxm >= pot.xOuterL && cxm <= pot.xOuterR) return 'rim';
+    if (cym >= pot.yRimBot && cym <= pot.yBodyBot &&
+        cxm >= pot.xInnerL && cxm <= pot.xInnerR) return 'body';
+    if (cym >= pot.yBodyBot && cym <= pot.yBaseBot &&
+        cxm >= pot.xInnerL && cxm <= pot.xInnerR) return 'base';
+    if (cxm >= haloX0 && cxm <= haloX1 &&
+        cym >= haloY0 && cym <= haloY1) return 'halo';
+    return 'background';
+  }
+
   // Fill cells
   const cells = [];
   for (let i = 0; i < hSplits.length - 1; i++) {
     for (let j = 0; j < vSplits.length - 1; j++) {
       const x = vSplits[j], y = hSplits[i];
       const w = vSplits[j + 1] - x, h = hSplits[i + 1] - y;
-      const col = pickColor();
+      const kind = classifyCell(x, y, w, h);
+      let col;
+      if (kind === 'rim') col = potRimColor;
+      else if (kind === 'body') col = potBodyColor;
+      else if (kind === 'base') col = '#0A0A0A';
+      else if (kind === 'halo') col = '#FAFAF5';
+      else col = pickColor();
       ctx.fillStyle = col;
       ctx.fillRect(x, y, w, h);
       cells.push({ x, y, w, h, color: col });
@@ -878,82 +980,15 @@ function generateMondriaan(cw, ch, potInfo) {
     ctx.stroke();
   });
 
-  // Draw the hidden flower pot
-  drawPot(ctx, cw, ch, LW, potInfo, cells);
+  // Record pot UV bbox for click detection.
+  if (pot) {
+    potInfo.u0 = pot.xOuterL / cw;
+    potInfo.v0 = pot.yRimTop / ch;
+    potInfo.u1 = pot.xOuterR / cw;
+    potInfo.v1 = pot.yBaseBot / ch;
+  }
 
   return c;
-}
-
-function drawPot(ctx, cw, ch, lw, potInfo, cells) {
-  // Pick a cell big enough
-  const big = cells.filter(c => c.w > 50 && c.h > 60);
-  const cell = big.length ? big[Math.floor(Math.random() * big.length)] : cells[Math.floor(Math.random() * cells.length)];
-
-  const potColors = ['#D42828', '#1A3F8F', '#F2C41A', '#0A0A0A'];
-  const pc = potColors[Math.floor(Math.random() * potColors.length)];
-  const fc = potColors.filter(c => c !== pc)[Math.floor(Math.random() * 3)];
-
-  // Pot geometry in pixels
-  const potW = Math.min(cell.w * 0.45, 55);
-  const potTotalH = Math.min(cell.h * 0.6, 70);
-  const cx = cell.x + cell.w * 0.3 + Math.random() * cell.w * 0.3;
-  const baseY = cell.y + cell.h * 0.55 + Math.random() * cell.h * 0.15;
-
-  const rimW = potW * 0.9;
-  const rimH = potTotalH * 0.1;
-  const bodyW = potW * 0.7;
-  const bodyH = potTotalH * 0.35;
-  const baseW = potW * 0.5;
-  const baseH = potTotalH * 0.08;
-  const stemW = Math.max(2, lw * 0.5);
-  const stemH = potTotalH * 0.25;
-  const leafW = potW * 0.4;
-  const leafH = potTotalH * 0.18;
-
-  const rimY = baseY - rimH;
-  const stemTop = rimY - stemH;
-  const leafTop = stemTop - leafH;
-
-  // Draw leaf (geometric rectangles)
-  ctx.fillStyle = fc;
-  ctx.fillRect(cx - leafW / 2, leafTop, leafW, leafH);
-  // Accent rectangles on leaf
-  const ac = potColors.filter(c => c !== pc && c !== fc)[0] || '#F2C41A';
-  ctx.fillStyle = ac;
-  ctx.fillRect(cx - leafW * 0.55, leafTop + leafH * 0.1, leafW * 0.3, leafH * 0.5);
-  ctx.fillRect(cx + leafW * 0.25, leafTop + leafH * 0.2, leafW * 0.3, leafH * 0.4);
-
-  // Stem
-  ctx.fillStyle = '#0A0A0A';
-  ctx.fillRect(cx - stemW / 2, stemTop, stemW, stemH);
-
-  // Rim
-  ctx.fillStyle = pc;
-  ctx.fillRect(cx - rimW / 2, rimY, rimW, rimH);
-
-  // Body
-  ctx.fillRect(cx - bodyW / 2, baseY, bodyW, bodyH);
-
-  // Base
-  ctx.fillRect(cx - baseW / 2, baseY + bodyH, baseW, baseH);
-
-  // Black outlines (Mondriaan style)
-  ctx.strokeStyle = '#0A0A0A';
-  ctx.lineWidth = Math.max(1.5, lw * 0.35);
-  ctx.strokeRect(cx - rimW / 2, rimY, rimW, rimH);
-  ctx.strokeRect(cx - bodyW / 2, baseY, bodyW, bodyH);
-  ctx.strokeRect(cx - leafW / 2, leafTop, leafW, leafH);
-
-  // Store pot bounding box in UV (0..1) coordinates
-  const px0 = cx - rimW / 2;
-  const py0 = leafTop;
-  const pw = rimW;
-  const ph = (baseY + bodyH + baseH) - leafTop;
-
-  potInfo.u0 = px0 / cw;
-  potInfo.v0 = py0 / ch;
-  potInfo.u1 = (px0 + pw) / cw;
-  potInfo.v1 = (py0 + ph) / ch;
 }
 
 /* ===== PLACE PAINTINGS ===== */
@@ -1022,9 +1057,19 @@ function placePaintings() {
     { x: 2, z: 10.75, ry: Math.PI },           // back gallery
   ];
 
+  // 3–5 of the 8 paintings randomly hide a pot; the rest are decoy Mondriaans.
+  const potCount = 3 + Math.floor(Math.random() * 3);
+  totalPots = potCount;
+  const potIndices = new Set();
+  while (potIndices.size < potCount) {
+    potIndices.add(Math.floor(Math.random() * spots.length));
+  }
+  document.getElementById('score').textContent = `Gevonden: 0/${totalPots}`;
+
   spots.forEach((s, idx) => {
     const potInfo = { u0: 0, v0: 0, u1: 0, v1: 0 };
-    const paintCanvas = generateMondriaan(512, 400, potInfo);
+    const hasPot = potIndices.has(idx);
+    const paintCanvas = generateMondriaan(512, 400, potInfo, hasPot);
 
     const tex = new THREE.CanvasTexture(paintCanvas);
     tex.minFilter = THREE.LinearFilter;
@@ -1101,6 +1146,7 @@ function placePaintings() {
       mesh: pMesh,
       group,
       potInfo,
+      hasPot,
       found: false,
       worldPos: new THREE.Vector3(s.x, yPos, s.z),
       index: idx,
@@ -1295,6 +1341,12 @@ function checkPaintingClick(sx, sy) {
   const painting = paintings.find(p => p.mesh === hit.object);
   if (!painting || painting.found || !hit.uv) return;
 
+  // Decoy painting (no pot composed in its grid) — shake and flash.
+  if (!painting.hasPot) {
+    triggerMiss(painting);
+    return;
+  }
+
   const u = hit.uv.x;
   const v = 1 - hit.uv.y; // flip V
   const pi = painting.potInfo;
@@ -1305,10 +1357,37 @@ function checkPaintingClick(sx, sy) {
   }
 }
 
+function triggerMiss(painting) {
+  const g = painting.group;
+  if (!g.userData._shakeBaseRz) g.userData._shakeBaseRz = g.rotation.z;
+  g.userData._shakeStart = performance.now();
+  if (!shakingGroups.includes(g)) shakingGroups.push(g);
+
+  const m = document.getElementById('missMsg');
+  if (m) {
+    m.style.opacity = '1';
+    setTimeout(() => { m.style.opacity = '0'; }, 600);
+  }
+}
+
+function tickShakes() {
+  const now = performance.now();
+  for (let i = shakingGroups.length - 1; i >= 0; i--) {
+    const g = shakingGroups[i];
+    const t = (now - g.userData._shakeStart) / 350;
+    if (t >= 1) {
+      g.rotation.z = g.userData._shakeBaseRz || 0;
+      shakingGroups.splice(i, 1);
+      continue;
+    }
+    g.rotation.z = (g.userData._shakeBaseRz || 0) + Math.sin(t * Math.PI * 6) * 0.06 * (1 - t);
+  }
+}
+
 function onFoundPot(p) {
   p.found = true;
   foundCount++;
-  document.getElementById('score').textContent = `Gevonden: ${foundCount}/${NUM_PAINTINGS}`;
+  document.getElementById('score').textContent = `Gevonden: ${foundCount}/${totalPots}`;
 
   // If this painting is currently the hint target, cancel the hint reset so
   // the green found-glow isn't wiped when the hint timer fires.
@@ -1333,8 +1412,10 @@ function onFoundPot(p) {
   spawnParticles(p.worldPos);
 
   // Win check
-  if (foundCount >= NUM_PAINTINGS) {
+  if (foundCount >= totalPots) {
     setTimeout(() => {
+      const winP = document.querySelector('#winOverlay p');
+      if (winP) winP.textContent = `Je hebt alle ${totalPots} bloempotten gevonden!`;
       document.getElementById('winOverlay').style.display = 'flex';
     }, 2500);
   }
@@ -1367,7 +1448,7 @@ function spawnParticles(pos) {
 /* ===== HINT ===== */
 function showHint() {
   if (hintActive) return;
-  const unfound = paintings.filter(p => !p.found);
+  const unfound = paintings.filter(p => !p.found && p.hasPot);
   if (!unfound.length) return;
 
   let nearest = unfound[0], nd = playerPos.distanceTo(nearest.worldPos);
@@ -1450,6 +1531,8 @@ function animate() {
       particles.splice(i, 1);
     }
   }
+
+  tickShakes();
 
   renderer.render(scene, camera);
 }
