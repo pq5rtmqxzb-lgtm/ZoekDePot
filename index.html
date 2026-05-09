@@ -972,8 +972,11 @@ function animate() {
   const rgt = joystickActive ? moveR : kr;
 
   const sy = Math.sin(yaw), cy = Math.cos(yaw);
-  const dx = (sy * fwd + cy * rgt) * MOVE_SPEED * dt;
-  const dz = (cy * fwd - sy * rgt) * MOVE_SPEED * dt;
+  // Camera right vector at yaw is (cos yaw, 0, -sin yaw); camera forward is
+  // (-sin yaw, 0, -cos yaw). Strafe was sign-flipped, so D / joystick-right
+  // moved the player to their left. Apply +rgt along camera-right.
+  const dx = (sy * fwd - cy * rgt) * MOVE_SPEED * dt;
+  const dz = (cy * fwd + sy * rgt) * MOVE_SPEED * dt;
 
   const nx = playerPos.x - dx;
   const nz = playerPos.z - dz;
