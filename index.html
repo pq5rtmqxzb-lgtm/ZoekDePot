@@ -77,12 +77,12 @@ canvas { display: block; width: 100%; height: 100%; }
 }
 #introOverlay h1 { font-size: 36px; margin-bottom: 20px; letter-spacing: 3px; }
 #introOverlay p { font-size: 18px; max-width: 500px; line-height: 1.6; margin-bottom: 10px; }
-#startBtn {
+#startBtn, #replayBtn {
   margin-top: 30px; padding: 16px 40px; font-size: 20px;
   background: #d42828; color: #fff; border: none; border-radius: 8px;
   cursor: pointer; font-family: 'Georgia', serif; letter-spacing: 1px;
 }
-#startBtn:active { background: #a01e1e; }
+#startBtn:active, #replayBtn:active { background: #a01e1e; }
 #winOverlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.88); z-index: 100;
@@ -111,12 +111,13 @@ canvas { display: block; width: 100%; height: 100%; }
   <h1>Zoek de Pot</h1>
   <p>Loop door het museum en zoek de bloempot in elk schilderij!</p>
   <p style="font-size:14px; opacity:0.7;" class="mobile-controls">Joystick links = lopen, veeg rechts = rondkijken</p>
-  <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis = rondkijken, klik = zoek de pot</p>
+  <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis = rondkijken, klik = zoek de pot, H = hint</p>
   <button id="startBtn">Start!</button>
 </div>
 <div id="winOverlay">
   <h1>Gefeliciteerd!</h1>
   <p>Je hebt alle bloempotten gevonden!</p>
+  <button id="replayBtn">Speel opnieuw</button>
 </div>
 <div id="ui">
   <div id="title">Zoek de Pot</div>
@@ -162,6 +163,7 @@ const wallSegs = [];
 const particles = [];
 let hintActive = false;
 let hintTimer = null;
+let hintTarget = null;
 
 /* Keyboard state */
 const keys = {};
@@ -175,6 +177,15 @@ const touchStarts = {};
 const isMobile = 'ontouchstart' in window;
 const joystickEl = document.getElementById('joystickArea');
 const knobEl = document.getElementById('joystickKnob');
+
+/* ===== SHARED MATERIALS / OBJECTS ===== */
+const WALL_MAT = new THREE.MeshStandardMaterial({ color: 0xf0ece4, roughness: 0.92, metalness: 0 });
+const BASEBOARD_MAT = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.7 });
+const CROWN_MAT = new THREE.MeshStandardMaterial({ color: 0xe0dcd4, roughness: 0.8 });
+const FRAME_MAT = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.5, metalness: 0.1 });
+const ARCH_MAT = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.5, metalness: 0.15 });
+const KEYSTONE_MAT = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.4, metalness: 0.2 });
+const raycaster = new THREE.Raycaster();
 
 /* ===== INIT ===== */
 function init() {
@@ -203,10 +214,12 @@ function init() {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   });
 
-  // Prevent all default touch behaviors on document
-  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  // Prevent default touch behaviors on the canvas only — leave overlays
+  // free to receive normal taps for buttons.
+  renderer.domElement.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
   document.addEventListener('gesturestart', e => e.preventDefault());
   document.addEventListener('gesturechange', e => e.preventDefault());
 
@@ -214,10 +227,6 @@ function init() {
 }
 
 /* ===== MUSEUM GEOMETRY ===== */
-function makeWallMat() {
-  return new THREE.MeshStandardMaterial({ color: 0xf0ece4, roughness: 0.92, metalness: 0 });
-}
-
 function addWall(x1, z1, x2, z2) {
   const dx = x2 - x1, dz = z2 - z1;
   const len = Math.sqrt(dx * dx + dz * dz);
@@ -226,21 +235,21 @@ function addWall(x1, z1, x2, z2) {
   const angle = Math.atan2(dx, dz);
 
   const geo = new THREE.BoxGeometry(WALL_THICK, WALL_HEIGHT, len);
-  const wall = new THREE.Mesh(geo, makeWallMat());
+  const wall = new THREE.Mesh(geo, WALL_MAT);
   wall.position.set(cx, WALL_HEIGHT / 2, cz);
   wall.rotation.y = angle;
   scene.add(wall);
 
   // Baseboard
   const bbGeo = new THREE.BoxGeometry(WALL_THICK + 0.05, 0.12, len + 0.02);
-  const bb = new THREE.Mesh(bbGeo, new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.7 }));
+  const bb = new THREE.Mesh(bbGeo, BASEBOARD_MAT);
   bb.position.set(cx, 0.06, cz);
   bb.rotation.y = angle;
   scene.add(bb);
 
   // Crown molding
   const cmGeo = new THREE.BoxGeometry(WALL_THICK + 0.04, 0.08, len + 0.02);
-  const cm = new THREE.Mesh(cmGeo, new THREE.MeshStandardMaterial({ color: 0xe0dcd4, roughness: 0.8 }));
+  const cm = new THREE.Mesh(cmGeo, CROWN_MAT);
   cm.position.set(cx, WALL_HEIGHT - 0.04, cz);
   cm.rotation.y = angle;
   scene.add(cm);
@@ -254,20 +263,17 @@ function addDoorFrame(x1, z1, x2, z2) {
   const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
   const angle = Math.atan2(dx, dz);
 
-  const frameMat = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.5, metalness: 0.1 });
-  const archMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.5, metalness: 0.15 });
-
   // Left pillar
   const pillarH = WALL_HEIGHT * 0.85;
   const pillarW = 0.18;
   const pillarD = WALL_THICK + 0.1;
-  const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(pillarD, pillarH, pillarW), frameMat);
+  const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(pillarD, pillarH, pillarW), FRAME_MAT);
   leftPillar.position.set(x1, pillarH / 2, z1);
   leftPillar.rotation.y = angle;
   scene.add(leftPillar);
 
   // Right pillar
-  const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(pillarD, pillarH, pillarW), frameMat);
+  const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(pillarD, pillarH, pillarW), FRAME_MAT);
   rightPillar.position.set(x2, pillarH / 2, z2);
   rightPillar.rotation.y = angle;
   scene.add(rightPillar);
@@ -276,7 +282,7 @@ function addDoorFrame(x1, z1, x2, z2) {
   const lintelH = 0.25;
   const lintel = new THREE.Mesh(
     new THREE.BoxGeometry(WALL_THICK + 0.12, lintelH, len + pillarW),
-    archMat
+    ARCH_MAT
   );
   lintel.position.set(cx, pillarH + lintelH / 2, cz);
   lintel.rotation.y = angle;
@@ -285,7 +291,7 @@ function addDoorFrame(x1, z1, x2, z2) {
   // Decorative keystone at center top
   const keystone = new THREE.Mesh(
     new THREE.BoxGeometry(WALL_THICK + 0.08, 0.12, 0.25),
-    new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.4, metalness: 0.2 })
+    KEYSTONE_MAT
   );
   keystone.position.set(cx, pillarH + lintelH + 0.06, cz);
   keystone.rotation.y = angle;
@@ -296,7 +302,7 @@ function addDoorFrame(x1, z1, x2, z2) {
   if (aboveH > 0.05) {
     const above = new THREE.Mesh(
       new THREE.BoxGeometry(WALL_THICK, aboveH, len + pillarW),
-      makeWallMat()
+      WALL_MAT
     );
     above.position.set(cx, pillarH + lintelH + aboveH / 2, cz);
     above.rotation.y = angle;
@@ -693,7 +699,15 @@ function wallCollide(nx, nz) {
 /* ===== INPUT ===== */
 function setupInput() {
   // Keyboard
-  addEventListener('keydown', e => { keys[e.code] = true; });
+  addEventListener('keydown', e => {
+    keys[e.code] = true;
+    if (!gameStarted) return;
+    if (e.code === 'KeyH') showHint();
+    if (e.code === 'Escape') {
+      const winOv = document.getElementById('winOverlay');
+      if (winOv.style.display === 'flex') winOv.style.display = 'none';
+    }
+  });
   addEventListener('keyup', e => { keys[e.code] = false; });
 
   // Pointer lock (desktop)
@@ -726,7 +740,7 @@ function setupInput() {
         lookTouchId = t.identifier;
         lookLastX = t.clientX;
         lookLastY = t.clientY;
-        touchStarts[t.identifier] = { t: Date.now(), x: t.clientX, y: t.clientY };
+        touchStarts[t.identifier] = { t: Date.now(), x: t.clientX, y: t.clientY, dist: 0 };
       }
     }
   }, { passive: false });
@@ -736,6 +750,8 @@ function setupInput() {
     e.preventDefault();
     for (const t of e.changedTouches) {
       if (t.identifier === lookTouchId) {
+        const s = touchStarts[t.identifier];
+        if (s) s.dist += Math.hypot(t.clientX - lookLastX, t.clientY - lookLastY);
         yaw -= (t.clientX - lookLastX) * LOOK_SPEED * 1.3;
         pitch = Math.max(-1, Math.min(1, pitch - (t.clientY - lookLastY) * LOOK_SPEED * 1.3));
         lookLastX = t.clientX;
@@ -750,7 +766,9 @@ function setupInput() {
     for (const t of e.changedTouches) {
       if (t.identifier === lookTouchId) {
         const s = touchStarts[t.identifier];
-        if (s && Date.now() - s.t < 300 && Math.hypot(t.clientX - s.x, t.clientY - s.y) < 15) {
+        // Only treat as a search-tap if total path length stayed small
+        // throughout the gesture, not just start-to-end.
+        if (s && Date.now() - s.t < 300 && s.dist < 15) {
           checkPaintingClick(t.clientX, t.clientY);
         }
         delete touchStarts[t.identifier];
@@ -806,6 +824,11 @@ function setupInput() {
     gameStarted = true;
     document.getElementById('introOverlay').style.display = 'none';
   });
+
+  // Replay button — reload to a fresh procedurally-generated museum
+  document.getElementById('replayBtn').addEventListener('click', () => {
+    location.reload();
+  });
 }
 
 function updateJoystick(tx, ty) {
@@ -818,13 +841,15 @@ function updateJoystick(tx, ty) {
 }
 
 /* ===== PAINTING CLICK ===== */
+const _ndc = new THREE.Vector2();
 function checkPaintingClick(sx, sy) {
-  const rc = new THREE.Raycaster();
-  rc.setFromCamera(new THREE.Vector2((sx / innerWidth) * 2 - 1, -(sy / innerHeight) * 2 + 1), camera);
-  rc.far = 4.0;
+  _ndc.set((sx / innerWidth) * 2 - 1, -(sy / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(_ndc, camera);
+  raycaster.far = 4.0;
 
   const meshes = paintings.filter(p => !p.found).map(p => p.mesh);
-  const hits = rc.intersectObjects(meshes);
+  if (meshes.length === 0) return;
+  const hits = raycaster.intersectObjects(meshes);
   if (hits.length === 0) return;
 
   const hit = hits[0];
@@ -846,6 +871,14 @@ function onFoundPot(p) {
   foundCount++;
   document.getElementById('score').textContent = `Gevonden: ${foundCount}/${NUM_PAINTINGS}`;
 
+  // If this painting is currently the hint target, cancel the hint reset so
+  // the green found-glow isn't wiped when the hint timer fires.
+  if (hintTarget === p) {
+    if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
+    hintActive = false;
+    hintTarget = null;
+  }
+
   // Flash message
   const msg = document.getElementById('foundMsg');
   msg.textContent = 'Bloempot gevonden!';
@@ -853,7 +886,7 @@ function onFoundPot(p) {
   setTimeout(() => { msg.style.opacity = '0'; }, 1800);
 
   // Glow on painting
-  p.mesh.material.emissive = new THREE.Color(0x44CC44);
+  p.mesh.material.emissive.setHex(0x44CC44);
   p.mesh.material.emissiveIntensity = 0.4;
   setTimeout(() => { p.mesh.material.emissiveIntensity = 0.12; }, 2500);
 
@@ -872,7 +905,10 @@ function spawnParticles(pos) {
   const cols = [0xFFD700, 0xFF4444, 0x44FF44, 0x4488FF, 0xFF8800];
   for (let i = 0; i < 25; i++) {
     const g = new THREE.BoxGeometry(0.04, 0.04, 0.04);
-    const m = new THREE.MeshBasicMaterial({ color: cols[Math.floor(Math.random() * cols.length)] });
+    const m = new THREE.MeshBasicMaterial({
+      color: cols[Math.floor(Math.random() * cols.length)],
+      transparent: true,
+    });
     const mesh = new THREE.Mesh(g, m);
     mesh.position.set(
       pos.x + (Math.random() - 0.5) * 0.4,
@@ -902,7 +938,8 @@ function showHint() {
   }
 
   hintActive = true;
-  nearest.mesh.material.emissive = new THREE.Color(0xFFD700);
+  hintTarget = nearest;
+  nearest.mesh.material.emissive.setHex(0xFFD700);
   nearest.mesh.material.emissiveIntensity = 0.6;
 
   if (hintTimer) clearTimeout(hintTimer);
@@ -912,6 +949,8 @@ function showHint() {
       nearest.mesh.material.emissiveIntensity = 0;
     }
     hintActive = false;
+    hintTimer = null;
+    if (hintTarget === nearest) hintTarget = null;
   }, 2500);
 }
 
@@ -962,7 +1001,6 @@ function animate() {
     p.mesh.rotation.x += dt * 3;
     p.mesh.rotation.z += dt * 2;
     p.mesh.material.opacity = Math.max(0, p.life / 2);
-    p.mesh.material.transparent = true;
     if (p.life <= 0) {
       scene.remove(p.mesh);
       p.mesh.geometry.dispose();
@@ -975,7 +1013,17 @@ function animate() {
 }
 
 /* ===== START ===== */
-init();
+try {
+  init();
+} catch (err) {
+  console.error('Zoek de Pot kon niet starten:', err);
+  const intro = document.getElementById('introOverlay');
+  if (intro) {
+    intro.innerHTML =
+      '<h1>Zoek de Pot</h1>' +
+      '<p>Je browser ondersteunt geen 3D &mdash; probeer een nieuwere browser.</p>';
+  }
+}
 </script>
 </body>
 </html>
