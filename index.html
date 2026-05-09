@@ -180,20 +180,44 @@ const knobEl = document.getElementById('joystickKnob');
 
 /* ===== SHARED MATERIALS / OBJECTS ===== */
 const WALL_MAT = new THREE.MeshStandardMaterial({ color: 0xf0ece4, roughness: 0.92, metalness: 0 });
+const FLOOR_MAT = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.55, metalness: 0.05 });
+const CEIL_MAT = new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: 0.95 });
 const BASEBOARD_MAT = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.7 });
+const TRIM_MAT = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.55, metalness: 0.15 });
 const CROWN_MAT = new THREE.MeshStandardMaterial({ color: 0xe0dcd4, roughness: 0.8 });
 const FRAME_MAT = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.5, metalness: 0.1 });
 const ARCH_MAT = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.5, metalness: 0.15 });
 const KEYSTONE_MAT = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.4, metalness: 0.2 });
+const FRAME_GOLD_MAT = new THREE.MeshStandardMaterial({ color: 0xc8a84e, roughness: 0.32, metalness: 0.7 });
+const FRAME_DARK_MAT = new THREE.MeshStandardMaterial({ color: 0x3a3020, roughness: 0.8 });
+const PANEL_MAT = new THREE.MeshStandardMaterial({ color: 0x6a4a30, roughness: 0.55, metalness: 0.05 });
+const PLINTH_MAT = new THREE.MeshStandardMaterial({ color: 0xcdbfa3, roughness: 0.6, metalness: 0.05 });
+const FIXTURE_MAT = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
+const BULB_MAT = new THREE.MeshBasicMaterial({ color: 0xffd9a3 });
 const raycaster = new THREE.Raycaster();
+const obstacles = [];
+
+/* Procedural texture helper. drawFn paints into a 2D canvas of size w×h.
+ * Returns a CanvasTexture with sRGB color space and tiling configured. */
+function makeTexture(drawFn, w, h, repU = 1, repV = 1) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  drawFn(c.getContext('2d'), w, h);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(repU, repV);
+  return tex;
+}
 
 /* ===== INIT ===== */
 function init() {
   clock = new THREE.Clock();
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x1a1a1e);
-  scene.fog = new THREE.Fog(0x1a1a1e, 12, 30);
+  scene.background = new THREE.Color(0x16140f);
+  scene.fog = new THREE.Fog(0x16140f, 9, 26);
 
   camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 50);
   camera.position.copy(playerPos);
@@ -202,9 +226,10 @@ function init() {
   renderer.setSize(innerWidth, innerHeight);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  renderer.toneMappingExposure = 1.1;
   document.body.insertBefore(renderer.domElement, document.getElementById('ui'));
 
+  setupTextures();
   buildMuseum();
   setupLights();
   placePaintings();
@@ -226,6 +251,116 @@ function init() {
   animate();
 }
 
+/* ===== PROCEDURAL TEXTURES ===== */
+function setupTextures() {
+  const aniso = renderer.capabilities.maxAnisotropy;
+
+  // Plaster wall — base off-white with low-contrast grain and a few blotches
+  const plasterTex = makeTexture((ctx, w, h) => {
+    ctx.fillStyle = '#f0ece4';
+    ctx.fillRect(0, 0, w, h);
+    const img = ctx.getImageData(0, 0, w, h);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const n = (Math.random() - 0.5) * 22;
+      img.data[i]   = Math.max(0, Math.min(255, img.data[i]   + n));
+      img.data[i+1] = Math.max(0, Math.min(255, img.data[i+1] + n));
+      img.data[i+2] = Math.max(0, Math.min(255, img.data[i+2] + n));
+    }
+    ctx.putImageData(img, 0, 0);
+    for (let i = 0; i < 24; i++) {
+      ctx.fillStyle = `rgba(120,108,94,${0.025 + Math.random() * 0.04})`;
+      ctx.beginPath();
+      ctx.arc(Math.random() * w, Math.random() * h, 18 + Math.random() * 50, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }, 512, 512, 4, 2);
+  plasterTex.anisotropy = aniso;
+  WALL_MAT.map = plasterTex;
+  WALL_MAT.needsUpdate = true;
+
+  // Wood plank floor — used as a prototype; each room clones with its own
+  // repeat so plank scale stays consistent across rooms of different sizes.
+  const plankTex = makeTexture((ctx, w, h) => {
+    const browns = ['#8a6a47', '#7a5a3d', '#956b48', '#82613f', '#6f5234'];
+    const planks = 4;
+    const plankH = h / planks;
+    for (let py = 0; py < planks; py++) {
+      const baseY = py * plankH;
+      const segs = 3;
+      const offset = (py % 2) * 0.5;
+      for (let s = 0; s < segs; s++) {
+        const x0 = ((s + offset) % segs) * (w / segs);
+        const segW = w / segs;
+        ctx.fillStyle = browns[(py * 7 + s * 13) % browns.length];
+        ctx.fillRect(x0, baseY, segW, plankH);
+        // Vertical grain
+        for (let g = 0; g < 14; g++) {
+          ctx.strokeStyle = `rgba(34, 22, 12, ${0.10 + Math.random() * 0.16})`;
+          ctx.lineWidth = 0.6 + Math.random() * 0.9;
+          const gx = x0 + Math.random() * segW;
+          ctx.beginPath();
+          ctx.moveTo(gx, baseY);
+          ctx.bezierCurveTo(
+            gx + (Math.random() - 0.5) * 14, baseY + plankH * 0.4,
+            gx + (Math.random() - 0.5) * 14, baseY + plankH * 0.7,
+            gx + (Math.random() - 0.5) * 14, baseY + plankH
+          );
+          ctx.stroke();
+        }
+        // Knots
+        if (Math.random() < 0.35) {
+          const kx = x0 + Math.random() * segW;
+          const ky = baseY + plankH * (0.3 + Math.random() * 0.4);
+          ctx.fillStyle = 'rgba(28, 16, 8, 0.55)';
+          ctx.beginPath();
+          ctx.ellipse(kx, ky, 4 + Math.random() * 5, 2 + Math.random() * 3, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      // Plank seam
+      ctx.fillStyle = 'rgba(18, 10, 5, 0.85)';
+      ctx.fillRect(0, baseY + plankH - 1, w, 2);
+    }
+    // Vertical seams every w/segs
+    ctx.fillStyle = 'rgba(18, 10, 5, 0.55)';
+    for (let s = 1; s < 3; s++) ctx.fillRect((w / 3) * s - 1, 0, 2, h);
+  }, 1024, 512);
+  plankTex.anisotropy = aniso;
+  FLOOR_MAT.map = plankTex;
+  FLOOR_MAT.needsUpdate = true;
+
+  // Walnut wall panel — used in the new addWallPanel() helper
+  const walnutTex = makeTexture((ctx, w, h) => {
+    ctx.fillStyle = '#6a4a30';
+    ctx.fillRect(0, 0, w, h);
+    for (let i = 0; i < 90; i++) {
+      ctx.strokeStyle = `rgba(${30 + Math.random() * 25}, ${20 + Math.random() * 18}, 12, ${0.18 + Math.random() * 0.22})`;
+      ctx.lineWidth = 0.5 + Math.random() * 1.4;
+      const x = Math.random() * w;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.bezierCurveTo(
+        x + (Math.random() - 0.5) * 10, h * 0.33,
+        x + (Math.random() - 0.5) * 10, h * 0.66,
+        x + (Math.random() - 0.5) * 10, h
+      );
+      ctx.stroke();
+    }
+    // Subtle highlight streaks
+    for (let i = 0; i < 18; i++) {
+      ctx.strokeStyle = `rgba(170, 130, 90, ${0.05 + Math.random() * 0.08})`;
+      ctx.lineWidth = 0.6;
+      const x = Math.random() * w;
+      ctx.beginPath();
+      ctx.moveTo(x, 0); ctx.lineTo(x + (Math.random() - 0.5) * 6, h);
+      ctx.stroke();
+    }
+  }, 256, 256, 1, 1);
+  walnutTex.anisotropy = aniso;
+  PANEL_MAT.map = walnutTex;
+  PANEL_MAT.needsUpdate = true;
+}
+
 /* ===== MUSEUM GEOMETRY ===== */
 function addWall(x1, z1, x2, z2) {
   const dx = x2 - x1, dz = z2 - z1;
@@ -240,19 +375,39 @@ function addWall(x1, z1, x2, z2) {
   wall.rotation.y = angle;
   scene.add(wall);
 
-  // Baseboard
-  const bbGeo = new THREE.BoxGeometry(WALL_THICK + 0.05, 0.12, len + 0.02);
-  const bb = new THREE.Mesh(bbGeo, BASEBOARD_MAT);
-  bb.position.set(cx, 0.06, cz);
+  // Baseboard (taller) + secondary trim strip just above it
+  const bb = new THREE.Mesh(
+    new THREE.BoxGeometry(WALL_THICK + 0.06, 0.18, len + 0.02),
+    BASEBOARD_MAT
+  );
+  bb.position.set(cx, 0.09, cz);
   bb.rotation.y = angle;
   scene.add(bb);
 
-  // Crown molding
-  const cmGeo = new THREE.BoxGeometry(WALL_THICK + 0.04, 0.08, len + 0.02);
-  const cm = new THREE.Mesh(cmGeo, CROWN_MAT);
-  cm.position.set(cx, WALL_HEIGHT - 0.04, cz);
+  const bbTrim = new THREE.Mesh(
+    new THREE.BoxGeometry(WALL_THICK + 0.08, 0.03, len + 0.02),
+    TRIM_MAT
+  );
+  bbTrim.position.set(cx, 0.18 + 0.015, cz);
+  bbTrim.rotation.y = angle;
+  scene.add(bbTrim);
+
+  // Crown molding (taller) + secondary trim strip just below it
+  const cm = new THREE.Mesh(
+    new THREE.BoxGeometry(WALL_THICK + 0.05, 0.14, len + 0.02),
+    CROWN_MAT
+  );
+  cm.position.set(cx, WALL_HEIGHT - 0.07, cz);
   cm.rotation.y = angle;
   scene.add(cm);
+
+  const cmTrim = new THREE.Mesh(
+    new THREE.BoxGeometry(WALL_THICK + 0.08, 0.03, len + 0.02),
+    TRIM_MAT
+  );
+  cmTrim.position.set(cx, WALL_HEIGHT - 0.14 - 0.015, cz);
+  cmTrim.rotation.y = angle;
+  scene.add(cmTrim);
 
   wallSegs.push({ x1, z1, x2, z2, len, angle });
 }
@@ -288,7 +443,7 @@ function addDoorFrame(x1, z1, x2, z2) {
   lintel.rotation.y = angle;
   scene.add(lintel);
 
-  // Decorative keystone at center top
+  // Decorative keystone at center top + flanking volutes
   const keystone = new THREE.Mesh(
     new THREE.BoxGeometry(WALL_THICK + 0.08, 0.12, 0.25),
     KEYSTONE_MAT
@@ -296,6 +451,21 @@ function addDoorFrame(x1, z1, x2, z2) {
   keystone.position.set(cx, pillarH + lintelH + 0.06, cz);
   keystone.rotation.y = angle;
   scene.add(keystone);
+
+  // Tiny volute scrolls flanking the keystone — placed in the wall's local
+  // 'along' direction (which is the BoxGeometry's z axis after rotation).
+  const voluteGeo = new THREE.BoxGeometry(WALL_THICK + 0.06, 0.08, 0.12);
+  const dirX = dx / len, dirZ = dz / len;
+  for (const sgn of [-1, 1]) {
+    const vol = new THREE.Mesh(voluteGeo, KEYSTONE_MAT);
+    vol.position.set(
+      cx + dirX * sgn * 0.22,
+      pillarH + lintelH + 0.04,
+      cz + dirZ * sgn * 0.22
+    );
+    vol.rotation.y = angle;
+    scene.add(vol);
+  }
 
   // Wall above door (fill gap between lintel and ceiling)
   const aboveH = WALL_HEIGHT - pillarH - lintelH;
@@ -310,10 +480,42 @@ function addDoorFrame(x1, z1, x2, z2) {
   }
 }
 
-function buildMuseum() {
-  const floorMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.55, metalness: 0.05 });
-  const ceilMat = new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: 0.95 });
+/* Wood-panelled wainscot panel with a thin gold trim border. Placed
+ * decoratively on otherwise-blank stretches of wall between paintings. */
+function addWallPanel(x, z, ry, w = 1.0, h = 2.4) {
+  const group = new THREE.Group();
 
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.025), PANEL_MAT);
+  group.add(panel);
+
+  const t = 0.025; // trim thickness
+  const td = 0.03; // trim depth
+  const trimZ = 0.005;
+  const top = new THREE.Mesh(new THREE.BoxGeometry(w + t * 2, t, td), FRAME_GOLD_MAT);
+  top.position.set(0, h / 2 + t / 2, trimZ);
+  group.add(top);
+  const bot = new THREE.Mesh(new THREE.BoxGeometry(w + t * 2, t, td), FRAME_GOLD_MAT);
+  bot.position.set(0, -h / 2 - t / 2, trimZ);
+  group.add(bot);
+  const lt = new THREE.Mesh(new THREE.BoxGeometry(t, h, td), FRAME_GOLD_MAT);
+  lt.position.set(-w / 2 - t / 2, 0, trimZ);
+  group.add(lt);
+  const rt = new THREE.Mesh(new THREE.BoxGeometry(t, h, td), FRAME_GOLD_MAT);
+  rt.position.set(w / 2 + t / 2, 0, trimZ);
+  group.add(rt);
+
+  group.position.set(x, 1.45, z);
+  group.rotation.y = ry;
+  scene.add(group);
+}
+
+/* Axis-aligned obstacle that blocks the player. Reuses wallCollide() via
+ * the shared `obstacles` list. */
+function addBoxObstacle(cx, cz, w, d) {
+  obstacles.push({ cx, cz, hw: w / 2, hd: d / 2 });
+}
+
+function buildMuseum() {
   // Room definitions: center x, center z, width, depth
   const rooms = [
     { x: 0, z: 0, w: 20, d: 8 },     // Main hall
@@ -322,27 +524,30 @@ function buildMuseum() {
     { x: 0, z: 7.5, w: 12, d: 7 },   // Back gallery (z: 4 to 11)
   ];
 
+  // Each plank tile = 4m × 2m of physical floor, so plank scale stays
+  // consistent regardless of room size.
+  const PLANK_TILE_W = 4, PLANK_TILE_D = 2;
+
   rooms.forEach(r => {
     const fg = new THREE.PlaneGeometry(r.w, r.d);
-    const floor = new THREE.Mesh(fg, floorMat);
+    const fMat = FLOOR_MAT.clone();
+    if (FLOOR_MAT.map) {
+      fMat.map = FLOOR_MAT.map.clone();
+      fMat.map.needsUpdate = true;
+      fMat.map.wrapS = fMat.map.wrapT = THREE.RepeatWrapping;
+      fMat.map.repeat.set(r.w / PLANK_TILE_W, r.d / PLANK_TILE_D);
+      fMat.map.anisotropy = FLOOR_MAT.map.anisotropy;
+    }
+    const floor = new THREE.Mesh(fg, fMat);
     floor.rotation.x = -Math.PI / 2;
     floor.position.set(r.x, 0, r.z);
     scene.add(floor);
 
-    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(r.w, r.d), ceilMat);
+    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(r.w, r.d), CEIL_MAT);
     ceil.rotation.x = Math.PI / 2;
     ceil.position.set(r.x, WALL_HEIGHT, r.z);
     scene.add(ceil);
   });
-
-  // Floor pattern - darker strips for wood planks effect
-  const stripMat = new THREE.MeshStandardMaterial({ color: 0x7a6548, roughness: 0.6, metalness: 0.05 });
-  for (let i = -12; i < 14; i += 0.8) {
-    const strip = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 30), stripMat);
-    strip.rotation.x = -Math.PI / 2;
-    strip.position.set(i, 0.001, 0);
-    scene.add(strip);
-  }
 
   // Walls
   // Main hall - front wall with openings to left & right wings
@@ -378,21 +583,52 @@ function buildMuseum() {
   addDoorFrame(-8, -4, -4, -4);   // Left wing entrance
   addDoorFrame(4, -4, 8, -4);     // Right wing entrance
   addDoorFrame(-3, 4, 3, 4);      // Back gallery entrance
+
+  // Decorative wall paneling between paintings on otherwise blank walls
+  // Main hall side walls (paintings at z = ±2; panel between them at z=0)
+  addWallPanel(-9.86, 0, Math.PI / 2, 1.0, 2.4);   // left wall, faces +X
+  addWallPanel(9.86, 0, -Math.PI / 2, 1.0, 2.4);   // right wall, faces -X
+  // Main hall front center wall (between wing entrances) — wall at z = -4
+  addWallPanel(0, -3.86, 0, 1.6, 2.4);             // faces +Z
+  // Wing back walls — flank the centred painting at x = ±6
+  addWallPanel(-8.5, -11.86, 0, 0.9, 2.2);
+  addWallPanel(-3.5, -11.86, 0, 0.9, 2.2);
+  addWallPanel(3.5, -11.86, 0, 0.9, 2.2);
+  addWallPanel(8.5, -11.86, 0, 0.9, 2.2);
+  // Back gallery back wall (paintings at x=±2; panel between them)
+  addWallPanel(0, 10.86, Math.PI, 1.0, 2.4);
+
+  // Wooden bench in the main hall, set off-centre toward the back gallery so
+  // the player spawn at (0,0,0) stays clear of its collision AABB.
+  const BENCH_Z = 1.5;
+  const benchSeat = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.08, 0.45), BASEBOARD_MAT);
+  benchSeat.position.set(0, 0.46, BENCH_Z);
+  scene.add(benchSeat);
+  const legGeo = new THREE.BoxGeometry(0.16, 0.42, 0.42);
+  for (const sx of [-0.85, 0.85]) {
+    const leg = new THREE.Mesh(legGeo, BASEBOARD_MAT);
+    leg.position.set(sx, 0.21, BENCH_Z);
+    scene.add(leg);
+  }
+  addBoxObstacle(0, BENCH_Z, 2.1, 0.55);
 }
 
 /* ===== LIGHTING ===== */
 function setupLights() {
-  scene.add(new THREE.AmbientLight(0xfff5e6, 0.5));
+  // Hemisphere fill — warm sky / dim ground for the gallery feel
+  scene.add(new THREE.HemisphereLight(0xfff2d8, 0x3a2a1c, 0.55));
 
-  // Room overhead lights
+  // Room overhead lights — tighter falloff than before for more variation
   [[0, 0], [-6, -8], [6, -8], [0, 8]].forEach(([x, z]) => {
-    const pl = new THREE.PointLight(0xfff0d0, 0.6, 16);
+    const pl = new THREE.PointLight(0xfff0d0, 0.9, 12);
     pl.position.set(x, WALL_HEIGHT - 0.2, z);
     scene.add(pl);
   });
 
-  // Hemisphere for soft fill
-  scene.add(new THREE.HemisphereLight(0xfff8f0, 0x8B7355, 0.2));
+  // Faux-skylight key from above-right — adds direction without shadow cost
+  const dir = new THREE.DirectionalLight(0xfff0d0, 0.25);
+  dir.position.set(8, 14, 6);
+  scene.add(dir);
 }
 
 /* ===== MONDRIAAN GENERATOR ===== */
@@ -574,6 +810,58 @@ function drawPot(ctx, cw, ch, lw, potInfo, cells) {
 }
 
 /* ===== PLACE PAINTINGS ===== */
+/* Build a layered painting frame in `group`'s local space:
+ *   - 4 main gold bars
+ *   - 4 outer gold bead bars (slightly forward, perimeter beyond main)
+ *   - 4 dark inner cove bars (recessed, just outside the painting edge) */
+function buildFrame(group) {
+  const fd = 0.09, fz = 0.02;
+  const mkBar = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+
+  // Main gold bars
+  const mainSpecs = [
+    [PW + 0.16, 0.08, 0, PH / 2 + 0.04],
+    [PW + 0.16, 0.08, 0, -PH / 2 - 0.04],
+    [0.08, PH + 0.16, -PW / 2 - 0.04, 0],
+    [0.08, PH + 0.16, PW / 2 + 0.04, 0],
+  ];
+  for (const [w, h, x, y] of mainSpecs) {
+    const m = new THREE.Mesh(mkBar(w, h, fd), FRAME_GOLD_MAT);
+    m.position.set(x, y, fz);
+    group.add(m);
+  }
+
+  // Outer bead — thin gold profile around the very perimeter, set forward
+  const beadFront = fz + fd / 2 + 0.005;
+  const beadD = 0.02;
+  const beadSpecs = [
+    [PW + 0.20, 0.025, 0, PH / 2 + 0.0925],
+    [PW + 0.20, 0.025, 0, -PH / 2 - 0.0925],
+    [0.025, PH + 0.20, -PW / 2 - 0.0925, 0],
+    [0.025, PH + 0.20, PW / 2 + 0.0925, 0],
+  ];
+  for (const [w, h, x, y] of beadSpecs) {
+    const m = new THREE.Mesh(mkBar(w, h, beadD), FRAME_GOLD_MAT);
+    m.position.set(x, y, beadFront - beadD / 2);
+    group.add(m);
+  }
+
+  // Inner dark cove on all 4 sides — recessed, just outside the painting
+  const coveD = fd * 0.55;
+  const coveZ = fz + 0.003;
+  const coveSpecs = [
+    [PW + 0.02, 0.022, 0, PH / 2 + 0.011],
+    [PW + 0.02, 0.022, 0, -PH / 2 - 0.011],
+    [0.022, PH + 0.02, -PW / 2 - 0.011, 0],
+    [0.022, PH + 0.02, PW / 2 + 0.011, 0],
+  ];
+  for (const [w, h, x, y] of coveSpecs) {
+    const m = new THREE.Mesh(mkBar(w, h, coveD), FRAME_DARK_MAT);
+    m.position.set(x, y, coveZ);
+    group.add(m);
+  }
+}
+
 function placePaintings() {
   // Positions: x, z, rotation (facing direction)
   const spots = [
@@ -605,38 +893,7 @@ function placePaintings() {
 
     // Frame group
     const group = new THREE.Group();
-
-    // Golden frame pieces - frame sits around the painting
-    const fMat = new THREE.MeshStandardMaterial({ color: 0xc8a84e, roughness: 0.35, metalness: 0.6 });
-    const fw = PW + 0.14, fh = PH + 0.14, fd = 0.08;
-    const fz = 0.02; // same plane as painting
-
-    const mkBar = (w, h, d) => new THREE.BoxGeometry(w, h, d);
-    const topBar = new THREE.Mesh(mkBar(fw, 0.07, fd), fMat);
-    topBar.position.set(0, PH / 2 + 0.035, fz);
-    group.add(topBar);
-
-    const botBar = new THREE.Mesh(mkBar(fw, 0.07, fd), fMat);
-    botBar.position.set(0, -PH / 2 - 0.035, fz);
-    group.add(botBar);
-
-    const leftBar = new THREE.Mesh(mkBar(0.07, fh, fd), fMat);
-    leftBar.position.set(-PW / 2 - 0.035, 0, fz);
-    group.add(leftBar);
-
-    const rightBar = new THREE.Mesh(mkBar(0.07, fh, fd), fMat);
-    rightBar.position.set(PW / 2 + 0.035, 0, fz);
-    group.add(rightBar);
-
-    // Inner frame shadow (dark inset)
-    const inMat = new THREE.MeshStandardMaterial({ color: 0x3a3020, roughness: 0.8 });
-    const inTop = new THREE.Mesh(mkBar(PW + 0.02, 0.02, fd * 0.5), inMat);
-    inTop.position.set(0, PH / 2 + 0.005, fz);
-    group.add(inTop);
-    const inBot = new THREE.Mesh(mkBar(PW + 0.02, 0.02, fd * 0.5), inMat);
-    inBot.position.set(0, -PH / 2 - 0.005, fz);
-    group.add(inBot);
-
+    buildFrame(group);
     group.add(pMesh);
 
     const yPos = PLAYER_H + 0.15;
@@ -644,8 +901,31 @@ function placePaintings() {
     group.rotation.y = s.ry;
     scene.add(group);
 
-    // Spotlight on painting
-    const spot = new THREE.SpotLight(0xfff5e0, 2.0, 5, Math.PI / 7, 0.6);
+    // Stone plinth on the floor below each painting + a contrasting top cap.
+    // The plinth protrudes into the room, so register it as an obstacle so
+    // the player can't phase through it when hugging the wall.
+    const plinth = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.4), PLINTH_MAT);
+    const plinthOff = new THREE.Vector3(0, 0, 0.18).applyAxisAngle(
+      new THREE.Vector3(0, 1, 0), s.ry
+    );
+    const plinthX = s.x + plinthOff.x;
+    const plinthZ = s.z + plinthOff.z;
+    plinth.position.set(plinthX, 0.25, plinthZ);
+    plinth.rotation.y = s.ry;
+    scene.add(plinth);
+    const plinthCap = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.04, 0.46), TRIM_MAT);
+    plinthCap.position.set(plinthX, 0.52, plinthZ);
+    plinthCap.rotation.y = s.ry;
+    scene.add(plinthCap);
+    // AABB obstacle: plinth's XZ footprint depends on s.ry — for axis-aligned
+    // painting rotations (0, ±π/2, π) the footprint is just 0.6 × 0.4 swapped
+    // when the painting is rotated 90°.
+    const isSideways = Math.abs(Math.cos(s.ry)) < 0.5;
+    if (isSideways) addBoxObstacle(plinthX, plinthZ, 0.4, 0.6);
+    else            addBoxObstacle(plinthX, plinthZ, 0.6, 0.4);
+
+    // Spotlight on painting — tighter cone, brighter, softer edge than before
+    const spot = new THREE.SpotLight(0xfff5e0, 2.6, 4.5, Math.PI / 9, 0.5);
     const off = new THREE.Vector3(0, 1.8, 1.0);
     off.applyAxisAngle(new THREE.Vector3(0, 1, 0), s.ry);
     spot.position.set(s.x + off.x, yPos + off.y, s.z + off.z);
@@ -656,14 +936,19 @@ function placePaintings() {
     scene.add(spot);
     scene.add(spotTarget);
 
-    // Small visible light fixture
-    const fixGeo = new THREE.BoxGeometry(0.3, 0.05, 0.1);
-    const fixMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
-    const fix = new THREE.Mesh(fixGeo, fixMat);
+    // Visible light fixture: dark housing + glowing bulb
+    const fix = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.1), FIXTURE_MAT);
     fix.position.copy(spot.position);
     fix.position.y += 0.05;
     fix.rotation.y = s.ry;
     scene.add(fix);
+
+    // Emissive bulb peeking out the underside of the housing
+    const bulb = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.06), BULB_MAT);
+    bulb.position.copy(fix.position);
+    bulb.position.y -= 0.04;
+    bulb.rotation.y = s.ry;
+    scene.add(bulb);
 
     paintings.push({
       mesh: pMesh,
@@ -690,6 +975,13 @@ function wallCollide(nx, nz) {
     const threshold = WALL_THICK / 2 + PLAYER_R;
 
     if (along >= -PLAYER_R && along <= L + PLAYER_R && Math.abs(dist) < threshold) {
+      return true;
+    }
+  }
+  // Axis-aligned obstacles (benches etc.). AABB inflated by PLAYER_R.
+  for (const o of obstacles) {
+    if (Math.abs(nx - o.cx) < o.hw + PLAYER_R &&
+        Math.abs(nz - o.cz) < o.hd + PLAYER_R) {
       return true;
     }
   }
