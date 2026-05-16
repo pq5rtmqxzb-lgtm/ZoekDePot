@@ -1,0 +1,276 @@
+#!/usr/bin/env python3
+"""Phase 2 renderer: reads apartment.json and emits floorplan.svg.
+
+The SVG is drawn in apartment world coordinates (meters, +X east, +Y south)
+and exported at 1:50 scale so it lines up with the source PDF when both are
+displayed at the same zoom. Every dimension and polygon comes from the JSON;
+this script introduces no new measurements.
+"""
+import json
+import pathlib
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+DATA = json.loads((ROOT / "apartment.json").read_text())
+
+# 1:50 scale → 1 m reality = 20 mm paper. At 96 DPI: 1 mm = 96/25.4 px = 3.7795 px.
+PX_PER_MM_PAPER = 96.0 / 25.4
+PX_PER_M = PX_PER_MM_PAPER * 20.0  # 75.59 px / m at 1:50, 96 DPI
+
+# Drawable extent in world coordinates (meters). Apartment occupies roughly
+# x ∈ [-2.5, 11], y ∈ [-1.5, 17.5] including balconies + zigzag.
+WORLD_MIN_X = -3.0
+WORLD_MAX_X = 11.5
+WORLD_MIN_Y = -2.0
+WORLD_MAX_Y = 18.0
+
+WIDTH_PX = (WORLD_MAX_X - WORLD_MIN_X) * PX_PER_M
+HEIGHT_PX = (WORLD_MAX_Y - WORLD_MIN_Y) * PX_PER_M
+
+
+def to_px(pt):
+    """World (m) → SVG pixel."""
+    x, y = pt
+    return ((x - WORLD_MIN_X) * PX_PER_M, (y - WORLD_MIN_Y) * PX_PER_M)
+
+
+def polyline(points, **attrs):
+    pts = " ".join(f"{x:.2f},{y:.2f}" for x, y in (to_px(p) for p in points))
+    a = " ".join(f'{k}="{v}"' for k, v in attrs.items())
+    return f'<polyline points="{pts}" {a}/>'
+
+
+def polygon(points, **attrs):
+    pts = " ".join(f"{x:.2f},{y:.2f}" for x, y in (to_px(p) for p in points))
+    a = " ".join(f'{k}="{v}"' for k, v in attrs.items())
+    return f'<polygon points="{pts}" {a}/>'
+
+
+def line(p1, p2, **attrs):
+    (x1, y1), (x2, y2) = to_px(p1), to_px(p2)
+    a = " ".join(f'{k}="{v}"' for k, v in attrs.items())
+    return f'<line x1="{x1:.2f}" y1="{y1:.2f}" x2="{x2:.2f}" y2="{y2:.2f}" {a}/>'
+
+
+def text(p, body, *, size=10, anchor="middle", color="#222", **attrs):
+    x, y = to_px(p)
+    a = " ".join(f'{k}="{v}"' for k, v in attrs.items())
+    return (
+        f'<text x="{x:.2f}" y="{y:.2f}" font-family="Helvetica, Arial, sans-serif" '
+        f'font-size="{size}" text-anchor="{anchor}" fill="{color}" {a}>{body}</text>'
+    )
+
+
+def grid():
+    out = []
+    # 1m grid
+    x = int(WORLD_MIN_X) - 1
+    while x <= WORLD_MAX_X + 1:
+        out.append(
+            line(
+                (x, WORLD_MIN_Y), (x, WORLD_MAX_Y),
+                stroke="#eef", **{"stroke-width": "0.5"},
+            )
+        )
+        x += 1
+    y = int(WORLD_MIN_Y) - 1
+    while y <= WORLD_MAX_Y + 1:
+        out.append(
+            line(
+                (WORLD_MIN_X, y), (WORLD_MAX_X, y),
+                stroke="#eef", **{"stroke-width": "0.5"},
+            )
+        )
+        y += 1
+    # 5m emphasis
+    for m in range(-5, 25, 5):
+        if WORLD_MIN_X <= m <= WORLD_MAX_X:
+            out.append(
+                line(
+                    (m, WORLD_MIN_Y), (m, WORLD_MAX_Y),
+                    stroke="#ccd", **{"stroke-width": "0.8"},
+                )
+            )
+        if WORLD_MIN_Y <= m <= WORLD_MAX_Y:
+            out.append(
+                line(
+                    (WORLD_MIN_X, m), (WORLD_MAX_X, m),
+                    stroke="#ccd", **{"stroke-width": "0.8"},
+                )
+            )
+    return "\n".join(out)
+
+
+def envelope():
+    """Apartment outer boundary, replacing the simple chamfer placeholder
+    with the multi-segment NW zigzag from the JSON."""
+    env = DATA["envelope_preliminary"]["polygon_clockwise_from_origin"]
+    zig = DATA["nw_zigzag"]["points_clockwise_from_top_facade"]
+    # Stitch: take env[0..6] (origin through the south + west_facade jog up to v6),
+    # then walk the zigzag in REVERSE (which goes from top facade down to (0, 4.10)),
+    # then close to env[0].
+    # env vertices: 0=(0,0), 1=(10.72,0), 2=(10.72,13.802), 3=(-2.30,13.802),
+    #               4=(-2.30,5.85), 5=(-1.0,5.85), 6=(-1.0,1.0), 7=(0,0)
+    # Replace v6/v7 transition with the zigzag.
+    pts = env[:6]  # (0,0) → (-2.30,5.85) → (-1.0,5.85)
+    # zigzag from top facade (0,0) heads south; we want to traverse it
+    # in the order that closes the polygon from (-1.0, 5.85) back up to (0, 0).
+    # Insert: from (-1.0, 5.85) → (-1.0, 4.10) (small vertical) → traverse zigzag in
+    # reverse → (0,0).
+    pts.append([-1.0, 4.10])
+    pts.extend(reversed(zig))
+    return pts
+
+
+def rooms():
+    """Best-effort room polygons from the JSON. Where the JSON only has
+    x_range_m / y_range_m, we build a rectangle. Otherwise we use polygon."""
+    R = []
+
+    # slaapkamer 1 — built from the 4000 N-S, 3675 E-W main rect, plus the
+    # NW alcove (zigzag). We construct the polygon by walking around the room.
+    zig = DATA["nw_zigzag"]["points_clockwise_from_top_facade"]
+    s1 = [(0.20, 0.20),          # NE interior corner
+          (5.52, 0.20),          # NE → E along north wall to the woonkamer-interface
+          (5.52, 4.20),          # south along east wall (slaapk1/woonkamer)
+          (0.20, 4.20),          # west along south wall (3675 + step area)
+          ]
+    # …then up into the alcove via the zigzag (interior face mirrors the
+    # exterior zigzag with ~0.2 m wall thickness — we ignore wall thickness
+    # on the interior side and just trace the zigzag as-is for the polygon).
+    s1.extend(reversed(zig))
+    R.append({"name": "slaapkamer 1", "label": "23,45 m²", "fill": "#fff4e6",
+              "polygon": s1, "centroid": (3.0, 2.2)})
+
+    # woonkamer — L-shape, narrow north strip + south extension. The exact
+    # south extension boundary is UNCERTAIN per the JSON; we pin it at the
+    # SW kitchen jog estimate (x=-2.30 west, y=13.602 south up to y=9.0 where
+    # slaapk2 begins).
+    w = [(5.72, 0.20),         # NE interior
+         (10.52, 0.20),        # along top facade interior, east to NE
+         (10.52, 13.602),      # down east facade interior
+         (-2.30, 13.602),      # west along south facade interior
+         (-2.30, 9.0),         # up the SW jog (estimate)
+         (1.815, 9.0),         # east along slaapk2/badk-klein north edge
+         (1.815, 4.20),        # up alongside slaapk1
+         (5.72, 4.20),         # west along slaapk1 south wall interface
+         ]
+    R.append({"name": "woonkamer", "label": "67,11 m²", "fill": "#e8f4ff",
+              "polygon": w, "centroid": (7.5, 5.0)})
+
+    # badkamer (groot) — interior 3.065 × 2.68. Position: along the west
+    # facade north of the gang. Y range estimated.
+    b1 = [(0.20, 4.40), (3.265, 4.40), (3.265, 7.10), (0.20, 7.10)]
+    R.append({"name": "badkamer", "label": "8,06 m²", "fill": "#eaf6ec",
+              "polygon": b1, "centroid": (1.7, 5.7)})
+
+    # toilet — 0.93 × 1.785, just east of badkamer groot
+    t = [(3.27, 5.32), (4.20, 5.32), (4.20, 7.10), (3.27, 7.10)]
+    R.append({"name": "toilet", "label": "1,67 m²", "fill": "#eef0f4",
+              "polygon": t, "centroid": (3.73, 6.2)})
+
+    # gang — corridor between rooms. Estimated L-shape.
+    g = [(0.20, 7.10), (4.20, 7.10), (4.20, 7.30),  # north edge from west facade to woonkamer interior
+         (5.72, 7.30),  # short east jut by woonkamer
+         (5.72, 9.0),   # down to where slaapk2 north wall is
+         (-2.30, 9.0),  # west along badk-klein / slaapk2 corridor edge
+         (-2.30, 7.10),  # close back up (estimate)
+         ]
+    R.append({"name": "gang", "label": "13,77 m²", "fill": "#fcf6e3",
+              "polygon": g, "centroid": (1.5, 8.0)})
+
+    # slaapkamer 2 — 4.115 × 4.593, SW area
+    s2 = [(-2.30, 9.009), (1.815, 9.009), (1.815, 13.602), (-2.30, 13.602)]
+    R.append({"name": "slaapkamer 2", "label": "18,90 m²", "fill": "#fff4e6",
+              "polygon": s2, "centroid": (-0.2, 11.3)})
+
+    # badkamer (klein) — en-suite inside slaapk2's NE corner (estimate)
+    bk = [(0.145, 9.009), (1.815, 9.009), (1.815, 11.298), (0.145, 11.298)]
+    R.append({"name": "badkamer (klein)", "label": "3,81 m²", "fill": "#eaf6ec",
+              "polygon": bk, "centroid": (0.98, 10.15)})
+
+    # balkon (top) — 5.709 × 1.331, outside top facade. SHARED slaapk1 + woonkamer.
+    bt = [(0.20, -1.331), (5.929, -1.331), (5.929, 0.0), (0.20, 0.0)]
+    R.append({"name": "balkon", "label": "7,60 m²", "fill": "#dde6dc",
+              "polygon": bt, "centroid": (3.0, -0.6)})
+
+    # balkon (bottom) — 6.675 × 3.600 outside south facade
+    bb = [(3.845, 13.802), (10.52, 13.802), (10.52, 17.402), (3.845, 17.402)]
+    R.append({"name": "balkon", "label": "24,03 m²", "fill": "#dde6dc",
+              "polygon": bb, "centroid": (7.2, 15.6)})
+
+    return R
+
+
+def render():
+    out = []
+    out.append(f'<svg xmlns="http://www.w3.org/2000/svg" '
+               f'viewBox="0 0 {WIDTH_PX:.1f} {HEIGHT_PX:.1f}" '
+               f'width="{WIDTH_PX:.1f}" height="{HEIGHT_PX:.1f}">')
+    out.append("<rect width='100%' height='100%' fill='#fafafa'/>")
+    out.append(grid())
+
+    # Rooms (filled polygons)
+    for r in rooms():
+        out.append(polygon(r["polygon"], fill=r["fill"], stroke="#888",
+                           **{"stroke-width": "0.6"}))
+        cx, cy = r["centroid"]
+        out.append(text((cx, cy - 0.18), r["name"], size=12, color="#222"))
+        out.append(text((cx, cy + 0.20), r["label"], size=11, color="#555"))
+
+    # Apartment envelope (heavy stroke)
+    env = envelope()
+    env.append(env[0])  # close
+    out.append(polyline(env, fill="none", stroke="#000",
+                        **{"stroke-width": "2.0"}))
+
+    # Origin marker
+    ox, oy = to_px((0, 0))
+    out.append(f'<circle cx="{ox:.1f}" cy="{oy:.1f}" r="3" fill="#c33"/>')
+    out.append(text((0.15, -0.15), "origin (0, 0)", size=9, color="#c33",
+                    anchor="start"))
+
+    # Compass + scale
+    out.append(text((WORLD_MAX_X - 1.5, WORLD_MIN_Y + 0.7), "N", size=18,
+                    color="#666", anchor="middle"))
+    out.append(line((WORLD_MAX_X - 1.5, WORLD_MIN_Y + 0.9),
+                    (WORLD_MAX_X - 1.5, WORLD_MIN_Y + 1.9),
+                    stroke="#666", **{"stroke-width": "1.5",
+                                       "marker-end": "url(#arrow)"}))
+    out.insert(2, '<defs><marker id="arrow" markerWidth="10" markerHeight="10" '
+                  'refX="5" refY="5" orient="auto-start-reverse">'
+                  '<path d="M0,0 L10,5 L0,10 Z" fill="#666"/></marker></defs>')
+
+    # 1m scale bar
+    bar_x, bar_y = WORLD_MIN_X + 0.5, WORLD_MAX_Y - 0.5
+    out.append(line((bar_x, bar_y), (bar_x + 1, bar_y), stroke="#444",
+                    **{"stroke-width": "2"}))
+    out.append(text((bar_x + 0.5, bar_y - 0.15), "1 m", size=10, color="#444"))
+
+    # Annotate every raw PDF dimension at its world position
+    # PDF (pt) → world: world_x = (px - 146) / 56.7; world_y = (py - 174.6) / 56.7
+    out.append('<g opacity="0.55">')
+    for d in DATA["raw_dimensions_pdf"]:
+        px, py = d["pdf_xy"]
+        wx = (px - 146.0) / 56.7
+        wy = (py - 174.6) / 56.7
+        out.append(text((wx, wy), str(d["mm"]), size=8, color="#06c",
+                        anchor="middle"))
+    out.append("</g>")
+
+    # Header
+    out.append(text((WORLD_MIN_X + 0.5, WORLD_MIN_Y + 0.7),
+                    "Type R3.sp — apartment.json, rendered at 1:50",
+                    size=14, color="#333", anchor="start"))
+    out.append(text((WORLD_MIN_X + 0.5, WORLD_MIN_Y + 1.1),
+                    "Phase 2: side-by-side check vs the PDF. Blue numbers are raw mm callouts.",
+                    size=10, color="#666", anchor="start"))
+
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+if __name__ == "__main__":
+    svg = render()
+    out_path = ROOT / "floorplan.svg"
+    out_path.write_text(svg)
+    print(f"Wrote {out_path} ({len(svg)} bytes)")

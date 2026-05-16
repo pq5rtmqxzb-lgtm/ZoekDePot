@@ -316,7 +316,30 @@
     "Top balkon: BOTH slaapkamer 1 AND woonkamer have sliding doors onto it.",
     "South-west kitchen jog placement: user OK with pinning later."
   ],
-  "still_need_user_input": [
-    "The NW corner is NOT a chamfer — it's a multi-step zigzag with an alcove. See /tmp/plan_nw.png crop sent to user. Please describe: (a) the architectural name for this feature (alcove? bay? building-core notch?), (b) whether the alcove is part of slaapk1 (interior storage) or part of the building outside (e.g. building riser/core), (c) the dimensions of each segment if known."
-  ]
+  "nw_zigzag": {
+    "_doc": "The NW corner of the apartment is shaped by the building lift shaft intruding from the building's central core. The boundary between slaapkamer 1 (east, interior) and the lift shaft (west, outside the unit) is a multi-segment stepped wall with two diagonal sections. The alcove is WALKABLE interior space within slaapk1 (user-confirmed). Coordinates below are best-effort ESTIMATES (user instructed 'just estimate' since only one segment, 1397, is labeled).",
+    "points_clockwise_from_top_facade": [
+      [0.00, 0.00],
+      [0.00, 0.70],
+      [-0.50, 0.70],
+      [-1.50, 1.70],
+      [-1.50, 3.10],
+      [-0.50, 4.10],
+      [0.00, 4.10]
+    ],
+    "estimated_segments": [
+      {"name": "step1 south",   "from": [0.00, 0.00], "to": [0.00, 0.70],  "length_m": 0.70, "source": "estimate"},
+      {"name": "step2 west",    "from": [0.00, 0.70], "to": [-0.50, 0.70], "length_m": 0.50, "source": "estimate"},
+      {"name": "diagonal 1",    "from": [-0.50, 0.70],"to": [-1.50, 1.70], "length_m": 1.414, "source": "estimate (assumed 45°)"},
+      {"name": "alcove west",   "from": [-1.50, 1.70],"to": [-1.50, 3.10], "length_m": 1.40, "source": "PDF callout 1397 mm — labels this vertical segment"},
+      {"name": "diagonal 2",    "from": [-1.50, 3.10],"to": [-0.50, 4.10], "length_m": 1.414, "source": "estimate (assumed 45°, mirror of diagonal 1)"},
+      {"name": "step into west facade", "from": [-0.50, 4.10], "to": [0.00, 4.10], "length_m": 0.50, "source": "estimate"}
+    ],
+    "verified_by_user": [
+      "Alcove is part of slaapkamer 1 (interior space).",
+      "Lift shaft causes the zigzag (cases the apartment in this corner).",
+      "Yes, the alcove is walkable inside slaapk1.",
+      "User OK with estimating the zigzag segments since only 1397 is labeled."
+    ]
+  }
 }
