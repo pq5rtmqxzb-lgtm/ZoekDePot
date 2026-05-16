@@ -231,13 +231,14 @@
       "level": "L0",
       "labeled_area_m2": 3.81,
       "access": "en-suite within slaapkamer 2 — door is in slaapk2 (user-confirmed). Slaapk2 itself has a separate door from the gang.",
+      "side_in_slaapk2": "WEST (LEFT) side of slaapkamer 2 (user-confirmed)",
       "dimension_citations": [
         "PDF callout 1670 → E-W = 1.670 m",
         "Derived N-S = 2.289 m so area matches 3.81 m²",
-        "PDF callout 1765 likely N-S = 1.765 m (combined with 1670 → 1.670 × 1.765 = 2.95 m², too small; so 1765 is a sub-section. Final N-S is 2.289 m derived from area)"
+        "PDF callout 1765 likely a sub-section dim"
       ],
       "uncertain": [
-        "Exact location inside slaapkamer 2 — NW/NE/SE corner of slaapk2 not yet pinned."
+        "Exact N-S placement within slaapk2 (north end vs south end of slaapk2's west side)."
       ]
     },
     {
@@ -257,21 +258,23 @@
       "name": "balkon (top)",
       "level": "L0",
       "labeled_area_m2": 7.60,
-      "shape_note": "Outside the apartment top facade. E-W 5.709 m × N-S 1.331 m. SHARED: both slaapkamer 1 AND woonkamer have sliding doors onto this balkon (user-confirmed). So the balkon spans across the slaapk1 / woonkamer-strip interior wall.",
-      "x_range_m": [0.20, 5.929],
+      "labeled_area_note": "7.60 m² is the OFFICIAL labelled portion (where the dim 5709 applies). User confirms the balkon spans the COMPLETE top facade width — both slaapkamer 1 AND woonkamer have sliding doors onto it. The polygon below covers the full outdoor strip, not just the labelled rectangle.",
+      "shape_note": "Spans the full apartment top facade width (~10.72 m). N-S depth ≈ 1.331 m (from area / 5709).",
+      "x_range_m": [0.00, 10.72],
       "y_range_m": [-1.331, 0.00],
       "dimension_citations": [
-        "PDF callout 5709 → E-W length",
-        "Area / length = 1.331 m → N-S depth",
-        "Both rooms have sliding doors onto balkon — user-confirmed"
+        "PDF callout 5709 → labelled section E-W length (used for area calculation)",
+        "Area / labelled length = 1.331 m → N-S depth",
+        "User-confirmed: balkon spans complete apartment width, accessible from both slaapk1 and woonkamer"
       ]
     },
     {
       "name": "balkon (bottom)",
       "level": "L0",
       "labeled_area_m2": 24.03,
-      "shape_note": "Outside the apartment south facade. 6.675 m × 3.600 m",
-      "x_range_m": [null, null],
+      "labeled_area_note": "24.03 m² is the OFFICIAL labelled portion. User confirms the balkon spans the COMPLETE south facade — accessible from BOTH woonkamer AND slaapkamer 2 via sliding doors.",
+      "shape_note": "Spans the full apartment south facade (~13.02 m including the SW slaapk2 frontage). N-S depth = 3.600 m (PDF callout 3600).",
+      "x_range_m": [-2.30, 10.72],
       "y_range_m": [13.802, 17.402],
       "dimension_citations": [
         "PDF callout 3600 → N-S depth",
@@ -284,14 +287,16 @@
   ],
 
   "openings_preliminary": [
-    {"type": "sliding_door", "wall": "top facade (slaapk1 section)",  "approx_span_x_m": [null, null], "note": "slaapk1 sliding door onto top balkon — user-confirmed; exact span TBD"},
-    {"type": "sliding_door", "wall": "top facade (woonkamer section)","approx_span_x_m": [null, null], "note": "woonkamer sliding door onto top balkon — user-confirmed; exact span TBD"},
-    {"type": "sliding_door", "wall": "south facade",                  "approx_span_x_m": [null, null], "note": "bottom balkon access from woonkamer — span TBD"},
-    {"type": "door",         "wall": "slaapk1 stepped south wall",    "width_m": null,                "note": "slaapk1 → gang; lives in the stepped/1845 section of slaapk1's south wall"},
-    {"type": "door",         "wall": "slaapk2 (to gang)",             "width_m": null,                "note": "slaapk2 → gang (user-confirmed)"},
-    {"type": "door",         "wall": "slaapk2 (to badkamer klein)",   "width_m": null,                "note": "slaapk2 → en-suite badkamer klein (user-confirmed)"},
-    {"type": "door",         "wall": "badkamer groot",                "width_m": null,                "note": "badkamer groot → gang; exact position TBD"},
-    {"type": "door",         "wall": "toilet",                        "width_m": 0.93,                "note": "toilet → gang; clear width 930 mm"}
+    {"type": "sliding_door", "wall": "top facade (slaapk1 section)",  "approx_span_x_m": [null, null], "note": "slaapk1 → top balkon (user-confirmed)"},
+    {"type": "sliding_door", "wall": "top facade (woonkamer section)","approx_span_x_m": [null, null], "note": "woonkamer → top balkon (user-confirmed)"},
+    {"type": "sliding_door", "wall": "south facade (woonkamer section)","approx_span_x_m": [null, null], "note": "woonkamer → bottom balkon (user-confirmed)"},
+    {"type": "sliding_door", "wall": "south facade (slaapk2 section)","approx_span_x_m": [null, null], "note": "slaapk2 → bottom balkon (user-confirmed: bottom balkon spans full width, accessible from slaapk2)"},
+    {"type": "door",         "wall": "gang → slaapkamer 1",           "width_m": null,                "note": "User-confirmed: gang has a door to slaapk1 (in addition to the previously-noted doors)"},
+    {"type": "door",         "wall": "gang → badkamer (groot)",       "width_m": null,                "note": "User-confirmed: gang has a door to badkamer groot"},
+    {"type": "door",         "wall": "gang → slaapkamer 2",           "width_m": null,                "note": "User-confirmed: slaapk2 has its own door to gang"},
+    {"type": "door",         "wall": "gang → toilet",                 "width_m": 0.93,                "note": "toilet door; clear width 930 mm"},
+    {"type": "door",         "wall": "gang → woonkamer",              "width_m": null,                "note": "Open passage from gang to woonkamer (entry to the living room); exact position TBD"},
+    {"type": "door",         "wall": "slaapk2 → badkamer (klein)",    "width_m": null,                "note": "Door inside slaapkamer 2 to its en-suite badkamer klein"}
   ],
 
   "uncertain": [

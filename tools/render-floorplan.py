@@ -141,21 +141,18 @@ def rooms():
     R.append({"name": "slaapkamer 1", "label": "23,45 m²", "fill": "#fff4e6",
               "polygon": s1, "centroid": (3.0, 2.2)})
 
-    # woonkamer — L-shape, narrow north strip + south extension. The exact
-    # south extension boundary is UNCERTAIN per the JSON; we pin it at the
-    # SW kitchen jog estimate (x=-2.30 west, y=13.602 south up to y=9.0 where
-    # slaapk2 begins).
-    w = [(5.72, 0.20),         # NE interior
-         (10.52, 0.20),        # along top facade interior, east to NE
-         (10.52, 13.602),      # down east facade interior
-         (-2.30, 13.602),      # west along south facade interior
-         (-2.30, 9.0),         # up the SW jog (estimate)
-         (1.815, 9.0),         # east along slaapk2/badk-klein north edge
-         (1.815, 4.20),        # up alongside slaapk1
-         (5.72, 4.20),         # west along slaapk1 south wall interface
+    # woonkamer — L-shape: east strip (5.72→10.52, full N-S) plus a south
+    # extension (1.815→5.72, between slaapk2 and the woonkamer strip).
+    w = [(5.52, 0.20),         # NW of strip — meets slaapk1 east wall
+         (10.52, 0.20),        # NE corner — top facade interior
+         (10.52, 13.602),      # SE corner — east facade interior
+         (1.815, 13.602),      # SW of south extension — meets slaapk2 SE corner
+         (1.815, 9.00),        # NW of south extension — meets slaapk2 NE corner
+         (5.52, 9.00),         # back east to woonkamer strip
+         (5.52, 4.20),         # up alongside slaapk1
          ]
     R.append({"name": "woonkamer", "label": "67,11 m²", "fill": "#e8f4ff",
-              "polygon": w, "centroid": (7.5, 5.0)})
+              "polygon": w, "centroid": (8.0, 5.0)})
 
     # badkamer (groot) — interior 3.065 × 2.68. Position: along the west
     # facade north of the gang. Y range estimated.
@@ -168,35 +165,38 @@ def rooms():
     R.append({"name": "toilet", "label": "1,67 m²", "fill": "#eef0f4",
               "polygon": t, "centroid": (3.73, 6.2)})
 
-    # gang — corridor between rooms. Estimated L-shape.
-    g = [(0.20, 7.10), (4.20, 7.10), (4.20, 7.30),  # north edge from west facade to woonkamer interior
-         (5.72, 7.30),  # short east jut by woonkamer
-         (5.72, 9.0),   # down to where slaapk2 north wall is
-         (-2.30, 9.0),  # west along badk-klein / slaapk2 corridor edge
-         (-2.30, 7.10),  # close back up (estimate)
-         ]
+    # gang — L-shape. Vertical arm runs between toilet east and woonkamer
+    # west, connecting slaapk1 (door at top) to the horizontal arm. Horizontal
+    # arm spans west under bathroom/toilet block to reach slaapk2's door.
+    g = [(4.20, 4.20),   # NW of vertical arm — just east of toilet east wall
+         (5.52, 4.20),   # NE of vertical arm — woonkamer west interior wall
+         (5.52, 9.00),   # SE of horizontal arm — down to slaapk2 north line
+         (0.20, 9.00),   # SW of horizontal arm — west facade interior
+         (0.20, 7.10),   # NW of horizontal arm — north up to bathrooms south wall
+         (4.20, 7.10),   # under toilet east wall - meet the vertical arm
+        ]
     R.append({"name": "gang", "label": "13,77 m²", "fill": "#fcf6e3",
-              "polygon": g, "centroid": (1.5, 8.0)})
+              "polygon": g, "centroid": (3.0, 8.05)})
 
     # slaapkamer 2 — 4.115 × 4.593, SW area
     s2 = [(-2.30, 9.009), (1.815, 9.009), (1.815, 13.602), (-2.30, 13.602)]
     R.append({"name": "slaapkamer 2", "label": "18,90 m²", "fill": "#fff4e6",
-              "polygon": s2, "centroid": (-0.2, 11.3)})
+              "polygon": s2, "centroid": (0.9, 11.3)})
 
-    # badkamer (klein) — en-suite inside slaapk2's NE corner (estimate)
-    bk = [(0.145, 9.009), (1.815, 9.009), (1.815, 11.298), (0.145, 11.298)]
+    # badkamer (klein) — en-suite inside slaapk2's WEST (LEFT) side, north corner
+    bk = [(-2.30, 9.009), (-0.63, 9.009), (-0.63, 11.298), (-2.30, 11.298)]
     R.append({"name": "badkamer (klein)", "label": "3,81 m²", "fill": "#eaf6ec",
-              "polygon": bk, "centroid": (0.98, 10.15)})
+              "polygon": bk, "centroid": (-1.46, 10.15)})
 
-    # balkon (top) — 5.709 × 1.331, outside top facade. SHARED slaapk1 + woonkamer.
-    bt = [(0.20, -1.331), (5.929, -1.331), (5.929, 0.0), (0.20, 0.0)]
-    R.append({"name": "balkon", "label": "7,60 m²", "fill": "#dde6dc",
-              "polygon": bt, "centroid": (3.0, -0.6)})
+    # balkon (top) — spans FULL apartment top facade width (user-confirmed)
+    bt = [(0.00, -1.331), (10.72, -1.331), (10.72, 0.0), (0.00, 0.0)]
+    R.append({"name": "balkon", "label": "7,60 m² (labelled)", "fill": "#dde6dc",
+              "polygon": bt, "centroid": (5.0, -0.6)})
 
-    # balkon (bottom) — 6.675 × 3.600 outside south facade
-    bb = [(3.845, 13.802), (10.52, 13.802), (10.52, 17.402), (3.845, 17.402)]
-    R.append({"name": "balkon", "label": "24,03 m²", "fill": "#dde6dc",
-              "polygon": bb, "centroid": (7.2, 15.6)})
+    # balkon (bottom) — spans FULL south facade width (user-confirmed)
+    bb = [(-2.30, 13.802), (10.72, 13.802), (10.72, 17.402), (-2.30, 17.402)]
+    R.append({"name": "balkon", "label": "24,03 m² (labelled)", "fill": "#dde6dc",
+              "polygon": bb, "centroid": (4.2, 15.6)})
 
     return R
 
