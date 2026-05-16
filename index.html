@@ -116,7 +116,7 @@ canvas { display: block; width: 100%; height: 100%; }
 <body>
 <div id="introOverlay">
   <h1>Zoek de Pot</h1>
-  <p>Loop door het museum en zoek de bloempot in elk schilderij!</p>
+  <p>Loop door het appartement (Type R3.sp, Ypsilon Park) en zoek de bloempot in elk schilderij!</p>
   <p style="font-size:14px; opacity:0.7;" class="mobile-controls">Joystick links = lopen, veeg rechts = rondkijken</p>
   <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis = rondkijken, klik = zoek de pot, H = hint</p>
   <button id="startBtn">Start!</button>
@@ -149,19 +149,19 @@ canvas { display: block; width: 100%; height: 100%; }
 import * as THREE from 'three';
 
 /* ===== CONSTANTS ===== */
-const WALL_HEIGHT = 4.0;
-const WALL_THICK = 0.3;
+const WALL_HEIGHT = 2.80;
+const WALL_THICK = 0.20;
 const PLAYER_H = 1.6;
-const PLAYER_R = 0.4;
-const MOVE_SPEED = 3.8;
+const PLAYER_R = 0.32;
+const MOVE_SPEED = 3.0;
 const LOOK_SPEED = 0.003;
 const NUM_PAINTINGS = 8;
-const PW = 1.8;   // painting width
-const PH = 1.4;   // painting height
+const PW = 1.1;   // painting width  (residential scale)
+const PH = 0.85;  // painting height
 
 /* ===== STATE ===== */
 let camera, scene, renderer, clock;
-const playerPos = new THREE.Vector3(0, PLAYER_H, 0);
+const playerPos = new THREE.Vector3(-0.5, PLAYER_H, 0.5);
 let yaw = 0, pitch = 0;
 let moveF = 0, moveR = 0;
 const paintings = [];
@@ -205,7 +205,28 @@ const PLINTH_MAT = new THREE.MeshStandardMaterial({ color: 0xcdbfa3, roughness: 
 const FIXTURE_MAT = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
 const WINDOW_FRAME_MAT = new THREE.MeshStandardMaterial({ color: 0x4a3826, roughness: 0.7 });
 const BULB_MAT = new THREE.MeshBasicMaterial({ color: 0xffd9a3 });
+
+// Residential additions
+const TILE_MAT       = new THREE.MeshStandardMaterial({ color: 0xe8e6e0, roughness: 0.45, metalness: 0.05 });
+const STONE_TILE_MAT = new THREE.MeshStandardMaterial({ color: 0xb6ada0, roughness: 0.85, metalness: 0.0 });
+const MATTRESS_MAT   = new THREE.MeshStandardMaterial({ color: 0xf3ece0, roughness: 0.9 });
+const LINEN_MAT      = new THREE.MeshStandardMaterial({ color: 0xc9d6dc, roughness: 0.85 });
+const PILLOW_MAT     = new THREE.MeshStandardMaterial({ color: 0xfbf5e8, roughness: 0.95 });
+const BEDFRAME_MAT   = new THREE.MeshStandardMaterial({ color: 0x4b3a28, roughness: 0.7 });
+const SOFA_MAT       = new THREE.MeshStandardMaterial({ color: 0x6d7a78, roughness: 0.95 });
+const TABLE_MAT      = new THREE.MeshStandardMaterial({ color: 0x5a432a, roughness: 0.55 });
+const CHAIR_MAT      = new THREE.MeshStandardMaterial({ color: 0x2e2418, roughness: 0.7 });
+const COUNTER_MAT    = new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.35, metalness: 0.25 });
+const CABINET_MAT    = new THREE.MeshStandardMaterial({ color: 0xeae3d3, roughness: 0.55 });
+const CERAMIC_MAT    = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.3, metalness: 0.05 });
+const GLASS_MAT      = new THREE.MeshStandardMaterial({ color: 0xb8ddee, transparent: true, opacity: 0.32, roughness: 0.05, metalness: 0.0 });
+const METAL_MAT      = new THREE.MeshStandardMaterial({ color: 0x8e8e8e, roughness: 0.3, metalness: 0.85 });
+const RAILING_MAT    = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.4, metalness: 0.7 });
+const WARDROBE_MAT   = new THREE.MeshStandardMaterial({ color: 0x8c6f4f, roughness: 0.55 });
+const SKY_MAT_PLACEHOLDER = null; // assigned after texture build
+
 let forestTex = null;
+let skyTex = null;
 const raycaster = new THREE.Raycaster();
 const obstacles = [];
 
@@ -228,8 +249,8 @@ function init() {
   clock = new THREE.Clock();
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x16140f);
-  scene.fog = new THREE.Fog(0x16140f, 9, 26);
+  scene.background = new THREE.Color(0xb8c8d8);
+  scene.fog = new THREE.Fog(0xb8c8d8, 22, 60);
 
   camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 50);
   camera.position.copy(playerPos);
@@ -483,6 +504,86 @@ function setupTextures() {
   }, 512, 768, 1, 1);
   forestTex.wrapS = forestTex.wrapT = THREE.ClampToEdgeWrapping;
   forestTex.anisotropy = aniso;
+
+  // Bathroom/toilet tile — small light grey squares with grout
+  const tileTex = makeTexture((ctx, w, h) => {
+    ctx.fillStyle = '#7a7a76';
+    ctx.fillRect(0, 0, w, h);
+    const cols = 8, rows = 8;
+    const tw = w / cols, th = h / rows;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const shade = 226 + Math.floor((Math.random() - 0.5) * 18);
+        ctx.fillStyle = `rgb(${shade},${shade - 2},${shade - 8})`;
+        ctx.fillRect(c * tw + 1, r * th + 1, tw - 2, th - 2);
+      }
+    }
+  }, 256, 256, 3, 3);
+  tileTex.anisotropy = aniso;
+  TILE_MAT.map = tileTex;
+  TILE_MAT.needsUpdate = true;
+
+  // Outdoor stone pavers — larger, darker blocks
+  const stoneTileTex = makeTexture((ctx, w, h) => {
+    ctx.fillStyle = '#5a554c';
+    ctx.fillRect(0, 0, w, h);
+    const cols = 3, rows = 3;
+    const tw = w / cols, th = h / rows;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const shade = 168 + Math.floor((Math.random() - 0.5) * 28);
+        ctx.fillStyle = `rgb(${shade},${shade - 8},${shade - 18})`;
+        ctx.fillRect(c * tw + 2, r * th + 2, tw - 4, th - 4);
+        // speckle
+        for (let i = 0; i < 24; i++) {
+          ctx.fillStyle = `rgba(40,32,22,${0.05 + Math.random() * 0.18})`;
+          ctx.fillRect(c * tw + Math.random() * tw, r * th + Math.random() * th, 2, 2);
+        }
+      }
+    }
+  }, 256, 256, 2, 2);
+  stoneTileTex.anisotropy = aniso;
+  STONE_TILE_MAT.map = stoneTileTex;
+  STONE_TILE_MAT.needsUpdate = true;
+
+  // Sky cyclorama — wraps the outside world beyond the balconies
+  skyTex = makeTexture((ctx, w, h) => {
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0,   '#a8c6e6');
+    grad.addColorStop(0.55,'#cad7d8');
+    grad.addColorStop(0.78,'#94a482');
+    grad.addColorStop(1,   '#5a6b48');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    // far tree silhouettes
+    for (let i = 0; i < 90; i++) {
+      const x = Math.random() * w;
+      const baseY = h * (0.58 + Math.random() * 0.22);
+      const treeH = 18 + Math.random() * 50;
+      const treeW = 12 + Math.random() * 24;
+      ctx.fillStyle = `rgba(60,80,58,${0.55 + Math.random() * 0.3})`;
+      ctx.beginPath();
+      ctx.moveTo(x, baseY - treeH);
+      ctx.lineTo(x - treeW / 2, baseY);
+      ctx.lineTo(x + treeW / 2, baseY);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // clouds
+    for (let i = 0; i < 18; i++) {
+      const cx = Math.random() * w;
+      const cy = h * (0.06 + Math.random() * 0.30);
+      const rx = 40 + Math.random() * 120;
+      const ry = 6 + Math.random() * 14;
+      ctx.fillStyle = `rgba(255,255,255,${0.18 + Math.random() * 0.20})`;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }, 2048, 512, 1, 1);
+  skyTex.wrapS = THREE.RepeatWrapping;
+  skyTex.wrapT = THREE.ClampToEdgeWrapping;
+  skyTex.anisotropy = aniso;
 }
 
 /* ===== MUSEUM GEOMETRY ===== */
@@ -675,119 +776,753 @@ function addBoxObstacle(cx, cz, w, d) {
   obstacles.push({ cx, cz, hw: w / 2, hd: d / 2 });
 }
 
-function buildMuseum() {
-  // Room definitions: center x, center z, width, depth
-  const rooms = [
-    { x: 0, z: 0, w: 20, d: 8 },     // Main hall
-    { x: -6, z: -8, w: 8, d: 8 },     // Left wing
-    { x: 6, z: -8, w: 8, d: 8 },      // Right wing
-    { x: 0, z: 7.5, w: 12, d: 7 },   // Back gallery (z: 4 to 11)
-  ];
+/* Add a sliding-glass door span — visual only, no wall collision in the span.
+ * Pure decorative: frame + 2 glass panes. Forest backdrop is provided by the
+ * sky cyclorama outside. */
+function addSlidingDoor(x1, z1, x2, z2) {
+  const dx = x2 - x1, dz = z2 - z1;
+  const len = Math.sqrt(dx * dx + dz * dz);
+  if (len < 0.01) return;
+  const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
+  const angle = Math.atan2(dx, dz);
 
-  // Each plank tile = 4m × 2m of physical floor, so plank scale stays
-  // consistent regardless of room size.
-  const PLANK_TILE_W = 4, PLANK_TILE_D = 2;
+  const group = new THREE.Group();
 
-  rooms.forEach(r => {
-    const fg = new THREE.PlaneGeometry(r.w, r.d);
-    const fMat = FLOOR_MAT.clone();
-    if (FLOOR_MAT.map) {
-      fMat.map = FLOOR_MAT.map.clone();
-      fMat.map.needsUpdate = true;
-      fMat.map.wrapS = fMat.map.wrapT = THREE.RepeatWrapping;
-      fMat.map.repeat.set(r.w / PLANK_TILE_W, r.d / PLANK_TILE_D);
-      fMat.map.anisotropy = FLOOR_MAT.map.anisotropy;
+  // Top header above door
+  const headerH = 0.25;
+  const header = new THREE.Mesh(
+    new THREE.BoxGeometry(WALL_THICK + 0.02, headerH, len),
+    WINDOW_FRAME_MAT
+  );
+  header.position.set(0, WALL_HEIGHT - headerH / 2, 0);
+  group.add(header);
+
+  // Above-header wall fill (between header and crown) — small
+  // (crown is 0.14 thick from ceiling, so leave that clear)
+
+  // Floor track / sill
+  const sill = new THREE.Mesh(
+    new THREE.BoxGeometry(WALL_THICK + 0.04, 0.04, len),
+    WINDOW_FRAME_MAT
+  );
+  sill.position.set(0, 0.02, 0);
+  group.add(sill);
+
+  // Two glass panes side by side
+  const paneW = (len - 0.06) / 2;
+  const paneH = WALL_HEIGHT - headerH - 0.04;
+  const paneCY = 0.04 + paneH / 2;
+  for (const sgn of [-1, 1]) {
+    const px = sgn * (paneW / 2 + 0.015);
+    const pane = new THREE.Mesh(
+      new THREE.PlaneGeometry(paneW, paneH),
+      new THREE.MeshStandardMaterial({
+        color: 0xc8e4ee, transparent: true, opacity: 0.20,
+        roughness: 0.05, metalness: 0.0, emissive: 0xffffff, emissiveIntensity: 0.04,
+      })
+    );
+    pane.position.set(px, paneCY, 0);
+    pane.rotation.y = Math.PI / 2;
+    group.add(pane);
+    // Vertical aluminium edge on each pane
+    for (const ex of [-paneW / 2, paneW / 2]) {
+      const edge = new THREE.Mesh(
+        new THREE.BoxGeometry(0.025, paneH, 0.025),
+        METAL_MAT
+      );
+      edge.position.set(px + ex, paneCY, 0);
+      group.add(edge);
     }
-    const floor = new THREE.Mesh(fg, fMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.set(r.x, 0, r.z);
-    scene.add(floor);
+  }
+  // Center vertical mullion where panes meet
+  const mid = new THREE.Mesh(
+    new THREE.BoxGeometry(0.04, paneH, 0.04),
+    METAL_MAT
+  );
+  mid.position.set(0, paneCY, 0);
+  group.add(mid);
 
-    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(r.w, r.d), CEIL_MAT);
-    ceil.rotation.x = Math.PI / 2;
-    ceil.position.set(r.x, WALL_HEIGHT, r.z);
-    scene.add(ceil);
-  });
+  group.position.set(cx, 0, cz);
+  group.rotation.y = angle;
+  scene.add(group);
+  // No wallSegs push — player walks through.
+}
 
-  // Walls
-  // Main hall - front wall with openings to left & right wings
-  addWall(-10, -4, -8, -4);    // front far-left
-  addWall(-4, -4, 4, -4);      // front center
-  addWall(8, -4, 10, -4);      // front far-right
-  // Openings: (-8,-4)→(-4,-4) to left wing, (4,-4)→(8,-4) to right wing
+/* Railing along a line — for balconies. Top rail + bottom rail + vertical
+ * balusters. Top rail height is residential standard ~1.1m. */
+function addRailing(x1, z1, x2, z2) {
+  const dx = x2 - x1, dz = z2 - z1;
+  const len = Math.sqrt(dx * dx + dz * dz);
+  if (len < 0.01) return;
+  const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
+  const angle = Math.atan2(dx, dz);
+  const RAIL_H = 1.10;
 
-  // Main hall - back wall with opening to back gallery
-  addWall(-10, 4, -3, 4);      // back left
-  addWall(3, 4, 10, 4);        // back right
-  // Opening: (-3,4)→(3,4) to back gallery
+  // Top rail
+  const top = new THREE.Mesh(
+    new THREE.BoxGeometry(0.05, 0.05, len),
+    RAILING_MAT
+  );
+  top.position.set(cx, RAIL_H, cz);
+  top.rotation.y = angle;
+  scene.add(top);
 
-  addWall(-10, -4, -10, 4);    // left wall
-  addWall(10, -4, 10, 4);      // right wall
+  // Bottom rail
+  const bot = new THREE.Mesh(
+    new THREE.BoxGeometry(0.05, 0.04, len),
+    RAILING_MAT
+  );
+  bot.position.set(cx, 0.10, cz);
+  bot.rotation.y = angle;
+  scene.add(bot);
 
-  // Left wing
-  addWall(-10, -4, -10, -12);
-  addWall(-2, -4, -2, -12);
-  addWall(-10, -12, -2, -12);
+  // Glass infill panel (frameless balustrade — common in NL new-builds)
+  const glassH = RAIL_H - 0.18;
+  const glass = new THREE.Mesh(
+    new THREE.PlaneGeometry(len - 0.05, glassH),
+    new THREE.MeshStandardMaterial({
+      color: 0xb8d0d8, transparent: true, opacity: 0.30,
+      roughness: 0.1, metalness: 0.0, side: THREE.DoubleSide,
+    })
+  );
+  glass.position.set(cx, 0.10 + glassH / 2 + 0.02, cz);
+  glass.rotation.y = angle + Math.PI / 2;
+  scene.add(glass);
 
-  // Right wing
-  addWall(2, -4, 2, -12);
-  addWall(10, -4, 10, -12);
-  addWall(2, -12, 10, -12);
+  // Posts every ~1.5m to anchor the rail
+  const dirX = dx / len, dirZ = dz / len;
+  const nPosts = Math.max(2, Math.ceil(len / 1.5) + 1);
+  for (let i = 0; i < nPosts; i++) {
+    const t = i / (nPosts - 1);
+    const px = x1 + dirX * len * t;
+    const pz = z1 + dirZ * len * t;
+    const post = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, RAIL_H, 0.05),
+      RAILING_MAT
+    );
+    post.position.set(px, RAIL_H / 2, pz);
+    scene.add(post);
+  }
 
-  // Back gallery
-  addWall(-6, 4, -6, 11);
-  addWall(6, 4, 6, 11);
-  addWall(-6, 11, 6, 11);
+  // Treat the railing as a wall for collision (player can't fall off)
+  wallSegs.push({ x1, z1, x2, z2, len, angle });
+}
 
-  // Door frames at each opening
-  addDoorFrame(-8, -4, -4, -4);   // Left wing entrance
-  addDoorFrame(4, -4, 8, -4);     // Right wing entrance
-  addDoorFrame(-3, 4, 3, 4);      // Back gallery entrance
+/* Per-room floor + ceiling. mat = floor material clone. */
+function addRoomFloor(rect, baseMat = FLOOR_MAT, tileW = 4, tileD = 2) {
+  const { x1, z1, x2, z2 } = rect;
+  const w = x2 - x1, d = z2 - z1;
+  const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
+  const fMat = baseMat.clone();
+  if (baseMat.map) {
+    fMat.map = baseMat.map.clone();
+    fMat.map.needsUpdate = true;
+    fMat.map.wrapS = fMat.map.wrapT = THREE.RepeatWrapping;
+    fMat.map.repeat.set(Math.max(1, w / tileW), Math.max(1, d / tileD));
+    fMat.map.anisotropy = baseMat.map.anisotropy;
+  }
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d), fMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(cx, 0.001, cz);
+  scene.add(floor);
 
-  // Decorative wall paneling between paintings on otherwise blank walls
-  // Main hall side walls (paintings at z = ±2; panel between them at z=0)
-  addWallPanel(-9.86, 0, Math.PI / 2, 1.0, 2.4);   // left wall, faces +X
-  addWallPanel(9.86, 0, -Math.PI / 2, 1.0, 2.4);   // right wall, faces -X
-  // Main hall front center wall (between wing entrances) — wall at z = -4
-  addWallPanel(0, -3.86, 0, 1.6, 2.4);             // faces +Z
-  // Wing back walls — flank the centred painting at x = ±6
-  addWallPanel(-8.5, -11.86, 0, 0.9, 2.2);
-  addWallPanel(-3.5, -11.86, 0, 0.9, 2.2);
-  addWallPanel(3.5, -11.86, 0, 0.9, 2.2);
-  addWallPanel(8.5, -11.86, 0, 0.9, 2.2);
-  // Back gallery back wall (paintings at x=±2; panel between them)
-  addWallPanel(0, 10.86, Math.PI, 1.0, 2.4);
+  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(w, d), CEIL_MAT);
+  ceil.rotation.x = Math.PI / 2;
+  ceil.position.set(cx, WALL_HEIGHT - 0.001, cz);
+  scene.add(ceil);
+}
 
-  // Wooden bench in the main hall, set off-centre toward the back gallery so
-  // the player spawn at (0,0,0) stays clear of its collision AABB.
-  const BENCH_Z = 1.5;
-  const benchSeat = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.08, 0.45), BASEBOARD_MAT);
-  benchSeat.position.set(0, 0.46, BENCH_Z);
-  scene.add(benchSeat);
-  const legGeo = new THREE.BoxGeometry(0.16, 0.42, 0.42);
-  for (const sx of [-0.85, 0.85]) {
-    const leg = new THREE.Mesh(legGeo, BASEBOARD_MAT);
-    leg.position.set(sx, 0.21, BENCH_Z);
+/* ===== FURNITURE HELPERS ===== */
+function addBed(x, z, ry, w, d) {
+  // Bed frame (low), mattress on top, pillows + duvet
+  const frameH = 0.30;
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(w, frameH, d), BEDFRAME_MAT);
+  frame.position.set(x, frameH / 2, z);
+  frame.rotation.y = ry;
+  scene.add(frame);
+
+  const matt = new THREE.Mesh(new THREE.BoxGeometry(w - 0.06, 0.18, d - 0.06), MATTRESS_MAT);
+  matt.position.set(x, frameH + 0.09, z);
+  matt.rotation.y = ry;
+  scene.add(matt);
+
+  // Duvet (covers bottom 2/3 of mattress)
+  const duvet = new THREE.Mesh(
+    new THREE.BoxGeometry(w - 0.10, 0.06, d * 0.62),
+    LINEN_MAT
+  );
+  // Offset along bed's length (local +z is the foot of bed if ry=0)
+  const localDuvetZ = d * 0.13;
+  duvet.position.set(
+    x + Math.sin(ry) * localDuvetZ,
+    frameH + 0.20,
+    z + Math.cos(ry) * localDuvetZ
+  );
+  duvet.rotation.y = ry;
+  scene.add(duvet);
+
+  // Headboard
+  const hbH = 0.45;
+  const hb = new THREE.Mesh(
+    new THREE.BoxGeometry(w + 0.04, hbH, 0.06),
+    BEDFRAME_MAT
+  );
+  const localHbZ = -d / 2 - 0.03;
+  hb.position.set(
+    x + Math.sin(ry) * localHbZ,
+    frameH + hbH / 2,
+    z + Math.cos(ry) * localHbZ
+  );
+  hb.rotation.y = ry;
+  scene.add(hb);
+
+  // Pillows (2 small for queen+, 1 for single)
+  const nPillows = w > 1.3 ? 2 : 1;
+  const pillowOffsets = nPillows === 2 ? [-w * 0.22, w * 0.22] : [0];
+  for (const po of pillowOffsets) {
+    const pillow = new THREE.Mesh(
+      new THREE.BoxGeometry(w * 0.34, 0.10, 0.30),
+      PILLOW_MAT
+    );
+    const localPx = po;
+    const localPz = -d / 2 + 0.30;
+    pillow.position.set(
+      x + Math.cos(ry) * localPx + Math.sin(ry) * localPz,
+      frameH + 0.18 + 0.05,
+      z - Math.sin(ry) * localPx + Math.cos(ry) * localPz
+    );
+    pillow.rotation.y = ry;
+    scene.add(pillow);
+  }
+
+  // Collision AABB — axis-aligned, computed for the bed's footprint
+  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
+  if (isSideways) addBoxObstacle(x, z, d, w);
+  else            addBoxObstacle(x, z, w, d);
+}
+
+function addSofa(x, z, ry) {
+  const w = 2.20, d = 0.95, seatH = 0.45;
+  // Base
+  const base = new THREE.Mesh(new THREE.BoxGeometry(w, seatH, d), SOFA_MAT);
+  base.position.set(x, seatH / 2, z);
+  base.rotation.y = ry;
+  scene.add(base);
+  // Back (along the -z local edge)
+  const backH = 0.55;
+  const back = new THREE.Mesh(new THREE.BoxGeometry(w, backH, 0.18), SOFA_MAT);
+  const localBz = -d / 2 + 0.09;
+  back.position.set(
+    x + Math.sin(ry) * localBz,
+    seatH + backH / 2,
+    z + Math.cos(ry) * localBz
+  );
+  back.rotation.y = ry;
+  scene.add(back);
+  // Arms
+  for (const sgn of [-1, 1]) {
+    const armW = 0.18, armH = 0.55;
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(armW, armH, d), SOFA_MAT);
+    const localAx = sgn * (w / 2 - armW / 2);
+    arm.position.set(
+      x + Math.cos(ry) * localAx,
+      armH / 2 + 0.10,
+      z - Math.sin(ry) * localAx
+    );
+    arm.rotation.y = ry;
+    scene.add(arm);
+  }
+  // Cushions on seat
+  for (const sgn of [-1, 0, 1]) {
+    const cu = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.12, d - 0.20), PILLOW_MAT);
+    const localCx = sgn * 0.66;
+    cu.position.set(
+      x + Math.cos(ry) * localCx,
+      seatH + 0.06,
+      z - Math.sin(ry) * localCx
+    );
+    cu.rotation.y = ry;
+    scene.add(cu);
+  }
+  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
+  if (isSideways) addBoxObstacle(x, z, d, w);
+  else            addBoxObstacle(x, z, w, d);
+}
+
+function addCoffeeTable(x, z) {
+  const top = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.05, 0.6), TABLE_MAT);
+  top.position.set(x, 0.42, z);
+  scene.add(top);
+  for (const [ox, oz] of [[-0.48, -0.24], [0.48, -0.24], [-0.48, 0.24], [0.48, 0.24]]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.40, 0.05), TABLE_MAT);
+    leg.position.set(x + ox, 0.20, z + oz);
     scene.add(leg);
   }
-  addBoxObstacle(0, BENCH_Z, 2.1, 0.55);
+  addBoxObstacle(x, z, 1.1, 0.6);
+}
+
+function addDiningTable(x, z) {
+  const w = 1.40, d = 0.85;
+  const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.04, d), TABLE_MAT);
+  top.position.set(x, 0.75, z);
+  scene.add(top);
+  for (const [ox, oz] of [[-w / 2 + 0.06, -d / 2 + 0.06], [w / 2 - 0.06, -d / 2 + 0.06], [-w / 2 + 0.06, d / 2 - 0.06], [w / 2 - 0.06, d / 2 - 0.06]]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.73, 0.06), TABLE_MAT);
+    leg.position.set(x + ox, 0.365, z + oz);
+    scene.add(leg);
+  }
+  // 4 chairs
+  for (const [cx, cz, cry] of [
+    [x, z - d / 2 - 0.42, 0],
+    [x, z + d / 2 + 0.42, Math.PI],
+    [x - w / 2 - 0.42, z, Math.PI / 2],
+    [x + w / 2 + 0.42, z, -Math.PI / 2],
+  ]) {
+    addChair(cx, cz, cry);
+  }
+  addBoxObstacle(x, z, w, d);
+}
+
+function addChair(x, z, ry) {
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.04, 0.40), CHAIR_MAT);
+  seat.position.set(x, 0.46, z);
+  seat.rotation.y = ry;
+  scene.add(seat);
+  // Back
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.45, 0.04), CHAIR_MAT);
+  const localBz = -0.18;
+  back.position.set(
+    x + Math.sin(ry) * localBz,
+    0.46 + 0.225,
+    z + Math.cos(ry) * localBz
+  );
+  back.rotation.y = ry;
+  scene.add(back);
+  // Legs
+  const legGeo = new THREE.BoxGeometry(0.04, 0.46, 0.04);
+  for (const [ox, oz] of [[-0.16, -0.16], [0.16, -0.16], [-0.16, 0.16], [0.16, 0.16]]) {
+    const leg = new THREE.Mesh(legGeo, CHAIR_MAT);
+    // Rotate offset by ry
+    const rx = Math.cos(ry) * ox + Math.sin(ry) * oz;
+    const rz = -Math.sin(ry) * ox + Math.cos(ry) * oz;
+    leg.position.set(x + rx, 0.23, z + rz);
+    leg.rotation.y = ry;
+    scene.add(leg);
+  }
+  addBoxObstacle(x, z, 0.45, 0.45);
+}
+
+function addKitchenIsland(x, z, ry, w = 2.115, d = 0.70) {
+  // Base cabinets
+  const base = new THREE.Mesh(new THREE.BoxGeometry(w, 0.85, d), CABINET_MAT);
+  base.position.set(x, 0.425, z);
+  base.rotation.y = ry;
+  scene.add(base);
+  // Counter top
+  const top = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.04, d + 0.04), COUNTER_MAT);
+  top.position.set(x, 0.87, z);
+  top.rotation.y = ry;
+  scene.add(top);
+  // 4 cooktop hobs
+  for (let i = 0; i < 4; i++) {
+    const ox = (i - 1.5) * (w * 0.18);
+    const oz = -d * 0.12;
+    const rx = Math.cos(ry) * ox + Math.sin(ry) * oz;
+    const rz = -Math.sin(ry) * ox + Math.cos(ry) * oz;
+    const hob = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.015, 18), METAL_MAT);
+    hob.position.set(x + rx, 0.895, z + rz);
+    scene.add(hob);
+  }
+  // Faucet
+  const faucet = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.30, 8), METAL_MAT);
+  const fox = w * 0.30;
+  const foz = d * 0.20;
+  const frx = Math.cos(ry) * fox + Math.sin(ry) * foz;
+  const frz = -Math.sin(ry) * fox + Math.cos(ry) * foz;
+  faucet.position.set(x + frx, 1.04, z + frz);
+  scene.add(faucet);
+  // Sink (recessed rectangle visible from above)
+  const sink = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.05, 0.30), METAL_MAT);
+  const sox = w * 0.30, soz = d * 0.05;
+  const srx = Math.cos(ry) * sox + Math.sin(ry) * soz;
+  const srz = -Math.sin(ry) * sox + Math.cos(ry) * soz;
+  sink.position.set(x + srx, 0.86, z + srz);
+  sink.rotation.y = ry;
+  scene.add(sink);
+
+  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
+  if (isSideways) addBoxObstacle(x, z, d, w);
+  else            addBoxObstacle(x, z, w, d);
+}
+
+function addBathtub(x, z, ry, w = 1.65, d = 0.75) {
+  // Outer tub shell
+  const shell = new THREE.Mesh(new THREE.BoxGeometry(w, 0.55, d), CERAMIC_MAT);
+  shell.position.set(x, 0.275, z);
+  shell.rotation.y = ry;
+  scene.add(shell);
+  // Inner water-line — a slightly recessed cavity hint
+  const cavity = new THREE.Mesh(
+    new THREE.BoxGeometry(w - 0.12, 0.04, d - 0.16),
+    new THREE.MeshStandardMaterial({ color: 0xd6e8eb, roughness: 0.4 })
+  );
+  cavity.position.set(x, 0.50, z);
+  cavity.rotation.y = ry;
+  scene.add(cavity);
+  // Faucet
+  const tap = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.16, 8), METAL_MAT);
+  const tox = -w / 2 + 0.10;
+  const trx = Math.cos(ry) * tox;
+  const trz = -Math.sin(ry) * tox;
+  tap.position.set(x + trx, 0.62, z + trz);
+  scene.add(tap);
+
+  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
+  if (isSideways) addBoxObstacle(x, z, d, w);
+  else            addBoxObstacle(x, z, w, d);
+}
+
+function addToiletBowl(x, z, ry) {
+  // Tank (against the back wall, local -z)
+  const tankD = 0.18, tankW = 0.38, tankH = 0.62;
+  const localTz = -0.18;
+  const tank = new THREE.Mesh(new THREE.BoxGeometry(tankW, tankH, tankD), CERAMIC_MAT);
+  tank.position.set(
+    x + Math.sin(ry) * localTz,
+    tankH / 2,
+    z + Math.cos(ry) * localTz
+  );
+  tank.rotation.y = ry;
+  scene.add(tank);
+  // Bowl
+  const bowl = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.42, 0.48), CERAMIC_MAT);
+  const localBz = 0.10;
+  bowl.position.set(
+    x + Math.sin(ry) * localBz,
+    0.21,
+    z + Math.cos(ry) * localBz
+  );
+  bowl.rotation.y = ry;
+  scene.add(bowl);
+  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
+  if (isSideways) addBoxObstacle(x, z, 0.55, 0.42);
+  else            addBoxObstacle(x, z, 0.42, 0.55);
+}
+
+function addSink(x, z, ry, w = 0.7) {
+  const vanH = 0.85;
+  const van = new THREE.Mesh(new THREE.BoxGeometry(w, vanH, 0.45), CABINET_MAT);
+  van.position.set(x, vanH / 2, z);
+  van.rotation.y = ry;
+  scene.add(van);
+  const basin = new THREE.Mesh(new THREE.BoxGeometry(w - 0.06, 0.08, 0.40), CERAMIC_MAT);
+  basin.position.set(x, vanH + 0.02, z);
+  basin.rotation.y = ry;
+  scene.add(basin);
+  // Mirror
+  const mirror = new THREE.Mesh(
+    new THREE.PlaneGeometry(w - 0.05, 0.5),
+    new THREE.MeshStandardMaterial({ color: 0x9bb3bb, roughness: 0.1, metalness: 0.8 })
+  );
+  const localMz = -0.21;
+  mirror.position.set(
+    x + Math.sin(ry) * localMz,
+    vanH + 0.5,
+    z + Math.cos(ry) * localMz
+  );
+  mirror.rotation.y = ry;
+  scene.add(mirror);
+  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
+  if (isSideways) addBoxObstacle(x, z, 0.45, w);
+  else            addBoxObstacle(x, z, w, 0.45);
+}
+
+function addWardrobe(x, z, ry, w = 1.6, d = 0.55) {
+  const h = WALL_HEIGHT - 0.10;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), WARDROBE_MAT);
+  body.position.set(x, h / 2, z);
+  body.rotation.y = ry;
+  scene.add(body);
+  // Door split lines
+  const nDoors = Math.max(2, Math.round(w / 0.55));
+  const dw = w / nDoors;
+  for (let i = 1; i < nDoors; i++) {
+    const seam = new THREE.Mesh(
+      new THREE.BoxGeometry(0.01, h - 0.05, 0.02),
+      BEDFRAME_MAT
+    );
+    const localSx = -w / 2 + i * dw;
+    const localSz = d / 2 + 0.005;
+    const rx = Math.cos(ry) * localSx + Math.sin(ry) * localSz;
+    const rz = -Math.sin(ry) * localSx + Math.cos(ry) * localSz;
+    seam.position.set(x + rx, h / 2, z + rz);
+    seam.rotation.y = ry;
+    scene.add(seam);
+  }
+  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
+  if (isSideways) addBoxObstacle(x, z, d, w);
+  else            addBoxObstacle(x, z, w, d);
+}
+
+function addShowerStall(x, z, ry, w = 0.9, d = 0.9) {
+  // Tray
+  const tray = new THREE.Mesh(new THREE.BoxGeometry(w, 0.08, d), CERAMIC_MAT);
+  tray.position.set(x, 0.04, z);
+  tray.rotation.y = ry;
+  scene.add(tray);
+  // Glass walls (2 visible sides) — facing into room
+  const gh = 2.0;
+  const wall1 = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, gh),
+    new THREE.MeshStandardMaterial({ color: 0xc8dde0, transparent: true, opacity: 0.28, roughness: 0.08, metalness: 0, side: THREE.DoubleSide })
+  );
+  const w1lz = d / 2;
+  wall1.position.set(x + Math.sin(ry) * w1lz, gh / 2, z + Math.cos(ry) * w1lz);
+  wall1.rotation.y = ry;
+  scene.add(wall1);
+  const wall2 = new THREE.Mesh(
+    new THREE.PlaneGeometry(d, gh),
+    new THREE.MeshStandardMaterial({ color: 0xc8dde0, transparent: true, opacity: 0.28, roughness: 0.08, metalness: 0, side: THREE.DoubleSide })
+  );
+  const w2lx = w / 2;
+  wall2.position.set(x + Math.cos(ry) * w2lx, gh / 2, z - Math.sin(ry) * w2lx);
+  wall2.rotation.y = ry + Math.PI / 2;
+  scene.add(wall2);
+
+  addBoxObstacle(x, z, w, d);
+}
+
+/* ===== APARTMENT GEOMETRY (Type R3.sp, bouwnummer 25) ===== */
+function buildApartment() {
+  // === Floor + ceiling per room (no overlaps) ===
+  // Slaapkamer 1
+  addRoomFloor({ x1: -5.45, z1: -7.06, x2: 0.108, z2: -2.76 }, FLOOR_MAT, 2.0, 2.5);
+  // Badkamer (groot) — tile
+  addRoomFloor({ x1: -5.45, z1: -2.76, x2: -2.445, z2: -0.078 }, TILE_MAT, 1.2, 1.2);
+  // Berging B — tile (small closet north of toilet)
+  addRoomFloor({ x1: -2.445, z1: -2.76, x2: -1.565, z2: -1.863 }, TILE_MAT, 1.0, 1.0);
+  // Toilet — tile
+  addRoomFloor({ x1: -2.445, z1: -1.863, x2: -1.565, z2: -0.078 }, TILE_MAT, 1.0, 1.0);
+  // Gang vertical leg — between slaapk1 and slaapk2, east of toilet
+  addRoomFloor({ x1: -1.565, z1: -2.76, x2: 0.108, z2: 1.00 }, FLOOR_MAT, 2.0, 2.5);
+  // Gang horizontal arm — connects bathrooms (west) to gang vertical (east)
+  addRoomFloor({ x1: -4.243, z1: -0.078, x2: -1.565, z2: 1.00 }, FLOOR_MAT, 2.0, 2.5);
+  // Gang east arm — corridor between slaapk2 east wall and woonkamer strip west wall
+  addRoomFloor({ x1: -1.335, z1: 1.00, x2: 0.108, z2: 5.593 }, FLOOR_MAT, 2.0, 2.5);
+  // Berging A — small closet south of badkamer
+  addRoomFloor({ x1: -5.45, z1: -0.078, x2: -4.243, z2: 1.00 }, TILE_MAT, 1.0, 1.0);
+  // Slaapkamer 2
+  addRoomFloor({ x1: -5.45, z1: 1.00, x2: -1.335, z2: 5.593 }, FLOOR_MAT, 2.0, 2.5);
+  // Badkamer klein (en-suite, inside slaapk2 SE corner) — tile
+  addRoomFloor({ x1: -3.00, z1: 3.304, x2: -1.335, z2: 5.593 }, TILE_MAT, 1.2, 1.2);
+  // Woonkamer narrow strip (east)
+  addRoomFloor({ x1:  0.108, z1: -7.06, x2: 3.68, z2: 6.74 }, FLOOR_MAT, 2.0, 2.5);
+  // Woonkamer south extension (the L's foot, west of the strip, south of slaapk2)
+  addRoomFloor({ x1: -3.00, z1:  5.593, x2: 0.108, z2: 6.74 }, FLOOR_MAT, 2.0, 2.5);
+
+  // === Balcony floors (outside, stone tile) ===
+  addRoomFloor({ x1: -2.10, z1: -8.391, x2: 3.609, z2: -7.06 }, STONE_TILE_MAT, 1.5, 1.5);
+  addRoomFloor({ x1: -3.00, z1:  6.74,  x2: 3.675, z2: 10.34 }, STONE_TILE_MAT, 1.5, 1.5);
+
+  // === Outer envelope walls (clockwise from chamfered NW corner) ===
+  // A→B: chamfer (1.0m × 1.0m bevel)
+  addWall(-4.45, -7.06, -5.45, -6.06);
+  // B→G: continuous west facade
+  addWall(-5.45, -6.06, -5.45, 5.593);
+  // G→H: south-west jog (slaapk2 south side / woonkamer S-ext west kink)
+  addWall(-5.45, 5.593, -3.00, 5.593);
+  // H→I: woonkamer south-ext west wall
+  addWall(-3.00, 5.593, -3.00, 6.74);
+  // I→J: bottom facade — broken for bottom balkon sliding doors
+  addWall(-3.00, 6.74, -1.30, 6.74);    // west of door
+  addWall( 1.70, 6.74, 3.68, 6.74);     // east of door
+  // J→K: east facade (the long woonkamer side)
+  addWall(3.68, 6.74, 3.68, -7.06);
+  // K→A: top facade — broken for top balkon sliding doors
+  addWall(3.68, -7.06, 1.60, -7.06);    // east of door
+  addWall(-2.10, -7.06, -4.45, -7.06);  // west of door
+
+  // Sliding door visuals (no collision in span)
+  addSlidingDoor(-2.10, -7.06, 1.60, -7.06);   // top balkon
+  addSlidingDoor(-1.30,  6.74, 1.70,  6.74);   // bottom balkon
+
+  // === Interior partition walls (with door openings) ===
+
+  // Slaapkamer 1 south wall — door at x∈[-1.30, -0.40]
+  addWall(-5.45, -2.76, -1.30, -2.76);
+  addWall(-0.40, -2.76,  0.108, -2.76);
+  addDoorFrame(-1.30, -2.76, -0.40, -2.76);
+
+  // Slaapk1 / woonkamer east wall
+  addWall(0.108, -7.06, 0.108, -2.76);
+
+  // Badkamer groot east wall
+  addWall(-2.445, -2.76, -2.445, -0.078);
+  // Badkamer groot south wall — door at x∈[-3.20, -2.445]? No, door opens north into gang.
+  // Place door at gang side: south wall has door at x∈[-3.10, -2.445]
+  addWall(-5.45, -0.078, -3.10, -0.078);
+  addDoorFrame(-3.10, -0.078, -2.445, -0.078);
+
+  // Toilet north wall
+  addWall(-2.445, -1.863, -1.565, -1.863);
+  // Toilet east wall
+  addWall(-1.565, -1.863, -1.565, -0.078);
+  // Toilet south = open to gang via door
+  addDoorFrame(-2.445, -0.078, -1.565, -0.078);
+
+  // Berging B east wall (small closet north of toilet)
+  addWall(-1.565, -2.76, -1.565, -1.863);
+
+  // Berging A east wall (large closet south of badkamer, separates from gang horizontal)
+  addWall(-4.243, -0.078, -4.243, 1.00);
+
+  // Slaapkamer 2 north wall — door at x∈[-2.30, -1.50]
+  addWall(-5.45, 1.00, -2.30, 1.00);
+  addWall(-1.50, 1.00, -1.335, 1.00);
+  addDoorFrame(-2.30, 1.00, -1.50, 1.00);
+
+  // Slaapk2 east wall (separates from woonkamer gang east-arm)
+  addWall(-1.335, 1.00, -1.335, 5.593);
+
+  // Badkamer klein (en-suite) north + west wall
+  addWall(-3.00, 3.304, -1.95, 3.304);
+  addWall(-1.05, 3.304, -1.335, 3.304);
+  addDoorFrame(-1.95, 3.304, -1.05, 3.304);
+  addWall(-3.00, 3.304, -3.00, 5.593);
+
+  // Woonkamer west wall — partial.
+  // Runs along x = 0.108 ONLY from slaapk1 south wall to gang vertical south.
+  // South of that, slaapk2's east wall at x=-1.335 takes over the role of
+  // separating slaapk2 from the woonkamer; the area between x=-1.335 and
+  // x=0.108 at z∈[1.00, 5.593] is part of the woonkamer L-shape.
+  addWall(0.108, -2.76, 0.108, -0.20);     // north piece
+  addDoorFrame(0.108, -0.20, 0.108, 0.70); // doorway from gang vertical leg
+  addWall(0.108, 0.70, 0.108, 1.00);       // short closer to gang's south edge
+
+  // === Balcony railings ===
+  // Top balkon
+  addRailing(-2.10, -8.391, 3.609, -8.391);   // outer (north) edge
+  addRailing(-2.10, -7.06,  -2.10, -8.391);   // west edge
+  addRailing( 3.609, -7.06,  3.609, -8.391);  // east edge
+
+  // Bottom balkon
+  addRailing(-3.00, 10.34, 3.675, 10.34);     // outer (south) edge
+  addRailing(-3.00,  6.74, -3.00, 10.34);     // west edge
+  addRailing( 3.675, 6.74,  3.675, 10.34);    // east edge
+
+  // === Sky cyclorama (outside, beyond the balconies) ===
+  const skyMat = new THREE.MeshBasicMaterial({
+    map: skyTex,
+    side: THREE.BackSide,
+    fog: false,
+  });
+  const cyclorama = new THREE.Mesh(
+    new THREE.CylinderGeometry(40, 40, 22, 48, 1, true),
+    skyMat
+  );
+  cyclorama.position.set(0, 5, 1);
+  scene.add(cyclorama);
+  // Ground plane far outside (so balconies don't float over the void)
+  const outdoor = new THREE.Mesh(
+    new THREE.PlaneGeometry(80, 80),
+    new THREE.MeshStandardMaterial({ color: 0x6e7d4e, roughness: 1.0 })
+  );
+  outdoor.rotation.x = -Math.PI / 2;
+  outdoor.position.set(0, -2.0, 1);
+  scene.add(outdoor);
+}
+
+function placeFurniture() {
+  // === Slaapkamer 1 — queen bed centered on east wall facing west, wardrobe S
+  // room x∈[-5.45, 0.108], z∈[-7.06, -2.76]; center ≈ (-2.67, -4.91)
+  addBed(-0.78, -4.50, -Math.PI / 2, 2.00, 1.60);   // head against east wall (x=0.108)
+  addWardrobe(-4.10, -3.06, Math.PI, 2.20, 0.55);   // along south wall, facing north
+  // Bedside table at head of bed
+  const bn = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.50, 0.40), BEDFRAME_MAT);
+  bn.position.set(-0.40, 0.25, -3.20);
+  scene.add(bn);
+  addBoxObstacle(-0.40, -3.20, 0.45, 0.40);
+
+  // === Badkamer (groot) — tub on north wall, sink on south
+  addBathtub(-4.90, -2.30, 0, 1.65, 0.75);          // along north wall
+  addSink(-2.85, -2.50, -Math.PI / 2, 0.70);        // east wall
+
+  // === Toilet
+  addToiletBowl(-2.05, -1.55, -Math.PI / 2);
+
+  // === Slaapkamer 2 — double bed against west wall, wardrobe along east wall
+  addBed(-4.50,  2.80, Math.PI / 2, 2.00, 1.60);    // head south, foot north; long axis runs N-S
+  addWardrobe(-1.62, 2.20, -Math.PI / 2, 1.80, 0.55); // east wall, facing west
+  // Bedside table next to bed (south of bed's south edge)
+  const bn2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.50, 0.40), BEDFRAME_MAT);
+  bn2.position.set(-3.40, 0.25, 4.20);   // y=0.25 (height/2), z=4.20 (south of bed)
+  scene.add(bn2);
+  addBoxObstacle(-3.40, 4.20, 0.45, 0.40);
+
+  // === Badkamer klein (en-suite) — shower + sink + small toilet
+  addShowerStall(-2.55, 3.95, 0, 0.90, 0.90);
+  addSink(-1.60, 3.70, -Math.PI / 2, 0.55);
+  addToiletBowl(-1.60, 5.10, -Math.PI / 2);
+
+  // === Woonkamer === room is L-shape:
+  // Strip: x∈[0.108, 3.68], z∈[-7.06, 6.74]
+  // South ext: x∈[-3.00, 0.108], z∈[4.99, 6.74]
+
+  // Sofa along east wall facing west (sit looking inward)
+  addSofa(3.10, -2.00, -Math.PI / 2);
+  addCoffeeTable(1.80, -2.00);
+
+  // Dining table near middle of strip
+  addDiningTable(2.00, 1.50);
+
+  // Kitchen island in the south extension (the L's foot)
+  addKitchenIsland(-1.45, 6.20, 0, 2.115, 0.70);
+
+  // Small side cabinet/console along north end of woonkamer
+  const console_ = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.85, 0.4), CABINET_MAT);
+  console_.position.set(2.00, 0.425, -6.50);
+  scene.add(console_);
+  addBoxObstacle(2.00, -6.50, 1.4, 0.4);
+}
+
+function buildMuseum() {
+  buildApartment();
+  placeFurniture();
 }
 
 /* ===== LIGHTING ===== */
 function setupLights() {
-  // Hemisphere fill — warm sky / dim ground for the gallery feel
-  scene.add(new THREE.HemisphereLight(0xfff2d8, 0x3a2a1c, 0.55));
+  // Hemisphere fill — slightly cooler sky for a daytime-residential feel
+  scene.add(new THREE.HemisphereLight(0xeff4fa, 0x3a3028, 0.7));
 
-  // Room overhead lights — tighter falloff than before for more variation
-  [[0, 0], [-6, -8], [6, -8], [0, 8]].forEach(([x, z]) => {
-    const pl = new THREE.PointLight(0xfff0d0, 0.9, 12);
-    pl.position.set(x, WALL_HEIGHT - 0.2, z);
+  // Per-room ceiling lights. [x, z, color, intensity, range]
+  const lights = [
+    [-0.6,  -1.0, 0xfff0d0, 0.85, 5],   // gang
+    [-2.7,  -5.2, 0xfff0d0, 0.85, 6],   // slaapkamer 1
+    [-3.5,   2.7, 0xfff0d0, 0.85, 6],   // slaapkamer 2
+    [-3.9,  -1.4, 0xeef4ff, 0.75, 4],   // badkamer (groot) cooler
+    [-2.0,  -1.0, 0xeef4ff, 0.55, 3],   // toilet cooler
+    [-2.2,   3.7, 0xeef4ff, 0.55, 3],   // badkamer klein
+    [ 2.0,  -3.5, 0xfff0d0, 0.95, 7],   // woonkamer north
+    [ 2.0,   2.0, 0xfff0d0, 0.95, 7],   // woonkamer middle
+    [-1.0,   5.7, 0xfff0d0, 0.95, 7],   // woonkamer / kitchen
+  ];
+  for (const [x, z, color, intensity, range] of lights) {
+    const pl = new THREE.PointLight(color, intensity, range);
+    pl.position.set(x, WALL_HEIGHT - 0.15, z);
     scene.add(pl);
-  });
+    // Small flush-mount disc visual
+    const disc = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.10, 0.10, 0.02, 16),
+      new THREE.MeshBasicMaterial({ color: color })
+    );
+    disc.position.set(x, WALL_HEIGHT - 0.01, z);
+    scene.add(disc);
+  }
 
-  // Faux-skylight key from above-right — adds direction without shadow cost
-  const dir = new THREE.DirectionalLight(0xfff0d0, 0.25);
-  dir.position.set(8, 14, 6);
+  // Sun key from above — daylit balconies
+  const dir = new THREE.DirectionalLight(0xfff4d8, 0.55);
+  dir.position.set(6, 18, -8);
   scene.add(dir);
 }
 
@@ -1046,15 +1781,17 @@ function buildFrame(group) {
 
 function placePaintings() {
   // Positions: x, z, rotation (facing direction)
+  // All in living areas (woonkamer, slaapk1, slaapk2, gang) per design.
+  // ry: 0 → faces +Z (south); π → -Z (north); π/2 → +X (east); -π/2 → -X (west).
   const spots = [
-    { x: -9.75, z: -2, ry: Math.PI / 2 },     // main hall left wall
-    { x: -9.75, z: 2, ry: Math.PI / 2 },      // main hall left wall
-    { x: 9.75, z: -2, ry: -Math.PI / 2 },     // main hall right wall
-    { x: 9.75, z: 2, ry: -Math.PI / 2 },      // main hall right wall
-    { x: -6, z: -11.75, ry: 0 },               // left wing back wall
-    { x: 6, z: -11.75, ry: 0 },                // right wing back wall
-    { x: -2, z: 10.75, ry: Math.PI },          // back gallery
-    { x: 2, z: 10.75, ry: Math.PI },           // back gallery
+    { x:  3.57, z: -5.30, ry: -Math.PI / 2 }, // woonkamer east wall, north
+    { x:  3.57, z:  0.20, ry: -Math.PI / 2 }, // woonkamer east wall, middle (above doorway)
+    { x:  3.57, z:  4.40, ry: -Math.PI / 2 }, // woonkamer east wall, south
+    { x:  2.50, z:  6.63, ry: Math.PI },      // woonkamer south wall, east of balkon door
+    { x: -2.60, z: -6.96, ry: 0 },             // slaapkamer 1 north wall (south-facing)
+    { x: -5.35, z: -5.20, ry: Math.PI / 2 },   // slaapkamer 1 west wall (east-facing)
+    { x: -3.50, z:  1.10, ry: 0 },             // slaapkamer 2 north wall (south-facing)
+    { x: -1.28, z:  3.00, ry: Math.PI / 2 },   // corridor west wall (east-facing, on slaapk2 east wall)
   ];
 
   // 3–5 of the 8 paintings randomly hide a pot; the rest are decoy Mondriaans.
@@ -1088,7 +1825,7 @@ function placePaintings() {
     buildFrame(group);
     group.add(pMesh);
 
-    const yPos = PLAYER_H + 0.15;
+    const yPos = 1.55;  // painting center height for 2.8 m ceiling
     group.position.set(s.x, yPos, s.z);
     group.rotation.y = s.ry;
     scene.add(group);
@@ -1116,9 +1853,11 @@ function placePaintings() {
     if (isSideways) addBoxObstacle(plinthX, plinthZ, 0.4, 0.6);
     else            addBoxObstacle(plinthX, plinthZ, 0.6, 0.4);
 
-    // Spotlight on painting — tighter cone, brighter, softer edge than before
-    const spot = new THREE.SpotLight(0xfff5e0, 2.6, 4.5, Math.PI / 9, 0.5);
-    const off = new THREE.Vector3(0, 1.8, 1.0);
+    // Spotlight on painting — tighter cone, sized for the 2.8m residential ceiling
+    const spot = new THREE.SpotLight(0xfff5e0, 1.8, 3.0, Math.PI / 9, 0.5);
+    // Fixture must stay below the ceiling (2.8m). With painting center at
+    // yPos=1.55, an offset of (0, 1.18, 0.7) puts the fixture at y=2.73.
+    const off = new THREE.Vector3(0, 1.18, 0.7);
     off.applyAxisAngle(new THREE.Vector3(0, 1, 0), s.ry);
     spot.position.set(s.x + off.x, yPos + off.y, s.z + off.z);
     // Create a separate target object (don't use pMesh, scene.add would reparent it!)
@@ -1504,9 +2243,9 @@ function animate() {
   if (!wallCollide(nx, playerPos.z)) playerPos.x = nx;
   if (!wallCollide(playerPos.x, nz)) playerPos.z = nz;
 
-  // Bounds
-  playerPos.x = Math.max(-11.5, Math.min(11.5, playerPos.x));
-  playerPos.z = Math.max(-13.5, Math.min(12.5, playerPos.z));
+  // Bounds — apartment + balconies
+  playerPos.x = Math.max(-7.0, Math.min(4.5, playerPos.x));
+  playerPos.z = Math.max(-9.0, Math.min(11.0, playerPos.z));
 
   camera.position.copy(playerPos);
   camera.rotation.order = 'YXZ';
