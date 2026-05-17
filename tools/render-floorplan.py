@@ -158,6 +158,23 @@ def rooms():
     R.append({"name": "woonkamer", "label": "67,11 m²", "fill": "#e8f4ff",
               "polygon": w, "centroid": (8.6, 6.0)})
 
+    # Gang — both arms shrunk (narrower) AND extended west to follow the
+    # apartment's west facade (which jogs out at the bathroom-level: x=-1.00
+    # above y=5.85, x=-2.30 below y=5.85). The "white area left of the gang"
+    # in earlier renders is now coloured gang (user-confirmed).
+    # Drawn BEFORE the bathroom block so badkamer + toilet overlay on top.
+    g = [(-1.00, 4.20),   # NW: top of upper west facade at slaapk1 south
+         (0.50, 4.20),    # NE of vertical arm — narrower than before
+         (0.50, 8.00),    # south down the (narrow) vertical arm
+         (6.948, 8.00),   # east along the (thinner) horizontal arm to woonkamer
+         (6.948, 9.00),   # south to slaapk2 north line
+         (-2.30, 9.00),   # west along slaapk2 north line to far west facade
+         (-2.30, 5.85),   # north along lower west facade to bathroom-jog step
+         (-1.00, 5.85),   # east across the bathroom-jog step
+        ]
+    R.append({"name": "gang", "label": "13,77 m²", "fill": "#fcf6e3",
+              "polygon": g, "centroid": (-0.50, 7.50)})
+
     # Bathroom block: x=3.158–6.748, y=4.40–7.10 (3.59 × 2.70 = 9.69 m²).
     # East wall (x=6.748) is the shared wall with woonkamer (whose
     # interior west wall is at x=6.948 — 0.20 m thick partition).
@@ -177,20 +194,6 @@ def rooms():
     t = [(5.818, 5.315), (6.748, 5.315), (6.748, 7.10), (5.818, 7.10)]
     R.append({"name": "toilet", "label": "1,67 m²", "fill": "#eef0f4",
               "polygon": t, "centroid": (6.28, 6.21)})
-
-    # Gang — L-shape. Vertical arm narrower than before so the bathroom
-    # block can be wider. Horizontal arm extends EAST all the way to the
-    # woonkamer west wall (x=6.948) so the gang connects to the living
-    # room (user-confirmed).
-    g = [(0.20, 4.20),    # NW: meets slaapk1 south wall at west facade
-         (3.158, 4.20),   # NE of vertical arm — meets badkamer NW corner
-         (3.158, 7.10),   # down to bathroom block south wall
-         (6.948, 7.10),   # east along bathroom south to woonkamer west wall
-         (6.948, 9.00),   # south down to slaapk2 north line
-         (0.20, 9.00),    # west along slaapk2 north line back to west facade
-        ]
-    R.append({"name": "gang", "label": "13,77 m²", "fill": "#fcf6e3",
-              "polygon": g, "centroid": (1.7, 6.5)})
 
     # slaapkamer 2 — 4.115 × 4.593, SW area
     s2 = [(-2.30, 9.009), (1.815, 9.009), (1.815, 13.602), (-2.30, 13.602)]
