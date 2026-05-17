@@ -159,6 +159,10 @@ const NUM_PAINTINGS = 8;
 const PW = 1.1;   // painting width  (residential scale)
 const PH = 0.85;  // painting height
 
+// Apartment envelope (outermost walkable extent, balconies included).
+// Matches the railings at index.html addRailing(...) calls below.
+const ENV = { xMin: -2.30, xMax: 10.72, zMin: -1.331, zMax: 17.402 };
+
 /* ===== STATE ===== */
 let camera, scene, renderer, clock;
 // Spawn inside the gang (central horizontal arm, well clear of every wall).
@@ -2312,9 +2316,9 @@ function animate() {
   if (!wallCollide(nx, playerPos.z)) playerPos.x = nx;
   if (!wallCollide(playerPos.x, nz)) playerPos.z = nz;
 
-  // Bounds — apartment + balconies (apartment.json coords)
-  playerPos.x = Math.max(-2.5, Math.min(10.9, playerPos.x));
-  playerPos.z = Math.max(-1.5, Math.min(17.5, playerPos.z));
+  // Bounds — apartment + balconies (matches railings at ENV extents).
+  playerPos.x = Math.max(ENV.xMin + PLAYER_R, Math.min(ENV.xMax - PLAYER_R, playerPos.x));
+  playerPos.z = Math.max(ENV.zMin + PLAYER_R, Math.min(ENV.zMax - PLAYER_R, playerPos.z));
 
   camera.position.copy(playerPos);
   camera.rotation.order = 'YXZ';
