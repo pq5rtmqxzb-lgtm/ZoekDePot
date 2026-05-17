@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Floor plan comparison — Phase 2</title>
+<style>
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #f0f0f3; color: #222; }
+  header { padding: 12px 20px; background: #fff; border-bottom: 1px solid #ddd; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  p.sub { margin: 0; color: #666; font-size: 13px; }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #ddd; min-height: calc(100vh - 60px); }
+  section { background: #fff; padding: 12px; overflow: auto; }
+  section h2 { font-size: 13px; margin: 0 0 8px; color: #444; text-transform: uppercase; letter-spacing: .04em; }
+  .pane img, .pane svg, .pane object { display: block; max-width: 100%; height: auto; }
+  .legend { margin-top: 10px; font-size: 12px; color: #555; }
+  .legend code { background: #f5f5f7; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>apartment.json → floorplan.svg, side by side with the PDF</h1>
+  <p class="sub">Phase 2 of the rebuild. The right pane is rendered from <code>apartment.json</code> at the same 1:50 scale as the PDF on the left. Look for wall positions, room outlines, and dimension callouts that don't line up.</p>
+</header>
+<main>
+  <section class="pane">
+    <h2>Original PDF (YP_bouwnummer_25.pdf, Type R3.sp)</h2>
+    <img src="floorplan-pdf.png" alt="Original floor plan PDF, cropped to the plan area">
+  </section>
+  <section class="pane">
+    <h2>Rendered from apartment.json</h2>
+    <object data="floorplan.svg" type="image/svg+xml" aria-label="Rendered floor plan from apartment.json"></object>
+    <p class="legend">
+      Black: outer envelope (incl. NW zigzag estimate).<br>
+      Coloured fills: room polygons. Blue numbers: every raw mm callout from the JSON (placed at the position read from the PDF).
+      Red dot: world origin (0, 0) at the NW corner of the top facade. Grid is 1 m × 1 m.
+    </p>
+  </section>
+</main>
+</body>
+</html>
