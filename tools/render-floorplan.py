@@ -158,19 +158,16 @@ def rooms():
     R.append({"name": "woonkamer", "label": "67,11 m²", "fill": "#e8f4ff",
               "polygon": w, "centroid": (8.6, 6.0)})
 
-    # Gang — both arms shrunk (narrower) AND extended west to follow the
-    # apartment's west facade (which jogs out at the bathroom-level: x=-1.00
-    # above y=5.85, x=-2.30 below y=5.85). The "white area left of the gang"
-    # in earlier renders is now coloured gang (user-confirmed).
-    # Drawn BEFORE the bathroom block so badkamer + toilet overlay on top.
-    g = [(-1.00, 4.20),   # NW: top of upper west facade at slaapk1 south
-         (0.50, 4.20),    # NE of vertical arm — narrower than before
-         (0.50, 8.00),    # south down the (narrow) vertical arm
-         (6.948, 8.00),   # east along the (thinner) horizontal arm to woonkamer
-         (6.948, 9.00),   # south to slaapk2 north line
-         (-2.30, 9.00),   # west along slaapk2 north line to far west facade
+    # Gang — fills the entire central strip between slaapk1 (north) and
+    # slaapk2 (south), from west facade to woonkamer west wall. The
+    # bathroom block (drawn after gang) overlays in the middle so the
+    # gang appears C-shaped wrapping around the bathrooms.
+    g = [(-1.00, 4.20),   # NW: meets slaapk1 south wall at upper west facade
+         (6.948, 4.20),   # east along slaapk1 south wall to woonkamer west wall
+         (6.948, 9.00),   # south along woonkamer west wall to slaapk2 north
+         (-2.30, 9.00),   # west along slaapk2 north wall to lower west facade
          (-2.30, 5.85),   # north along lower west facade to bathroom-jog step
-         (-1.00, 5.85),   # east across the bathroom-jog step
+         (-1.00, 5.85),   # east across the bathroom-jog horizontal step
         ]
     R.append({"name": "gang", "label": "13,77 m²", "fill": "#fcf6e3",
               "polygon": g, "centroid": (-0.50, 7.50)})

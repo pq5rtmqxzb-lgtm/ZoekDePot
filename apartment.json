@@ -246,19 +246,17 @@
       ],
       "polygon_clockwise": [
         [-1.00, 4.20],
-        [0.50, 4.20],
-        [0.50, 8.00],
-        [6.948, 8.00],
+        [6.948, 4.20],
         [6.948, 9.00],
         [-2.30, 9.00],
         [-2.30, 5.85],
         [-1.00, 5.85]
       ],
-      "user_corrections_round5": [
-        "Both arms shrunk (vertical arm now 1.5 m wide east of facade, horizontal arm 1.0 m tall).",
-        "Gang extended west to follow the apartment west facade, including the bathroom-jog bulge (white area previously left of gang is now gang)."
+      "user_corrections_round6": [
+        "Gang absorbs the central white space (now wraps around the bathroom block from all sides except east).",
+        "Result: gang is a C-shape that fills the central strip; bathroom block is a rectangular cutout in the middle."
       ],
-      "computed_area_m2_estimate": 18.0,
+      "computed_area_m2_estimate": 32.6,
       "dimension_citations": [
         "PDF callout 6750 → likely the gang's long horizontal axis",
         "PDF callout 4585 → another gang segment",
@@ -316,17 +314,112 @@
     }
   ],
 
-  "openings_preliminary": [
-    {"type": "sliding_door", "wall": "top facade (slaapk1 section)",  "approx_span_x_m": [null, null], "note": "slaapk1 → top balkon (user-confirmed)"},
-    {"type": "sliding_door", "wall": "top facade (woonkamer section)","approx_span_x_m": [null, null], "note": "woonkamer → top balkon (user-confirmed)"},
-    {"type": "sliding_door", "wall": "south facade (woonkamer section)","approx_span_x_m": [null, null], "note": "woonkamer → bottom balkon (user-confirmed)"},
-    {"type": "sliding_door", "wall": "south facade (slaapk2 section)","approx_span_x_m": [null, null], "note": "slaapk2 → bottom balkon (user-confirmed: bottom balkon spans full width, accessible from slaapk2)"},
-    {"type": "door",         "wall": "gang → slaapkamer 1",           "width_m": null,                "note": "User-confirmed: gang has a door to slaapk1 (in addition to the previously-noted doors)"},
-    {"type": "door",         "wall": "gang → badkamer (groot)",       "width_m": null,                "note": "User-confirmed: gang has a door to badkamer groot"},
-    {"type": "door",         "wall": "gang → slaapkamer 2",           "width_m": null,                "note": "User-confirmed: slaapk2 has its own door to gang"},
-    {"type": "door",         "wall": "gang → toilet",                 "width_m": 0.93,                "note": "toilet door; clear width 930 mm"},
-    {"type": "door",         "wall": "gang → woonkamer",              "width_m": null,                "note": "Open passage from gang to woonkamer (entry to the living room); exact position TBD"},
-    {"type": "door",         "wall": "slaapk2 → badkamer (klein)",    "width_m": null,                "note": "Door inside slaapkamer 2 to its en-suite badkamer klein"}
+  "openings": [
+    {
+      "id": "balkon_top_slaapk1",
+      "type": "sliding_door",
+      "wall_segment": "top facade between x=0.50 and x=2.50 at y=0",
+      "span_x_m": [0.50, 2.50],
+      "width_m": 2.00,
+      "height_m": 2.40,
+      "from_room": "slaapkamer 1",
+      "to_room": "balkon (top)"
+    },
+    {
+      "id": "balkon_top_woonk",
+      "type": "sliding_door",
+      "wall_segment": "top facade between x=7.50 and x=10.20 at y=0",
+      "span_x_m": [7.50, 10.20],
+      "width_m": 2.70,
+      "height_m": 2.40,
+      "from_room": "woonkamer",
+      "to_room": "balkon (top)"
+    },
+    {
+      "id": "balkon_bot_woonk",
+      "type": "sliding_door",
+      "wall_segment": "south facade between x=7.00 and x=10.20 at y=13.802",
+      "span_x_m": [7.00, 10.20],
+      "width_m": 3.20,
+      "height_m": 2.40,
+      "from_room": "woonkamer",
+      "to_room": "balkon (bottom)"
+    },
+    {
+      "id": "balkon_bot_slaapk2",
+      "type": "sliding_door",
+      "wall_segment": "south facade between x=-1.50 and x=1.30 at y=13.802",
+      "span_x_m": [-1.50, 1.30],
+      "width_m": 2.80,
+      "height_m": 2.40,
+      "from_room": "slaapkamer 2",
+      "to_room": "balkon (bottom)"
+    },
+    {
+      "id": "door_gang_slaapk1",
+      "type": "door",
+      "wall_segment": "slaapk1 south wall, west portion (the 1845 mm section)",
+      "span_x_m": [0.80, 1.73],
+      "width_m": 0.93,
+      "height_m": 2.10,
+      "from_room": "gang",
+      "to_room": "slaapkamer 1"
+    },
+    {
+      "id": "door_gang_badkamer",
+      "type": "door",
+      "wall_segment": "badkamer south wall at y=7.10",
+      "span_at_y_m": 7.10,
+      "span_x_m": [3.50, 4.43],
+      "width_m": 0.93,
+      "height_m": 2.10,
+      "from_room": "gang",
+      "to_room": "badkamer (groot)"
+    },
+    {
+      "id": "door_badkamer_toilet",
+      "type": "door",
+      "wall_segment": "toilet west wall at x=5.818",
+      "span_y_m": [5.50, 6.43],
+      "width_m": 0.93,
+      "height_m": 2.10,
+      "from_room": "badkamer (groot)",
+      "to_room": "toilet"
+    },
+    {
+      "id": "door_gang_slaapk2",
+      "type": "door",
+      "wall_segment": "slaapk2 north wall at y=9.0, east end (near woonkamer)",
+      "span_at_y_m": 9.0,
+      "span_x_m": [0.80, 1.73],
+      "width_m": 0.93,
+      "height_m": 2.10,
+      "from_room": "gang",
+      "to_room": "slaapkamer 2"
+    },
+    {
+      "id": "door_gang_woonkamer",
+      "type": "open_passage",
+      "wall_segment": "woonkamer west wall at x=6.948, gang horizontal arm range y=6.50-7.80",
+      "span_at_x_m": 6.948,
+      "span_y_m": [6.50, 7.80],
+      "width_m": 1.30,
+      "height_m": 2.40,
+      "from_room": "gang",
+      "to_room": "woonkamer",
+      "note": "Wide open passage, not a hinged door"
+    },
+    {
+      "id": "door_slaapk2_badkklein",
+      "type": "door",
+      "wall_segment": "badk klein east wall at x=-0.63",
+      "span_at_x_m": -0.63,
+      "span_y_m": [10.20, 11.13],
+      "width_m": 0.93,
+      "height_m": 2.10,
+      "from_room": "slaapkamer 2",
+      "to_room": "badkamer (klein)"
+    }
   ],
 
   "uncertain": [
