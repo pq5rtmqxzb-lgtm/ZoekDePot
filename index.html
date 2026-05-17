@@ -191,8 +191,8 @@ const knobEl = document.getElementById('joystickKnob');
 
 /* ===== SHARED MATERIALS / OBJECTS ===== */
 const WALL_MAT = new THREE.MeshStandardMaterial({ color: 0xf0ece4, roughness: 0.92, metalness: 0 });
-const FLOOR_MAT = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.55, metalness: 0.05 });
-const CEIL_MAT = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });
+const FLOOR_MAT = new THREE.MeshStandardMaterial({ color: 0xd9be99, roughness: 0.55, metalness: 0.04 });
+const CEIL_MAT = new THREE.MeshStandardMaterial({ color: 0xfafaf7, roughness: 0.95 });
 const BASEBOARD_MAT = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.7 });
 const TRIM_MAT = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.55, metalness: 0.15 });
 const CROWN_MAT = new THREE.MeshStandardMaterial({ color: 0xe0dcd4, roughness: 0.8 });
@@ -312,10 +312,10 @@ function setupTextures() {
   WALL_MAT.map = plasterTex;
   WALL_MAT.needsUpdate = true;
 
-  // Wood plank floor — used as a prototype; each room clones with its own
-  // repeat so plank scale stays consistent across rooms of different sizes.
+  // Light wood plank floor (oak/blond) — used as a prototype; each room clones
+  // with its own repeat so plank scale stays consistent across room sizes.
   const plankTex = makeTexture((ctx, w, h) => {
-    const browns = ['#8a6a47', '#7a5a3d', '#956b48', '#82613f', '#6f5234'];
+    const blondes = ['#e2c9a4', '#d6b88e', '#e7d2ad', '#cdb287', '#dcc09a'];
     const planks = 4;
     const plankH = h / planks;
     for (let py = 0; py < planks; py++) {
@@ -325,11 +325,11 @@ function setupTextures() {
       for (let s = 0; s < segs; s++) {
         const x0 = ((s + offset) % segs) * (w / segs);
         const segW = w / segs;
-        ctx.fillStyle = browns[(py * 7 + s * 13) % browns.length];
+        ctx.fillStyle = blondes[(py * 7 + s * 13) % blondes.length];
         ctx.fillRect(x0, baseY, segW, plankH);
-        // Vertical grain
+        // Vertical grain — lighter, low-contrast warm-brown streaks
         for (let g = 0; g < 14; g++) {
-          ctx.strokeStyle = `rgba(34, 22, 12, ${0.10 + Math.random() * 0.16})`;
+          ctx.strokeStyle = `rgba(120, 85, 50, ${0.06 + Math.random() * 0.10})`;
           ctx.lineWidth = 0.6 + Math.random() * 0.9;
           const gx = x0 + Math.random() * segW;
           ctx.beginPath();
@@ -341,27 +341,52 @@ function setupTextures() {
           );
           ctx.stroke();
         }
-        // Knots
-        if (Math.random() < 0.35) {
+        // Knots — smaller and softer to keep the floor reading light
+        if (Math.random() < 0.30) {
           const kx = x0 + Math.random() * segW;
           const ky = baseY + plankH * (0.3 + Math.random() * 0.4);
-          ctx.fillStyle = 'rgba(28, 16, 8, 0.55)';
+          ctx.fillStyle = 'rgba(110, 75, 40, 0.35)';
           ctx.beginPath();
-          ctx.ellipse(kx, ky, 4 + Math.random() * 5, 2 + Math.random() * 3, 0, 0, Math.PI * 2);
+          ctx.ellipse(kx, ky, 3 + Math.random() * 4, 1.5 + Math.random() * 2.5, 0, 0, Math.PI * 2);
           ctx.fill();
         }
       }
       // Plank seam
-      ctx.fillStyle = 'rgba(18, 10, 5, 0.85)';
+      ctx.fillStyle = 'rgba(80, 55, 30, 0.55)';
       ctx.fillRect(0, baseY + plankH - 1, w, 2);
     }
     // Vertical seams every w/segs
-    ctx.fillStyle = 'rgba(18, 10, 5, 0.55)';
+    ctx.fillStyle = 'rgba(80, 55, 30, 0.40)';
     for (let s = 1; s < 3; s++) ctx.fillRect((w / 3) * s - 1, 0, 2, h);
   }, 1024, 512);
   plankTex.anisotropy = aniso;
   FLOOR_MAT.map = plankTex;
   FLOOR_MAT.needsUpdate = true;
+
+  // White paint ceiling — near-white base with a faint stipple so it
+  // catches light unevenly like a rolled ceiling rather than flat color.
+  const ceilingTex = makeTexture((ctx, w, h) => {
+    ctx.fillStyle = '#fafaf7';
+    ctx.fillRect(0, 0, w, h);
+    const img = ctx.getImageData(0, 0, w, h);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const n = (Math.random() - 0.5) * 6;
+      img.data[i]   = Math.max(0, Math.min(255, img.data[i]   + n));
+      img.data[i+1] = Math.max(0, Math.min(255, img.data[i+1] + n));
+      img.data[i+2] = Math.max(0, Math.min(255, img.data[i+2] + n));
+    }
+    ctx.putImageData(img, 0, 0);
+    // Sparse roller stipple — very low alpha
+    for (let i = 0; i < 80; i++) {
+      ctx.fillStyle = `rgba(220, 220, 215, ${0.05 + Math.random() * 0.08})`;
+      ctx.beginPath();
+      ctx.arc(Math.random() * w, Math.random() * h, 6 + Math.random() * 20, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }, 512, 512, 3, 3);
+  ceilingTex.anisotropy = aniso;
+  CEIL_MAT.map = ceilingTex;
+  CEIL_MAT.needsUpdate = true;
 
   // Walnut wall panel — used in the new addWallPanel() helper
   const walnutTex = makeTexture((ctx, w, h) => {
@@ -927,7 +952,17 @@ function addRoomFloor(rect, baseMat = FLOOR_MAT, tileW = 4, tileD = 2) {
   floor.position.set(cx, 0.001, cz);
   scene.add(floor);
 
-  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(w, d), CEIL_MAT);
+  // Ceiling — clone CEIL_MAT and scale the paint stipple to room size so the
+  // texture density stays consistent across small and large rooms.
+  const cMat = CEIL_MAT.clone();
+  if (CEIL_MAT.map) {
+    cMat.map = CEIL_MAT.map.clone();
+    cMat.map.needsUpdate = true;
+    cMat.map.wrapS = cMat.map.wrapT = THREE.RepeatWrapping;
+    cMat.map.repeat.set(Math.max(1, w / 2.5), Math.max(1, d / 2.5));
+    cMat.map.anisotropy = CEIL_MAT.map.anisotropy;
+  }
+  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(w, d), cMat);
   ceil.rotation.x = Math.PI / 2;
   ceil.position.set(cx, WALL_HEIGHT - 0.001, cz);
   scene.add(ceil);
