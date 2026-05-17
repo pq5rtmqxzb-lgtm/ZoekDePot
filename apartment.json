@@ -196,65 +196,70 @@
       "name": "badkamer (groot)",
       "level": "L0",
       "labeled_area_m2": 8.06,
-      "x_range_m": [3.385, 6.390],
-      "y_range_m": [4.40, 7.08],
-      "interior_w_m": 3.005,
-      "interior_d_m": 2.680,
-      "computed_area_m2": 8.053,
-      "dimension_citations": [
-        "PDF callout 3065 → interior E-W ≈ 3.005 m (the dim text reads 3065 mm; final width 3.005 m used to make area 8.05 m² match label 8.06)",
-        "Derived N-S 2.680 m so area = 8.053 m²",
-        "Position: central, east wall (x=6.390) ADJACENT to woonkamer west wall (user-confirmed)"
+      "shape": "L-shape: rectangle 3.59 × 2.70 with the toilet (0.93 × 1.785) cut out of the SE corner",
+      "x_range_m": [3.158, 6.748],
+      "y_range_m": [4.40, 7.10],
+      "polygon_clockwise": [
+        [3.158, 4.40],
+        [6.748, 4.40],
+        [6.748, 5.315],
+        [5.818, 5.315],
+        [5.818, 7.10],
+        [3.158, 7.10]
       ],
-      "uncertain": [
-        "The 1180, 1285, 2090, 2730, 1500 callouts are interior layout dims (tub, sink, etc.) — not envelope walls."
+      "interior_block_w_m": 3.590,
+      "interior_block_d_m": 2.700,
+      "computed_area_m2": 8.027,
+      "dimension_citations": [
+        "PDF callout 3065 → interior E-W ≈ 3.005 m (used 3.59 m for the COMBINED bathroom block to fit badkamer + toilet inside)",
+        "Bathroom block N-S = 2.70 m so block area = 9.69 m² ≈ badkamer 8.06 + toilet 1.67 m²",
+        "Position: east wall (x=6.748) shares 0.20 m partition with woonkamer west wall at x=6.948 (user-confirmed adjacent)",
+        "Toilet at SE corner cut out of the L-shape (user-confirmed)"
       ]
     },
     {
       "name": "toilet",
       "level": "L0",
       "labeled_area_m2": 1.67,
+      "location_in_badkamer": "SE (right-bottom) corner of badkamer, user-confirmed",
       "interior_w_m": 0.93,
       "interior_d_m": 1.785,
       "computed_area_m2": 1.660,
-      "x_range_m": [5.460, 6.390],
-      "y_range_m": [7.08, 8.865],
+      "x_range_m": [5.818, 6.748],
+      "y_range_m": [5.315, 7.10],
       "dimension_citations": [
         "PDF callout 930 → toilet E-W = 0.93 m (user-confirmed)",
         "PDF callout 1785 → toilet N-S = 1.785 m (user-confirmed)",
-        "Position: south of badkamer (groot), east wall ADJACENT to woonkamer (user-confirmed)"
+        "Inside badkamer's SE corner so east wall coincides with badkamer east wall (adjacent to woonkamer)"
       ]
     },
     {
       "name": "gang",
       "level": "L0",
       "labeled_area_m2": 13.77,
-      "shape_note": "L-shape. Vertical arm on the LEFT (west) running from slaapkamer 1's south wall down to the bathroom block's south wall. Horizontal arm runs east along the bathroom block's south wall to reach slaapkamer 2's door, with a notch for the toilet (which juts south).",
+      "shape_note": "L-shape. Vertical arm on the LEFT (west) running from slaapkamer 1's south wall down to the bathroom block's south wall. Horizontal arm runs east along the bathroom block's south wall ALL THE WAY to the woonkamer west wall — gang connects to woonkamer (user-confirmed).",
       "doors": [
         "→ slaapkamer 1 (top of vertical arm; user-confirmed)",
-        "→ badkamer groot (east face of vertical arm; user-confirmed)",
-        "→ toilet (from horizontal arm; user-confirmed)",
-        "→ slaapkamer 2 (south end; user-confirmed)",
-        "→ woonkamer (open passage from horizontal arm; exact position TBD)"
+        "→ badkamer (in the east face of the vertical arm or north face of horizontal arm; user-confirmed)",
+        "→ slaapkamer 2 (south end of horizontal arm; user-confirmed)",
+        "→ woonkamer (east end of horizontal arm; user-confirmed)"
       ],
       "polygon_clockwise": [
         [0.20, 4.20],
-        [3.385, 4.20],
-        [3.385, 7.08],
-        [5.460, 7.08],
-        [5.460, 8.865],
-        [6.390, 8.865],
-        [6.390, 9.00],
+        [3.158, 4.20],
+        [3.158, 7.10],
+        [6.948, 7.10],
+        [6.948, 9.00],
         [0.20, 9.00]
       ],
-      "computed_area_m2_estimate": 19.3,
+      "computed_area_m2_estimate": 21.4,
       "dimension_citations": [
         "PDF callout 6750 → likely the gang's long horizontal axis",
         "PDF callout 4585 → another gang segment",
         "PDF callouts 1645, 1375, 2220, 1200 are likely interior gang sub-dimensions"
       ],
       "uncertain": [
-        "Polygon overestimates labelled area (19.3 m² vs 13.77 m²). Likely cause: my wall positions don't yet reflect a narrower vertical arm or shorter horizontal arm. Will pin precisely once you confirm the overall shape."
+        "Polygon still overestimates labelled area (21.4 m² vs 13.77 m²). Likely one of the arms is shorter or narrower in the PDF. Open to further pinning."
       ]
     },
     {

@@ -51,18 +51,18 @@
 <polygon points="241.89,166.30 644.03,166.30 644.03,468.66 241.89,468.66 226.77,461.10 188.98,461.10 113.39,385.51 113.39,279.69 188.98,204.09 226.77,204.09 226.77,151.18" fill="#fff4e6" stroke="#888" stroke-width="0.6"/>
 <text x="453.54" y="303.87" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#222" >slaapkamer 1</text>
 <text x="453.54" y="332.60" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#555" >23,45 m²</text>
-<polygon points="644.03,166.30 1021.98,166.30 1021.98,1179.36 363.97,1179.36 363.97,831.50 644.03,831.50 644.03,468.66" fill="#e8f4ff" stroke="#888" stroke-width="0.6"/>
-<text x="831.50" y="515.53" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#222" >woonkamer</text>
-<text x="831.50" y="544.25" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#555" >67,11 m²</text>
-<polygon points="482.65,483.78 709.80,483.78 709.80,686.36 482.65,686.36" fill="#eaf6ec" stroke="#888" stroke-width="0.6"/>
-<text x="596.41" y="571.46" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#222" >badkamer</text>
-<text x="596.41" y="600.19" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#555" >8,06 m²</text>
-<polygon points="639.50,686.36 709.80,686.36 709.80,821.29 639.50,821.29" fill="#eef0f4" stroke="#888" stroke-width="0.6"/>
-<text x="675.02" y="740.03" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#222" >toilet</text>
-<text x="675.02" y="768.76" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#555" >1,67 m²</text>
-<polygon points="241.89,468.66 482.65,468.66 482.65,686.36 639.50,686.36 639.50,821.29 709.80,821.29 709.80,831.50 241.89,831.50" fill="#fcf6e3" stroke="#888" stroke-width="0.6"/>
-<text x="362.83" y="628.91" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#222" >gang</text>
-<text x="362.83" y="657.64" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#555" >13,77 m²</text>
+<polygon points="644.03,166.30 1021.98,166.30 1021.98,1179.36 363.97,1179.36 363.97,831.50 751.97,831.50 751.97,468.66 644.03,468.66" fill="#e8f4ff" stroke="#888" stroke-width="0.6"/>
+<text x="876.85" y="591.12" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#222" >woonkamer</text>
+<text x="876.85" y="619.84" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#555" >67,11 m²</text>
+<polygon points="465.49,483.78 736.86,483.78 736.86,552.94 666.56,552.94 666.56,687.87 465.49,687.87" fill="#eaf6ec" stroke="#888" stroke-width="0.6"/>
+<text x="578.27" y="568.44" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#222" >badkamer</text>
+<text x="578.27" y="597.17" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#555" >8,06 m²</text>
+<polygon points="666.56,552.94 736.86,552.94 736.86,687.87 666.56,687.87" fill="#eef0f4" stroke="#888" stroke-width="0.6"/>
+<text x="701.48" y="606.99" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#222" >toilet</text>
+<text x="701.48" y="635.72" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#555" >1,67 m²</text>
+<polygon points="241.89,468.66 465.49,468.66 465.49,687.87 751.97,687.87 751.97,831.50 241.89,831.50" fill="#fcf6e3" stroke="#888" stroke-width="0.6"/>
+<text x="355.28" y="628.91" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#222" >gang</text>
+<text x="355.28" y="657.64" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#555" >13,77 m²</text>
 <polygon points="52.91,832.18 363.97,832.18 363.97,1179.36 52.91,1179.36" fill="#fff4e6" stroke="#888" stroke-width="0.6"/>
 <text x="294.80" y="991.75" font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#222" >slaapkamer 2</text>
 <text x="294.80" y="1020.47" font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#555" >18,90 m²</text>
