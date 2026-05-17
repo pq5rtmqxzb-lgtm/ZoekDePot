@@ -159,6 +159,101 @@ const NUM_PAINTINGS = 8;
 const PW = 1.1;   // painting width  (residential scale)
 const PH = 0.85;  // painting height
 
+// Apartment envelope (outermost walkable extent, balconies included).
+// Matches the railings at index.html addRailing(...) calls below.
+const ENV = { xMin: -2.30, xMax: 10.72, zMin: -1.331, zMax: 17.402 };
+
+// Ceiling height — must stay in sync with apartment.json:levels[0].ceiling_height_m.
+// init() asserts this matches WALL_HEIGHT.
+const CEILING_FROM_JSON = 2.80;
+
+// Apartment geometry (walls, doors, sliding doors, railings).
+// Coordinates are wall CENTRELINES (matches addWall's WALL_THICK extrusion).
+// `kind` chooses the builder: wall = solid wall (adds collision segment),
+// door = decorative door frame (no collision in span), sliding = sliding-door
+// visual (no collision in span), railing = balcony rail (with collision).
+const APARTMENT_GEOM = [
+  // --- Top facade — sliding doors at slaapk1 (x∈[0.50,2.50]) and woonkamer (x∈[7.50,10.20])
+  { kind: 'wall',    x1:  0.00, z1:  0.00, x2:  0.50, z2:  0.00 },
+  { kind: 'wall',    x1:  2.50, z1:  0.00, x2:  7.50, z2:  0.00 },
+  { kind: 'wall',    x1: 10.20, z1:  0.00, x2: 10.72, z2:  0.00 },
+  { kind: 'sliding', x1:  0.50, z1:  0.00, x2:  2.50, z2:  0.00 }, // slaapk1
+  { kind: 'sliding', x1:  7.50, z1:  0.00, x2: 10.20, z2:  0.00 }, // woonkamer
+  // --- East facade (no openings)
+  { kind: 'wall',    x1: 10.72, z1:  0.00, x2: 10.72, z2: 13.802 },
+  // --- South facade — sliding doors at slaapk2 (x∈[-1.50,1.30]) and woonkamer (x∈[7.00,10.20])
+  { kind: 'wall',    x1: 10.72, z1: 13.802, x2: 10.20, z2: 13.802 },
+  { kind: 'wall',    x1:  7.00, z1: 13.802, x2:  1.30, z2: 13.802 },
+  { kind: 'wall',    x1: -1.50, z1: 13.802, x2: -2.30, z2: 13.802 },
+  { kind: 'sliding', x1:  7.00, z1: 13.802, x2: 10.20, z2: 13.802 }, // woonkamer
+  { kind: 'sliding', x1: -1.50, z1: 13.802, x2:  1.30, z2: 13.802 }, // slaapk2
+  // --- West facade (with bathroom-jog step)
+  { kind: 'wall',    x1: -2.30, z1: 13.802, x2: -2.30, z2:  5.85 },
+  { kind: 'wall',    x1: -2.30, z1:  5.85,  x2:  0.00, z2:  5.85 },
+  { kind: 'wall',    x1:  0.00, z1:  5.85,  x2:  0.00, z2:  4.10 },
+  // --- NW zigzag (six segments around the lift-shaft alcove)
+  { kind: 'wall',    x1:  0.00, z1:  4.10,  x2: -0.60, z2:  4.10 },
+  { kind: 'wall',    x1: -0.60, z1:  4.10,  x2: -1.55, z2:  3.10 },
+  { kind: 'wall',    x1: -1.55, z1:  3.10,  x2: -1.55, z2:  1.70 },
+  { kind: 'wall',    x1: -1.55, z1:  1.70,  x2: -0.60, z2:  0.70 },
+  { kind: 'wall',    x1: -0.60, z1:  0.70,  x2:  0.00, z2:  0.70 },
+  { kind: 'wall',    x1:  0.00, z1:  0.70,  x2:  0.00, z2:  0.00 },
+
+  // --- Slaapk1 east wall
+  { kind: 'wall',    x1:  5.52, z1:  0.20,  x2:  5.52, z2:  4.20 },
+  // --- Slaapk1 south wall — door at x∈[0.80, 1.73]
+  { kind: 'wall',    x1:  0.00, z1:  4.20,  x2:  0.80, z2:  4.20 },
+  { kind: 'door',    x1:  0.80, z1:  4.20,  x2:  1.73, z2:  4.20 },
+  { kind: 'wall',    x1:  1.73, z1:  4.20,  x2:  5.52, z2:  4.20 },
+  // --- Bathroom block — door to gang on south wall at x∈[3.50, 4.43]
+  { kind: 'wall',    x1:  3.158, z1: 4.40,  x2:  6.748, z2: 4.40 },
+  { kind: 'wall',    x1:  3.158, z1: 4.40,  x2:  3.158, z2: 7.10 },
+  { kind: 'wall',    x1:  6.748, z1: 4.40,  x2:  6.748, z2: 7.10 },
+  { kind: 'wall',    x1:  3.158, z1: 7.10,  x2:  3.50,  z2: 7.10 },
+  { kind: 'door',    x1:  3.50,  z1: 7.10,  x2:  4.43,  z2: 7.10 },
+  { kind: 'wall',    x1:  4.43,  z1: 7.10,  x2:  6.748, z2: 7.10 },
+  // --- Toilet partition (inside bathroom SE corner) — door on west wall at z∈[5.50, 6.43]
+  { kind: 'wall',    x1:  5.818, z1: 5.315, x2:  6.748, z2: 5.315 },
+  { kind: 'wall',    x1:  5.818, z1: 5.315, x2:  5.818, z2: 5.50 },
+  { kind: 'door',    x1:  5.818, z1: 5.50,  x2:  5.818, z2: 6.43 },
+  { kind: 'wall',    x1:  5.818, z1: 6.43,  x2:  5.818, z2: 7.10 },
+  // --- Slaapk2 north wall — door at x∈[0.80, 1.73]
+  { kind: 'wall',    x1: -2.30,  z1: 9.00,  x2:  0.80,  z2: 9.00 },
+  { kind: 'door',    x1:  0.80,  z1: 9.00,  x2:  1.73,  z2: 9.00 },
+  { kind: 'wall',    x1:  1.73,  z1: 9.00,  x2:  1.815, z2: 9.00 },
+  // --- Slaapk2 east wall
+  { kind: 'wall',    x1:  1.815, z1: 9.00,  x2:  1.815, z2: 13.802 },
+  // --- Badkamer klein (en-suite, NW corner of slaapk2) — door on east wall at z∈[10.20, 11.13]
+  { kind: 'wall',    x1: -2.30,  z1: 11.298, x2: -0.63, z2: 11.298 },
+  { kind: 'wall',    x1: -0.63,  z1:  9.009, x2: -0.63, z2: 10.20 },
+  { kind: 'door',    x1: -0.63,  z1: 10.20,  x2: -0.63, z2: 11.13 },
+  { kind: 'wall',    x1: -0.63,  z1: 11.13,  x2: -0.63, z2: 11.298 },
+  // --- Woonkamer west wall — open passage to gang at z∈[6.50, 7.80]
+  { kind: 'wall',    x1:  6.948, z1: 4.20,  x2:  6.948, z2: 6.50 },
+  { kind: 'door',    x1:  6.948, z1: 6.50,  x2:  6.948, z2: 7.80 },
+  { kind: 'wall',    x1:  6.948, z1: 7.80,  x2:  6.948, z2: 9.00 },
+
+  // --- Top balkon railings
+  { kind: 'railing', x1:  0.00,  z1: -1.331, x2: 10.72, z2: -1.331 }, // outer (N)
+  { kind: 'railing', x1:  0.00,  z1:  0.00,  x2:  0.00, z2: -1.331 }, // west
+  { kind: 'railing', x1: 10.72,  z1:  0.00,  x2: 10.72, z2: -1.331 }, // east
+  // --- Bottom balkon railings
+  { kind: 'railing', x1: -2.30,  z1: 17.402, x2: 10.72, z2: 17.402 }, // outer (S)
+  { kind: 'railing', x1: -2.30,  z1: 13.802, x2: -2.30, z2: 17.402 }, // west
+  { kind: 'railing', x1: 10.72,  z1: 13.802, x2: 10.72, z2: 17.402 }, // east
+];
+
+// Painting placement (used by placePaintings + checkPaintingClick).
+const PAINTING_CENTER_Y   = 1.55;        // painting centre height
+const PAINTING_WALL_GAP   = 0.06;        // distance from wall face to painting back
+const PLINTH_SIZE         = { w: 0.6, h: 0.5, d: 0.4 };
+const PLINTH_CAP_SIZE     = { w: 0.66, h: 0.04, d: 0.46 };
+const PLINTH_FORWARD      = 0.18;        // plinth centre offset from painting (room-side)
+// Spotlight fixture: PAINTING_CENTER_Y + 1.10 + 0.05 (housing top) = 2.70 m,
+// leaving 0.10 m clearance below the 2.80 m ceiling.
+const SPOTLIGHT_OFFSET    = { y: 1.10, z: 0.7 };
+const PAINTING_HIT_PAD    = 0.035;       // UV padding around pot bbox for click hit-test
+
 /* ===== STATE ===== */
 let camera, scene, renderer, clock;
 // Spawn inside the gang (central horizontal arm, well clear of every wall).
@@ -247,6 +342,12 @@ function makeTexture(drawFn, w, h, repU = 1, repV = 1) {
 
 /* ===== INIT ===== */
 function init() {
+  if (CEILING_FROM_JSON !== WALL_HEIGHT) {
+    console.warn(
+      'Ceiling height mismatch: WALL_HEIGHT =', WALL_HEIGHT,
+      'vs apartment.json levels[0].ceiling_height_m =', CEILING_FROM_JSON
+    );
+  }
   clock = new THREE.Clock();
 
   scene = new THREE.Scene();
@@ -802,6 +903,18 @@ function addBoxObstacle(cx, cz, w, d) {
   obstacles.push({ cx, cz, hw: w / 2, hd: d / 2 });
 }
 
+/* Same as addBoxObstacle but takes a local-frame footprint (w in local x,
+ * d in local z) plus a Y rotation, and emits the AABB of the rotated rect.
+ * For ry ∈ {0, ±π/2, π} this reduces to swapping w/d; for arbitrary
+ * angles it produces the correct enclosing axis-aligned box. */
+function addRotatedBoxObstacle(cx, cz, w, d, ry) {
+  const c = Math.abs(Math.cos(ry));
+  const s = Math.abs(Math.sin(ry));
+  const aabbW = w * c + d * s;
+  const aabbD = w * s + d * c;
+  obstacles.push({ cx, cz, hw: aabbW / 2, hd: aabbD / 2 });
+}
+
 /* Add a sliding-glass door span — visual only, no wall collision in the span.
  * Pure decorative: frame + 2 glass panes. Forest backdrop is provided by the
  * sky cyclorama outside. */
@@ -1032,9 +1145,7 @@ function addBed(x, z, ry, w, d) {
   }
 
   // Collision AABB — axis-aligned, computed for the bed's footprint
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, d, w);
-  else            addBoxObstacle(x, z, w, d);
+  addRotatedBoxObstacle(x, z, w, d, ry);
 }
 
 function addSofa(x, z, ry) {
@@ -1080,9 +1191,7 @@ function addSofa(x, z, ry) {
     cu.rotation.y = ry;
     scene.add(cu);
   }
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, d, w);
-  else            addBoxObstacle(x, z, w, d);
+  addRotatedBoxObstacle(x, z, w, d, ry);
 }
 
 function addCoffeeTable(x, z) {
@@ -1186,9 +1295,7 @@ function addKitchenIsland(x, z, ry, w = 2.115, d = 0.70) {
   sink.rotation.y = ry;
   scene.add(sink);
 
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, d, w);
-  else            addBoxObstacle(x, z, w, d);
+  addRotatedBoxObstacle(x, z, w, d, ry);
 }
 
 function addBathtub(x, z, ry, w = 1.65, d = 0.75) {
@@ -1213,9 +1320,7 @@ function addBathtub(x, z, ry, w = 1.65, d = 0.75) {
   tap.position.set(x + trx, 0.62, z + trz);
   scene.add(tap);
 
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, d, w);
-  else            addBoxObstacle(x, z, w, d);
+  addRotatedBoxObstacle(x, z, w, d, ry);
 }
 
 function addToiletBowl(x, z, ry) {
@@ -1240,9 +1345,7 @@ function addToiletBowl(x, z, ry) {
   );
   bowl.rotation.y = ry;
   scene.add(bowl);
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, 0.55, 0.42);
-  else            addBoxObstacle(x, z, 0.42, 0.55);
+  addRotatedBoxObstacle(x, z, 0.42, 0.55, ry);
 }
 
 function addSink(x, z, ry, w = 0.7) {
@@ -1268,9 +1371,7 @@ function addSink(x, z, ry, w = 0.7) {
   );
   mirror.rotation.y = ry;
   scene.add(mirror);
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, 0.45, w);
-  else            addBoxObstacle(x, z, w, 0.45);
+  addRotatedBoxObstacle(x, z, w, 0.45, ry);
 }
 
 function addWardrobe(x, z, ry, w = 1.6, d = 0.55) {
@@ -1295,9 +1396,7 @@ function addWardrobe(x, z, ry, w = 1.6, d = 0.55) {
     seam.rotation.y = ry;
     scene.add(seam);
   }
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, d, w);
-  else            addBoxObstacle(x, z, w, d);
+  addRotatedBoxObstacle(x, z, w, d, ry);
 }
 
 function addShowerStall(x, z, ry, w = 0.9, d = 0.9) {
@@ -1386,97 +1485,16 @@ function buildApartment() {
   addRoomFloor({ x1: 0.00, z1: -1.331, x2: 10.72, z2: 0.00 }, STONE_TILE_MAT, 1.5, 1.5);
   addRoomFloor({ x1: -2.30, z1: 13.802, x2: 10.72, z2: 17.402 }, STONE_TILE_MAT, 1.5, 1.5);
 
-  // === Outer envelope walls ===
-  // Top facade — broken by two sliding doors:
-  //   slaapk1: x∈[0.50, 2.50]; woonkamer: x∈[7.50, 10.20]
-  addWall(0.00, 0.00, 0.50, 0.00);
-  addWall(2.50, 0.00, 7.50, 0.00);
-  addWall(10.20, 0.00, 10.72, 0.00);
-
-  // East facade (no doors)
-  addWall(10.72, 0.00, 10.72, 13.802);
-
-  // South facade — broken by two sliding doors:
-  //   slaapk2: x∈[-1.50, 1.30]; woonkamer: x∈[7.00, 10.20]
-  addWall(10.72, 13.802, 10.20, 13.802);
-  addWall(7.00, 13.802, 1.30, 13.802);
-  addWall(-1.50, 13.802, -2.30, 13.802);
-
-  // West facade (lower, after bathroom-jog)
-  addWall(-2.30, 13.802, -2.30, 5.85);
-  // Bathroom-jog horizontal step
-  addWall(-2.30, 5.85, 0.00, 5.85);
-  // West facade (upper, between jog and the NW zigzag end)
-  addWall(0.00, 5.85, 0.00, 4.10);
-
-  // NW zigzag — six segments tracing the lift-shaft alcove
-  addWall(0.00, 4.10, -0.60, 4.10);   // step west at zigzag bottom
-  addWall(-0.60, 4.10, -1.55, 3.10);  // diagonal NW
-  addWall(-1.55, 3.10, -1.55, 1.70);  // vertical (1397 mm)
-  addWall(-1.55, 1.70, -0.60, 0.70);  // diagonal NE
-  addWall(-0.60, 0.70, 0.00, 0.70);   // step east
-  addWall(0.00, 0.70, 0.00, 0.00);    // vertical to top facade NW
-
-  // === Interior walls ===
-
-  // Slaapk1 east wall — separates slaapk1 from woonkamer north strip
-  addWall(5.52, 0.20, 5.52, 4.20);
-
-  // Slaapk1 south wall — door at x∈[0.80, 1.73]
-  addWall(0.00, 4.20, 0.80, 4.20);
-  addDoorFrame(0.80, 4.20, 1.73, 4.20);
-  addWall(1.73, 4.20, 5.52, 4.20);
-
-  // Bathroom block: north + west + east walls + south with gang door
-  addWall(3.158, 4.40, 6.748, 4.40);              // north wall
-  addWall(3.158, 4.40, 3.158, 7.10);              // west wall
-  addWall(6.748, 4.40, 6.748, 7.10);              // east wall (shared partition with woonkamer)
-  addWall(3.158, 7.10, 3.50, 7.10);               // south wall west of gang door
-  addDoorFrame(3.50, 7.10, 4.43, 7.10);
-  addWall(4.43, 7.10, 6.748, 7.10);               // south wall east of gang door
-
-  // Toilet partition inside the bathroom block (SE corner)
-  addWall(5.818, 5.315, 6.748, 5.315);            // toilet north wall
-  addWall(5.818, 5.315, 5.818, 5.50);             // toilet west wall, above door
-  addDoorFrame(5.818, 5.50, 5.818, 6.43);
-  addWall(5.818, 6.43, 5.818, 7.10);              // toilet west wall, below door
-
-  // Slaapk2 north wall — door at x∈[0.80, 1.73] (near east end, towards gang)
-  addWall(-2.30, 9.00, 0.80, 9.00);
-  addDoorFrame(0.80, 9.00, 1.73, 9.00);
-  addWall(1.73, 9.00, 1.815, 9.00);
-
-  // Slaapk2 east wall — separates from woonkamer south extension
-  addWall(1.815, 9.00, 1.815, 13.802);
-
-  // Badkamer klein (en-suite, NW corner of slaapk2)
-  addWall(-2.30, 11.298, -0.63, 11.298);          // south wall
-  addWall(-0.63, 9.009, -0.63, 10.20);            // east wall north of door
-  addDoorFrame(-0.63, 10.20, -0.63, 11.13);
-  addWall(-0.63, 11.13, -0.63, 11.298);
-
-  // Woonkamer west wall — separates woonkamer east strip from gang
-  // (and from the bathroom east wall, which has its own 0.20 m partition)
-  // Open passage to gang at z∈[6.50, 7.80].
-  addWall(6.948, 4.20, 6.948, 6.50);
-  addDoorFrame(6.948, 6.50, 6.948, 7.80);
-  addWall(6.948, 7.80, 6.948, 9.00);
-
-  // === Sliding door visuals ===
-  addSlidingDoor(0.50, 0.00, 2.50, 0.00);            // top balkon · slaapk1
-  addSlidingDoor(7.50, 0.00, 10.20, 0.00);           // top balkon · woonkamer
-  addSlidingDoor(7.00, 13.802, 10.20, 13.802);       // bottom balkon · woonkamer
-  addSlidingDoor(-1.50, 13.802, 1.30, 13.802);       // bottom balkon · slaapk2
-
-  // === Balcony railings (each balkon spans the full apartment width) ===
-  // Top balkon
-  addRailing(0.00, -1.331, 10.72, -1.331);   // outer (north) edge
-  addRailing(0.00, 0.00, 0.00, -1.331);      // west edge
-  addRailing(10.72, 0.00, 10.72, -1.331);    // east edge
-  // Bottom balkon
-  addRailing(-2.30, 17.402, 10.72, 17.402);  // outer (south) edge
-  addRailing(-2.30, 13.802, -2.30, 17.402);  // west edge
-  addRailing(10.72, 13.802, 10.72, 17.402);  // east edge
+  // Walls, doors, sliding-door visuals and railings — driven by APARTMENT_GEOM.
+  const geomDispatch = {
+    wall:    addWall,
+    door:    addDoorFrame,
+    sliding: addSlidingDoor,
+    railing: addRailing,
+  };
+  for (const g of APARTMENT_GEOM) {
+    geomDispatch[g.kind](g.x1, g.z1, g.x2, g.z2);
+  }
 
   // === Sky cyclorama (outside, beyond the balconies) ===
   const skyMat = new THREE.MeshBasicMaterial({
@@ -1849,18 +1867,18 @@ function buildFrame(group) {
 }
 
 function placePaintings() {
-  // Positions: x, z, rotation (facing direction)
-  // All in living areas (woonkamer, slaapk1, slaapk2, gang) per design.
+  // (wx, wz) = point ON the wall face; painting hangs PAINTING_WALL_GAP forward
+  // along its local +Z, which after ry rotation gives the room-side normal.
   // ry: 0 → faces +Z (south); π → -Z (north); π/2 → +X (east); -π/2 → -X (west).
   const spots = [
-    { x:  3.50, z:  0.30, ry: 0 },              // slaapkamer 1 north wall (south-facing)
-    { x:  5.40, z:  1.00, ry: -Math.PI / 2 },   // slaapkamer 1 east wall, north of bed
-    { x: 10.41, z:  2.50, ry: -Math.PI / 2 },   // woonkamer east wall, north strip
-    { x: 10.41, z:  6.50, ry: -Math.PI / 2 },   // woonkamer east wall, middle
-    { x: 10.41, z: 11.50, ry: -Math.PI / 2 },   // woonkamer east wall, south extension
-    { x:  5.00, z: 13.50, ry: Math.PI },        // woonkamer south wall (north-facing)
-    { x:  1.71, z: 12.00, ry: -Math.PI / 2 },   // slaapkamer 2 east wall, south end
-    { x:  6.84, z:  5.00, ry: -Math.PI / 2 },   // gang east wall (woonkamer side, north of door)
+    { wx:  3.50, wz:  0.10, ry: 0 },              // slaapk1 north facade (south-facing)
+    { wx:  5.42, wz:  3.80, ry: -Math.PI / 2 },   // slaapk1 east wall, south of bed (bed footprint x∈[3.60,5.20], z∈[1.00,3.00])
+    { wx: 10.62, wz:  2.50, ry: -Math.PI / 2 },   // woonkamer east facade, north strip
+    { wx: 10.62, wz:  6.50, ry: -Math.PI / 2 },   // woonkamer east facade, middle
+    { wx: 10.62, wz: 11.50, ry: -Math.PI / 2 },   // woonkamer east facade, south extension
+    { wx:  5.00, wz: 13.70, ry: Math.PI },        // woonkamer south facade (north-facing)
+    { wx:  1.715, wz: 9.50, ry: -Math.PI / 2 },   // slaapk2 east wall, north of bed (bed footprint x∈[0.05,1.65], z∈[11.00,13.00])
+    { wx:  5.20, wz:  7.20, ry: 0 },              // bathroom south wall (south-facing into gang)
   ];
 
   // 3–5 of the 8 paintings randomly hide a pot; the rest are decoy Mondriaans.
@@ -1894,44 +1912,48 @@ function placePaintings() {
     buildFrame(group);
     group.add(pMesh);
 
-    const yPos = 1.55;  // painting center height for 2.8 m ceiling
-    group.position.set(s.x, yPos, s.z);
+    // Translate the wall-anchor (wx, wz) forward by PAINTING_WALL_GAP along
+    // the painting's local +Z so the back of the canvas sits just off the wall.
+    const yAxis = new THREE.Vector3(0, 1, 0);
+    const wallForward = new THREE.Vector3(0, 0, PAINTING_WALL_GAP).applyAxisAngle(yAxis, s.ry);
+    const groupX = s.wx + wallForward.x;
+    const groupZ = s.wz + wallForward.z;
+    group.position.set(groupX, PAINTING_CENTER_Y, groupZ);
     group.rotation.y = s.ry;
     scene.add(group);
 
     // Stone plinth on the floor below each painting + a contrasting top cap.
     // The plinth protrudes into the room, so register it as an obstacle so
     // the player can't phase through it when hugging the wall.
-    const plinth = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.4), PLINTH_MAT);
-    const plinthOff = new THREE.Vector3(0, 0, 0.18).applyAxisAngle(
-      new THREE.Vector3(0, 1, 0), s.ry
+    const plinth = new THREE.Mesh(
+      new THREE.BoxGeometry(PLINTH_SIZE.w, PLINTH_SIZE.h, PLINTH_SIZE.d),
+      PLINTH_MAT
     );
-    const plinthX = s.x + plinthOff.x;
-    const plinthZ = s.z + plinthOff.z;
-    plinth.position.set(plinthX, 0.25, plinthZ);
+    const plinthOff = new THREE.Vector3(0, 0, PLINTH_FORWARD).applyAxisAngle(yAxis, s.ry);
+    const plinthX = groupX + plinthOff.x;
+    const plinthZ = groupZ + plinthOff.z;
+    plinth.position.set(plinthX, PLINTH_SIZE.h / 2, plinthZ);
     plinth.rotation.y = s.ry;
     scene.add(plinth);
-    const plinthCap = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.04, 0.46), TRIM_MAT);
-    plinthCap.position.set(plinthX, 0.52, plinthZ);
+    const plinthCap = new THREE.Mesh(
+      new THREE.BoxGeometry(PLINTH_CAP_SIZE.w, PLINTH_CAP_SIZE.h, PLINTH_CAP_SIZE.d),
+      TRIM_MAT
+    );
+    plinthCap.position.set(plinthX, PLINTH_SIZE.h + PLINTH_CAP_SIZE.h / 2, plinthZ);
     plinthCap.rotation.y = s.ry;
     scene.add(plinthCap);
-    // AABB obstacle: plinth's XZ footprint depends on s.ry — for axis-aligned
-    // painting rotations (0, ±π/2, π) the footprint is just 0.6 × 0.4 swapped
-    // when the painting is rotated 90°.
-    const isSideways = Math.abs(Math.cos(s.ry)) < 0.5;
-    if (isSideways) addBoxObstacle(plinthX, plinthZ, 0.4, 0.6);
-    else            addBoxObstacle(plinthX, plinthZ, 0.6, 0.4);
+    // AABB obstacle: footprint computed from rotated local box (w × d).
+    addRotatedBoxObstacle(plinthX, plinthZ, PLINTH_SIZE.w, PLINTH_SIZE.d, s.ry);
 
-    // Spotlight on painting — tighter cone, sized for the 2.8m residential ceiling
+    // Spotlight on painting — tighter cone, sized for the 2.8m residential ceiling.
+    // Fixture sits at PAINTING_CENTER_Y + SPOTLIGHT_OFFSET.y; housing top is +0.05.
     const spot = new THREE.SpotLight(0xfff5e0, 1.8, 3.0, Math.PI / 9, 0.5);
-    // Fixture must stay below the ceiling (2.8m). With painting center at
-    // yPos=1.55, an offset of (0, 1.18, 0.7) puts the fixture at y=2.73.
-    const off = new THREE.Vector3(0, 1.18, 0.7);
-    off.applyAxisAngle(new THREE.Vector3(0, 1, 0), s.ry);
-    spot.position.set(s.x + off.x, yPos + off.y, s.z + off.z);
+    const off = new THREE.Vector3(0, SPOTLIGHT_OFFSET.y, SPOTLIGHT_OFFSET.z);
+    off.applyAxisAngle(yAxis, s.ry);
+    spot.position.set(groupX + off.x, PAINTING_CENTER_Y + off.y, groupZ + off.z);
     // Create a separate target object (don't use pMesh, scene.add would reparent it!)
     const spotTarget = new THREE.Object3D();
-    spotTarget.position.set(s.x, yPos, s.z);
+    spotTarget.position.set(groupX, PAINTING_CENTER_Y, groupZ);
     spot.target = spotTarget;
     scene.add(spot);
     scene.add(spotTarget);
@@ -1956,7 +1978,7 @@ function placePaintings() {
       potInfo,
       hasPot,
       found: false,
-      worldPos: new THREE.Vector3(s.x, yPos, s.z),
+      worldPos: new THREE.Vector3(groupX, PAINTING_CENTER_Y, groupZ),
       index: idx,
     });
   });
@@ -2158,7 +2180,7 @@ function checkPaintingClick(sx, sy) {
   const u = hit.uv.x;
   const v = 1 - hit.uv.y; // flip V
   const pi = painting.potInfo;
-  const pad = 0.035;
+  const pad = PAINTING_HIT_PAD;
 
   if (u >= pi.u0 - pad && u <= pi.u1 + pad && v >= pi.v0 - pad && v <= pi.v1 + pad) {
     onFoundPot(painting);
@@ -2312,9 +2334,9 @@ function animate() {
   if (!wallCollide(nx, playerPos.z)) playerPos.x = nx;
   if (!wallCollide(playerPos.x, nz)) playerPos.z = nz;
 
-  // Bounds — apartment + balconies (apartment.json coords)
-  playerPos.x = Math.max(-2.5, Math.min(10.9, playerPos.x));
-  playerPos.z = Math.max(-1.5, Math.min(17.5, playerPos.z));
+  // Bounds — apartment + balconies (matches railings at ENV extents).
+  playerPos.x = Math.max(ENV.xMin + PLAYER_R, Math.min(ENV.xMax - PLAYER_R, playerPos.x));
+  playerPos.z = Math.max(ENV.zMin + PLAYER_R, Math.min(ENV.zMax - PLAYER_R, playerPos.z));
 
   camera.position.copy(playerPos);
   camera.rotation.order = 'YXZ';
