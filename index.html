@@ -161,8 +161,8 @@ const PH = 0.85;  // painting height
 
 /* ===== STATE ===== */
 let camera, scene, renderer, clock;
-// Spawn inside the gang (central corridor) in apartment.json coords.
-const playerPos = new THREE.Vector3(3.0, PLAYER_H, 7.0);
+// Spawn inside the gang (central horizontal arm, well clear of every wall).
+const playerPos = new THREE.Vector3(2.0, PLAYER_H, 8.0);
 let yaw = 0, pitch = 0;
 let moveF = 0, moveR = 0;
 const paintings = [];
@@ -192,7 +192,7 @@ const knobEl = document.getElementById('joystickKnob');
 /* ===== SHARED MATERIALS / OBJECTS ===== */
 const WALL_MAT = new THREE.MeshStandardMaterial({ color: 0xf0ece4, roughness: 0.92, metalness: 0 });
 const FLOOR_MAT = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.55, metalness: 0.05 });
-const CEIL_MAT = new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: 0.95 });
+const CEIL_MAT = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });
 const BASEBOARD_MAT = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.7 });
 const TRIM_MAT = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.55, metalness: 0.15 });
 const CROWN_MAT = new THREE.MeshStandardMaterial({ color: 0xe0dcd4, roughness: 0.8 });
