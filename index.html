@@ -163,6 +163,21 @@ const PH = 0.85;  // painting height
 // Matches the railings at index.html addRailing(...) calls below.
 const ENV = { xMin: -2.30, xMax: 10.72, zMin: -1.331, zMax: 17.402 };
 
+// Ceiling height — must stay in sync with apartment.json:levels[0].ceiling_height_m.
+// init() asserts this matches WALL_HEIGHT.
+const CEILING_FROM_JSON = 2.80;
+
+// Painting placement (used by placePaintings + checkPaintingClick).
+const PAINTING_CENTER_Y   = 1.55;        // painting centre height
+const PAINTING_WALL_GAP   = 0.06;        // distance from wall face to painting back
+const PLINTH_SIZE         = { w: 0.6, h: 0.5, d: 0.4 };
+const PLINTH_CAP_SIZE     = { w: 0.66, h: 0.04, d: 0.46 };
+const PLINTH_FORWARD      = 0.18;        // plinth centre offset from painting (room-side)
+// Spotlight fixture: PAINTING_CENTER_Y + 1.10 + 0.05 (housing top) = 2.70 m,
+// leaving 0.10 m clearance below the 2.80 m ceiling.
+const SPOTLIGHT_OFFSET    = { y: 1.10, z: 0.7 };
+const PAINTING_HIT_PAD    = 0.035;       // UV padding around pot bbox for click hit-test
+
 /* ===== STATE ===== */
 let camera, scene, renderer, clock;
 // Spawn inside the gang (central horizontal arm, well clear of every wall).
@@ -251,6 +266,12 @@ function makeTexture(drawFn, w, h, repU = 1, repV = 1) {
 
 /* ===== INIT ===== */
 function init() {
+  if (CEILING_FROM_JSON !== WALL_HEIGHT) {
+    console.warn(
+      'Ceiling height mismatch: WALL_HEIGHT =', WALL_HEIGHT,
+      'vs apartment.json levels[0].ceiling_height_m =', CEILING_FROM_JSON
+    );
+  }
   clock = new THREE.Clock();
 
   scene = new THREE.Scene();
@@ -1898,44 +1919,48 @@ function placePaintings() {
     buildFrame(group);
     group.add(pMesh);
 
-    const yPos = 1.55;  // painting center height for 2.8 m ceiling
-    group.position.set(s.x, yPos, s.z);
+    group.position.set(s.x, PAINTING_CENTER_Y, s.z);
     group.rotation.y = s.ry;
     scene.add(group);
 
     // Stone plinth on the floor below each painting + a contrasting top cap.
     // The plinth protrudes into the room, so register it as an obstacle so
     // the player can't phase through it when hugging the wall.
-    const plinth = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.4), PLINTH_MAT);
-    const plinthOff = new THREE.Vector3(0, 0, 0.18).applyAxisAngle(
+    const plinth = new THREE.Mesh(
+      new THREE.BoxGeometry(PLINTH_SIZE.w, PLINTH_SIZE.h, PLINTH_SIZE.d),
+      PLINTH_MAT
+    );
+    const plinthOff = new THREE.Vector3(0, 0, PLINTH_FORWARD).applyAxisAngle(
       new THREE.Vector3(0, 1, 0), s.ry
     );
     const plinthX = s.x + plinthOff.x;
     const plinthZ = s.z + plinthOff.z;
-    plinth.position.set(plinthX, 0.25, plinthZ);
+    plinth.position.set(plinthX, PLINTH_SIZE.h / 2, plinthZ);
     plinth.rotation.y = s.ry;
     scene.add(plinth);
-    const plinthCap = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.04, 0.46), TRIM_MAT);
-    plinthCap.position.set(plinthX, 0.52, plinthZ);
+    const plinthCap = new THREE.Mesh(
+      new THREE.BoxGeometry(PLINTH_CAP_SIZE.w, PLINTH_CAP_SIZE.h, PLINTH_CAP_SIZE.d),
+      TRIM_MAT
+    );
+    plinthCap.position.set(plinthX, PLINTH_SIZE.h + PLINTH_CAP_SIZE.h / 2, plinthZ);
     plinthCap.rotation.y = s.ry;
     scene.add(plinthCap);
     // AABB obstacle: plinth's XZ footprint depends on s.ry — for axis-aligned
     // painting rotations (0, ±π/2, π) the footprint is just 0.6 × 0.4 swapped
     // when the painting is rotated 90°.
     const isSideways = Math.abs(Math.cos(s.ry)) < 0.5;
-    if (isSideways) addBoxObstacle(plinthX, plinthZ, 0.4, 0.6);
-    else            addBoxObstacle(plinthX, plinthZ, 0.6, 0.4);
+    if (isSideways) addBoxObstacle(plinthX, plinthZ, PLINTH_SIZE.d, PLINTH_SIZE.w);
+    else            addBoxObstacle(plinthX, plinthZ, PLINTH_SIZE.w, PLINTH_SIZE.d);
 
-    // Spotlight on painting — tighter cone, sized for the 2.8m residential ceiling
+    // Spotlight on painting — tighter cone, sized for the 2.8m residential ceiling.
+    // Fixture sits at PAINTING_CENTER_Y + SPOTLIGHT_OFFSET.y; housing top is +0.05.
     const spot = new THREE.SpotLight(0xfff5e0, 1.8, 3.0, Math.PI / 9, 0.5);
-    // Fixture must stay below the ceiling (2.8m). With painting center at
-    // yPos=1.55, an offset of (0, 1.18, 0.7) puts the fixture at y=2.73.
-    const off = new THREE.Vector3(0, 1.18, 0.7);
+    const off = new THREE.Vector3(0, SPOTLIGHT_OFFSET.y, SPOTLIGHT_OFFSET.z);
     off.applyAxisAngle(new THREE.Vector3(0, 1, 0), s.ry);
-    spot.position.set(s.x + off.x, yPos + off.y, s.z + off.z);
+    spot.position.set(s.x + off.x, PAINTING_CENTER_Y + off.y, s.z + off.z);
     // Create a separate target object (don't use pMesh, scene.add would reparent it!)
     const spotTarget = new THREE.Object3D();
-    spotTarget.position.set(s.x, yPos, s.z);
+    spotTarget.position.set(s.x, PAINTING_CENTER_Y, s.z);
     spot.target = spotTarget;
     scene.add(spot);
     scene.add(spotTarget);
@@ -1960,7 +1985,7 @@ function placePaintings() {
       potInfo,
       hasPot,
       found: false,
-      worldPos: new THREE.Vector3(s.x, yPos, s.z),
+      worldPos: new THREE.Vector3(s.x, PAINTING_CENTER_Y, s.z),
       index: idx,
     });
   });
@@ -2162,7 +2187,7 @@ function checkPaintingClick(sx, sy) {
   const u = hit.uv.x;
   const v = 1 - hit.uv.y; // flip V
   const pi = painting.potInfo;
-  const pad = 0.035;
+  const pad = PAINTING_HIT_PAD;
 
   if (u >= pi.u0 - pad && u <= pi.u1 + pad && v >= pi.v0 - pad && v <= pi.v1 + pad) {
     onFoundPot(painting);
