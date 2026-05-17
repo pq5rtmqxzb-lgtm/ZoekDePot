@@ -1872,18 +1872,18 @@ function buildFrame(group) {
 }
 
 function placePaintings() {
-  // Positions: x, z, rotation (facing direction)
-  // All in living areas (woonkamer, slaapk1, slaapk2, gang) per design.
+  // (wx, wz) = point ON the wall face; painting hangs PAINTING_WALL_GAP forward
+  // along its local +Z, which after ry rotation gives the room-side normal.
   // ry: 0 → faces +Z (south); π → -Z (north); π/2 → +X (east); -π/2 → -X (west).
   const spots = [
-    { x:  3.50, z:  0.30, ry: 0 },              // slaapkamer 1 north wall (south-facing)
-    { x:  5.40, z:  1.00, ry: -Math.PI / 2 },   // slaapkamer 1 east wall, north of bed
-    { x: 10.41, z:  2.50, ry: -Math.PI / 2 },   // woonkamer east wall, north strip
-    { x: 10.41, z:  6.50, ry: -Math.PI / 2 },   // woonkamer east wall, middle
-    { x: 10.41, z: 11.50, ry: -Math.PI / 2 },   // woonkamer east wall, south extension
-    { x:  5.00, z: 13.50, ry: Math.PI },        // woonkamer south wall (north-facing)
-    { x:  1.71, z: 12.00, ry: -Math.PI / 2 },   // slaapkamer 2 east wall, south end
-    { x:  6.84, z:  5.00, ry: -Math.PI / 2 },   // gang east wall (woonkamer side, north of door)
+    { wx:  3.50, wz:  0.10, ry: 0 },              // slaapk1 north facade (south-facing)
+    { wx:  5.42, wz:  3.80, ry: -Math.PI / 2 },   // slaapk1 east wall, south of bed (bed footprint x∈[3.60,5.20], z∈[1.00,3.00])
+    { wx: 10.62, wz:  2.50, ry: -Math.PI / 2 },   // woonkamer east facade, north strip
+    { wx: 10.62, wz:  6.50, ry: -Math.PI / 2 },   // woonkamer east facade, middle
+    { wx: 10.62, wz: 11.50, ry: -Math.PI / 2 },   // woonkamer east facade, south extension
+    { wx:  5.00, wz: 13.70, ry: Math.PI },        // woonkamer south facade (north-facing)
+    { wx:  1.715, wz: 9.50, ry: -Math.PI / 2 },   // slaapk2 east wall, north of bed (bed footprint x∈[0.05,1.65], z∈[11.00,13.00])
+    { wx:  5.20, wz:  7.20, ry: 0 },              // bathroom south wall (south-facing into gang)
   ];
 
   // 3–5 of the 8 paintings randomly hide a pot; the rest are decoy Mondriaans.
@@ -1917,7 +1917,13 @@ function placePaintings() {
     buildFrame(group);
     group.add(pMesh);
 
-    group.position.set(s.x, PAINTING_CENTER_Y, s.z);
+    // Translate the wall-anchor (wx, wz) forward by PAINTING_WALL_GAP along
+    // the painting's local +Z so the back of the canvas sits just off the wall.
+    const yAxis = new THREE.Vector3(0, 1, 0);
+    const wallForward = new THREE.Vector3(0, 0, PAINTING_WALL_GAP).applyAxisAngle(yAxis, s.ry);
+    const groupX = s.wx + wallForward.x;
+    const groupZ = s.wz + wallForward.z;
+    group.position.set(groupX, PAINTING_CENTER_Y, groupZ);
     group.rotation.y = s.ry;
     scene.add(group);
 
@@ -1928,11 +1934,9 @@ function placePaintings() {
       new THREE.BoxGeometry(PLINTH_SIZE.w, PLINTH_SIZE.h, PLINTH_SIZE.d),
       PLINTH_MAT
     );
-    const plinthOff = new THREE.Vector3(0, 0, PLINTH_FORWARD).applyAxisAngle(
-      new THREE.Vector3(0, 1, 0), s.ry
-    );
-    const plinthX = s.x + plinthOff.x;
-    const plinthZ = s.z + plinthOff.z;
+    const plinthOff = new THREE.Vector3(0, 0, PLINTH_FORWARD).applyAxisAngle(yAxis, s.ry);
+    const plinthX = groupX + plinthOff.x;
+    const plinthZ = groupZ + plinthOff.z;
     plinth.position.set(plinthX, PLINTH_SIZE.h / 2, plinthZ);
     plinth.rotation.y = s.ry;
     scene.add(plinth);
@@ -1950,11 +1954,11 @@ function placePaintings() {
     // Fixture sits at PAINTING_CENTER_Y + SPOTLIGHT_OFFSET.y; housing top is +0.05.
     const spot = new THREE.SpotLight(0xfff5e0, 1.8, 3.0, Math.PI / 9, 0.5);
     const off = new THREE.Vector3(0, SPOTLIGHT_OFFSET.y, SPOTLIGHT_OFFSET.z);
-    off.applyAxisAngle(new THREE.Vector3(0, 1, 0), s.ry);
-    spot.position.set(s.x + off.x, PAINTING_CENTER_Y + off.y, s.z + off.z);
+    off.applyAxisAngle(yAxis, s.ry);
+    spot.position.set(groupX + off.x, PAINTING_CENTER_Y + off.y, groupZ + off.z);
     // Create a separate target object (don't use pMesh, scene.add would reparent it!)
     const spotTarget = new THREE.Object3D();
-    spotTarget.position.set(s.x, PAINTING_CENTER_Y, s.z);
+    spotTarget.position.set(groupX, PAINTING_CENTER_Y, groupZ);
     spot.target = spotTarget;
     scene.add(spot);
     scene.add(spotTarget);
@@ -1979,7 +1983,7 @@ function placePaintings() {
       potInfo,
       hasPot,
       found: false,
-      worldPos: new THREE.Vector3(s.x, PAINTING_CENTER_Y, s.z),
+      worldPos: new THREE.Vector3(groupX, PAINTING_CENTER_Y, groupZ),
       index: idx,
     });
   });
