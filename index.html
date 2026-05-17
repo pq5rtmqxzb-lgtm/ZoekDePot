@@ -827,6 +827,18 @@ function addBoxObstacle(cx, cz, w, d) {
   obstacles.push({ cx, cz, hw: w / 2, hd: d / 2 });
 }
 
+/* Same as addBoxObstacle but takes a local-frame footprint (w in local x,
+ * d in local z) plus a Y rotation, and emits the AABB of the rotated rect.
+ * For ry ∈ {0, ±π/2, π} this reduces to swapping w/d; for arbitrary
+ * angles it produces the correct enclosing axis-aligned box. */
+function addRotatedBoxObstacle(cx, cz, w, d, ry) {
+  const c = Math.abs(Math.cos(ry));
+  const s = Math.abs(Math.sin(ry));
+  const aabbW = w * c + d * s;
+  const aabbD = w * s + d * c;
+  obstacles.push({ cx, cz, hw: aabbW / 2, hd: aabbD / 2 });
+}
+
 /* Add a sliding-glass door span — visual only, no wall collision in the span.
  * Pure decorative: frame + 2 glass panes. Forest backdrop is provided by the
  * sky cyclorama outside. */
@@ -1057,9 +1069,7 @@ function addBed(x, z, ry, w, d) {
   }
 
   // Collision AABB — axis-aligned, computed for the bed's footprint
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, d, w);
-  else            addBoxObstacle(x, z, w, d);
+  addRotatedBoxObstacle(x, z, w, d, ry);
 }
 
 function addSofa(x, z, ry) {
@@ -1105,9 +1115,7 @@ function addSofa(x, z, ry) {
     cu.rotation.y = ry;
     scene.add(cu);
   }
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, d, w);
-  else            addBoxObstacle(x, z, w, d);
+  addRotatedBoxObstacle(x, z, w, d, ry);
 }
 
 function addCoffeeTable(x, z) {
@@ -1211,9 +1219,7 @@ function addKitchenIsland(x, z, ry, w = 2.115, d = 0.70) {
   sink.rotation.y = ry;
   scene.add(sink);
 
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, d, w);
-  else            addBoxObstacle(x, z, w, d);
+  addRotatedBoxObstacle(x, z, w, d, ry);
 }
 
 function addBathtub(x, z, ry, w = 1.65, d = 0.75) {
@@ -1238,9 +1244,7 @@ function addBathtub(x, z, ry, w = 1.65, d = 0.75) {
   tap.position.set(x + trx, 0.62, z + trz);
   scene.add(tap);
 
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, d, w);
-  else            addBoxObstacle(x, z, w, d);
+  addRotatedBoxObstacle(x, z, w, d, ry);
 }
 
 function addToiletBowl(x, z, ry) {
@@ -1265,9 +1269,7 @@ function addToiletBowl(x, z, ry) {
   );
   bowl.rotation.y = ry;
   scene.add(bowl);
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, 0.55, 0.42);
-  else            addBoxObstacle(x, z, 0.42, 0.55);
+  addRotatedBoxObstacle(x, z, 0.42, 0.55, ry);
 }
 
 function addSink(x, z, ry, w = 0.7) {
@@ -1293,9 +1295,7 @@ function addSink(x, z, ry, w = 0.7) {
   );
   mirror.rotation.y = ry;
   scene.add(mirror);
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, 0.45, w);
-  else            addBoxObstacle(x, z, w, 0.45);
+  addRotatedBoxObstacle(x, z, w, 0.45, ry);
 }
 
 function addWardrobe(x, z, ry, w = 1.6, d = 0.55) {
@@ -1320,9 +1320,7 @@ function addWardrobe(x, z, ry, w = 1.6, d = 0.55) {
     seam.rotation.y = ry;
     scene.add(seam);
   }
-  const isSideways = Math.abs(Math.cos(ry)) < 0.5;
-  if (isSideways) addBoxObstacle(x, z, d, w);
-  else            addBoxObstacle(x, z, w, d);
+  addRotatedBoxObstacle(x, z, w, d, ry);
 }
 
 function addShowerStall(x, z, ry, w = 0.9, d = 0.9) {
@@ -1945,12 +1943,8 @@ function placePaintings() {
     plinthCap.position.set(plinthX, PLINTH_SIZE.h + PLINTH_CAP_SIZE.h / 2, plinthZ);
     plinthCap.rotation.y = s.ry;
     scene.add(plinthCap);
-    // AABB obstacle: plinth's XZ footprint depends on s.ry — for axis-aligned
-    // painting rotations (0, ±π/2, π) the footprint is just 0.6 × 0.4 swapped
-    // when the painting is rotated 90°.
-    const isSideways = Math.abs(Math.cos(s.ry)) < 0.5;
-    if (isSideways) addBoxObstacle(plinthX, plinthZ, PLINTH_SIZE.d, PLINTH_SIZE.w);
-    else            addBoxObstacle(plinthX, plinthZ, PLINTH_SIZE.w, PLINTH_SIZE.d);
+    // AABB obstacle: footprint computed from rotated local box (w × d).
+    addRotatedBoxObstacle(plinthX, plinthZ, PLINTH_SIZE.w, PLINTH_SIZE.d, s.ry);
 
     // Spotlight on painting — tighter cone, sized for the 2.8m residential ceiling.
     // Fixture sits at PAINTING_CENTER_Y + SPOTLIGHT_OFFSET.y; housing top is +0.05.
