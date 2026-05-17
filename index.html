@@ -161,7 +161,8 @@ const PH = 0.85;  // painting height
 
 /* ===== STATE ===== */
 let camera, scene, renderer, clock;
-const playerPos = new THREE.Vector3(-0.5, PLAYER_H, 0.5);
+// Spawn inside the gang (central corridor) in apartment.json coords.
+const playerPos = new THREE.Vector3(3.0, PLAYER_H, 7.0);
 let yaw = 0, pitch = 0;
 let moveF = 0, moveR = 0;
 const paintings = [];
@@ -1294,121 +1295,153 @@ function addShowerStall(x, z, ry, w = 0.9, d = 0.9) {
 
 /* ===== APARTMENT GEOMETRY (Type R3.sp, bouwnummer 25) ===== */
 function buildApartment() {
-  // === Floor + ceiling per room (no overlaps) ===
-  // Slaapkamer 1
-  addRoomFloor({ x1: -5.45, z1: -7.06, x2: 0.108, z2: -2.76 }, FLOOR_MAT, 2.0, 2.5);
-  // Badkamer (groot) — tile
-  addRoomFloor({ x1: -5.45, z1: -2.76, x2: -2.445, z2: -0.078 }, TILE_MAT, 1.2, 1.2);
-  // Berging B — tile (small closet north of toilet)
-  addRoomFloor({ x1: -2.445, z1: -2.76, x2: -1.565, z2: -1.863 }, TILE_MAT, 1.0, 1.0);
-  // Toilet — tile
-  addRoomFloor({ x1: -2.445, z1: -1.863, x2: -1.565, z2: -0.078 }, TILE_MAT, 1.0, 1.0);
-  // Gang vertical leg — between slaapk1 and slaapk2, east of toilet
-  addRoomFloor({ x1: -1.565, z1: -2.76, x2: 0.108, z2: 1.00 }, FLOOR_MAT, 2.0, 2.5);
-  // Gang horizontal arm — connects bathrooms (west) to gang vertical (east)
-  addRoomFloor({ x1: -4.243, z1: -0.078, x2: -1.565, z2: 1.00 }, FLOOR_MAT, 2.0, 2.5);
-  // Gang east arm — corridor between slaapk2 east wall and woonkamer strip west wall
-  addRoomFloor({ x1: -1.335, z1: 1.00, x2: 0.108, z2: 5.593 }, FLOOR_MAT, 2.0, 2.5);
-  // Berging A — small closet south of badkamer
-  addRoomFloor({ x1: -5.45, z1: -0.078, x2: -4.243, z2: 1.00 }, TILE_MAT, 1.0, 1.0);
-  // Slaapkamer 2
-  addRoomFloor({ x1: -5.45, z1: 1.00, x2: -1.335, z2: 5.593 }, FLOOR_MAT, 2.0, 2.5);
-  // Badkamer klein (en-suite, inside slaapk2 SE corner) — tile
-  addRoomFloor({ x1: -3.00, z1: 3.304, x2: -1.335, z2: 5.593 }, TILE_MAT, 1.2, 1.2);
-  // Woonkamer narrow strip (east)
-  addRoomFloor({ x1:  0.108, z1: -7.06, x2: 3.68, z2: 6.74 }, FLOOR_MAT, 2.0, 2.5);
-  // Woonkamer south extension (the L's foot, west of the strip, south of slaapk2)
-  addRoomFloor({ x1: -3.00, z1:  5.593, x2: 0.108, z2: 6.74 }, FLOOR_MAT, 2.0, 2.5);
+  // Geometry is driven by apartment.json (Phase 3 of the rebuild).
+  // Coords: +X east, +Z south, origin at NW corner of the top facade.
+  //
+  //                  TOP FACADE  y=0
+  //   (-2.5, -1.33)…………………… top balkon ……………………… (10.72, -1.33)
+  //          │                                          │
+  //   NW zigzag │  slaapk1  │   strip   │  woonkamer    │
+  //   (alcove)  │ 5.52 wide │           │   strip       │
+  //          └─────┐  4.20  │           │               │
+  //                │ gang (C-shape)     ┃ woonkamer     │
+  //   (-2.30, 5.85)┤  ┌──────────────┐  ┃   west wall   │
+  //                ┤  │ badkamer +   │  ┃   x=6.948     │
+  //                ┤  │ toilet (SE)  │  ┃               │
+  //                └──┴──────────────┘──┘               │
+  //                  │       gang horizontal arm        │
+  //   (-2.30, 9.00)──┴──────────┬────────────────────────┤
+  //                 slaapk2     │  woonkamer south ext   │
+  //                 4.115 wide  │  (wraps east + south)  │
+  //                 + badk klein│                        │
+  //   (-2.30, 13.802)…………………… bottom balkon ……………… (10.72, 13.802)
+  //                 spans full apartment width
+  //
+  // Door positions: see apartment.json `openings`.
 
-  // === Balcony floors (outside, stone tile) ===
-  addRoomFloor({ x1: -2.10, z1: -8.391, x2: 3.609, z2: -7.06 }, STONE_TILE_MAT, 1.5, 1.5);
-  addRoomFloor({ x1: -3.00, z1:  6.74,  x2: 3.675, z2: 10.34 }, STONE_TILE_MAT, 1.5, 1.5);
+  // === Floor + ceiling per room ===
+  // Slaapkamer 1 main rectangle + NW alcove (zigzag area approximated by
+  // overlapping rectangles, walls trace the diagonal segments)
+  addRoomFloor({ x1: 0.00, z1: 0.20, x2: 5.52, z2: 4.20 }, FLOOR_MAT, 2.0, 2.5);
+  addRoomFloor({ x1: -0.60, z1: 0.70, x2: 0.00, z2: 4.10 }, FLOOR_MAT, 2.0, 2.5);
+  addRoomFloor({ x1: -1.55, z1: 1.70, x2: -0.60, z2: 3.10 }, FLOOR_MAT, 2.0, 2.5);
 
-  // === Outer envelope walls (clockwise from chamfered NW corner) ===
-  // A→B: chamfer (1.0m × 1.0m bevel)
-  addWall(-4.45, -7.06, -5.45, -6.06);
-  // B→G: continuous west facade
-  addWall(-5.45, -6.06, -5.45, 5.593);
-  // G→H: south-west jog (slaapk2 south side / woonkamer S-ext west kink)
-  addWall(-5.45, 5.593, -3.00, 5.593);
-  // H→I: woonkamer south-ext west wall
-  addWall(-3.00, 5.593, -3.00, 6.74);
-  // I→J: bottom facade — broken for bottom balkon sliding doors
-  addWall(-3.00, 6.74, -1.30, 6.74);    // west of door
-  addWall( 1.70, 6.74, 3.68, 6.74);     // east of door
-  // J→K: east facade (the long woonkamer side)
-  addWall(3.68, 6.74, 3.68, -7.06);
-  // K→A: top facade — broken for top balkon sliding doors
-  addWall(3.68, -7.06, 1.60, -7.06);    // east of door
-  addWall(-2.10, -7.06, -4.45, -7.06);  // west of door
+  // Gang (C-shape around the bathroom block)
+  addRoomFloor({ x1: -1.00, z1: 4.20, x2: 6.948, z2: 4.40 }, FLOOR_MAT, 2.0, 2.5); // top sliver under slaapk1
+  addRoomFloor({ x1: -1.00, z1: 4.40, x2: 3.158, z2: 5.85 }, FLOOR_MAT, 2.0, 2.5); // west of bathroom
+  addRoomFloor({ x1: -2.30, z1: 5.85, x2: 3.158, z2: 7.10 }, FLOOR_MAT, 2.0, 2.5); // wider west bulge
+  addRoomFloor({ x1: -2.30, z1: 7.10, x2: 6.948, z2: 9.00 }, FLOOR_MAT, 2.0, 2.5); // bottom row
+  addRoomFloor({ x1: 6.748, z1: 4.40, x2: 6.948, z2: 7.10 }, FLOOR_MAT, 0.3, 2.5); // sliver east of bathroom
 
-  // Sliding door visuals (no collision in span)
-  addSlidingDoor(-2.10, -7.06, 1.60, -7.06);   // top balkon
-  addSlidingDoor(-1.30,  6.74, 1.70,  6.74);   // bottom balkon
+  // Bathroom block — badkamer (L-shape) + toilet (SE corner)
+  addRoomFloor({ x1: 3.158, z1: 4.40, x2: 6.748, z2: 5.315 }, TILE_MAT, 1.2, 1.2); // top of bath
+  addRoomFloor({ x1: 3.158, z1: 5.315, x2: 5.818, z2: 7.10 }, TILE_MAT, 1.2, 1.2); // L-bottom of bath
+  addRoomFloor({ x1: 5.818, z1: 5.315, x2: 6.748, z2: 7.10 }, TILE_MAT, 1.0, 1.0); // toilet
 
-  // === Interior partition walls (with door openings) ===
+  // Slaapkamer 2 (en-suite badk klein overlaid)
+  addRoomFloor({ x1: -2.30, z1: 9.00, x2: 1.815, z2: 13.602 }, FLOOR_MAT, 2.0, 2.5);
+  addRoomFloor({ x1: -2.30, z1: 9.009, x2: -0.63, z2: 11.298 }, TILE_MAT, 1.2, 1.2);
 
-  // Slaapkamer 1 south wall — door at x∈[-1.30, -0.40]
-  addWall(-5.45, -2.76, -1.30, -2.76);
-  addWall(-0.40, -2.76,  0.108, -2.76);
-  addDoorFrame(-1.30, -2.76, -0.40, -2.76);
+  // Woonkamer — north strip + east strip + south extension
+  addRoomFloor({ x1: 5.52, z1: 0.20, x2: 10.52, z2: 4.20 }, FLOOR_MAT, 2.0, 2.5);
+  addRoomFloor({ x1: 6.948, z1: 4.20, x2: 10.52, z2: 9.00 }, FLOOR_MAT, 2.0, 2.5);
+  addRoomFloor({ x1: 1.815, z1: 9.00, x2: 10.52, z2: 13.602 }, FLOOR_MAT, 2.0, 2.5);
 
-  // Slaapk1 / woonkamer east wall
-  addWall(0.108, -7.06, 0.108, -2.76);
+  // Balcony floors (outdoor stone tile)
+  addRoomFloor({ x1: 0.00, z1: -1.331, x2: 10.72, z2: 0.00 }, STONE_TILE_MAT, 1.5, 1.5);
+  addRoomFloor({ x1: -2.30, z1: 13.802, x2: 10.72, z2: 17.402 }, STONE_TILE_MAT, 1.5, 1.5);
 
-  // Badkamer groot east wall
-  addWall(-2.445, -2.76, -2.445, -0.078);
-  // Badkamer groot south wall — door at x∈[-3.20, -2.445]? No, door opens north into gang.
-  // Place door at gang side: south wall has door at x∈[-3.10, -2.445]
-  addWall(-5.45, -0.078, -3.10, -0.078);
-  addDoorFrame(-3.10, -0.078, -2.445, -0.078);
+  // === Outer envelope walls ===
+  // Top facade — broken by two sliding doors:
+  //   slaapk1: x∈[0.50, 2.50]; woonkamer: x∈[7.50, 10.20]
+  addWall(0.00, 0.00, 0.50, 0.00);
+  addWall(2.50, 0.00, 7.50, 0.00);
+  addWall(10.20, 0.00, 10.72, 0.00);
 
-  // Toilet north wall
-  addWall(-2.445, -1.863, -1.565, -1.863);
-  // Toilet east wall
-  addWall(-1.565, -1.863, -1.565, -0.078);
-  // Toilet south = open to gang via door
-  addDoorFrame(-2.445, -0.078, -1.565, -0.078);
+  // East facade (no doors)
+  addWall(10.72, 0.00, 10.72, 13.802);
 
-  // Berging B east wall (small closet north of toilet)
-  addWall(-1.565, -2.76, -1.565, -1.863);
+  // South facade — broken by two sliding doors:
+  //   slaapk2: x∈[-1.50, 1.30]; woonkamer: x∈[7.00, 10.20]
+  addWall(10.72, 13.802, 10.20, 13.802);
+  addWall(7.00, 13.802, 1.30, 13.802);
+  addWall(-1.50, 13.802, -2.30, 13.802);
 
-  // Berging A east wall (large closet south of badkamer, separates from gang horizontal)
-  addWall(-4.243, -0.078, -4.243, 1.00);
+  // West facade (lower, after bathroom-jog)
+  addWall(-2.30, 13.802, -2.30, 5.85);
+  // Bathroom-jog horizontal step
+  addWall(-2.30, 5.85, 0.00, 5.85);
+  // West facade (upper, between jog and the NW zigzag end)
+  addWall(0.00, 5.85, 0.00, 4.10);
 
-  // Slaapkamer 2 north wall — door at x∈[-2.30, -1.50]
-  addWall(-5.45, 1.00, -2.30, 1.00);
-  addWall(-1.50, 1.00, -1.335, 1.00);
-  addDoorFrame(-2.30, 1.00, -1.50, 1.00);
+  // NW zigzag — six segments tracing the lift-shaft alcove
+  addWall(0.00, 4.10, -0.60, 4.10);   // step west at zigzag bottom
+  addWall(-0.60, 4.10, -1.55, 3.10);  // diagonal NW
+  addWall(-1.55, 3.10, -1.55, 1.70);  // vertical (1397 mm)
+  addWall(-1.55, 1.70, -0.60, 0.70);  // diagonal NE
+  addWall(-0.60, 0.70, 0.00, 0.70);   // step east
+  addWall(0.00, 0.70, 0.00, 0.00);    // vertical to top facade NW
 
-  // Slaapk2 east wall (separates from woonkamer gang east-arm)
-  addWall(-1.335, 1.00, -1.335, 5.593);
+  // === Interior walls ===
 
-  // Badkamer klein (en-suite) north + west wall
-  addWall(-3.00, 3.304, -1.95, 3.304);
-  addWall(-1.05, 3.304, -1.335, 3.304);
-  addDoorFrame(-1.95, 3.304, -1.05, 3.304);
-  addWall(-3.00, 3.304, -3.00, 5.593);
+  // Slaapk1 east wall — separates slaapk1 from woonkamer north strip
+  addWall(5.52, 0.20, 5.52, 4.20);
 
-  // Woonkamer west wall — partial.
-  // Runs along x = 0.108 ONLY from slaapk1 south wall to gang vertical south.
-  // South of that, slaapk2's east wall at x=-1.335 takes over the role of
-  // separating slaapk2 from the woonkamer; the area between x=-1.335 and
-  // x=0.108 at z∈[1.00, 5.593] is part of the woonkamer L-shape.
-  addWall(0.108, -2.76, 0.108, -0.20);     // north piece
-  addDoorFrame(0.108, -0.20, 0.108, 0.70); // doorway from gang vertical leg
-  addWall(0.108, 0.70, 0.108, 1.00);       // short closer to gang's south edge
+  // Slaapk1 south wall — door at x∈[0.80, 1.73]
+  addWall(0.00, 4.20, 0.80, 4.20);
+  addDoorFrame(0.80, 4.20, 1.73, 4.20);
+  addWall(1.73, 4.20, 5.52, 4.20);
 
-  // === Balcony railings ===
+  // Bathroom block: north + west + east walls + south with gang door
+  addWall(3.158, 4.40, 6.748, 4.40);              // north wall
+  addWall(3.158, 4.40, 3.158, 7.10);              // west wall
+  addWall(6.748, 4.40, 6.748, 7.10);              // east wall (shared partition with woonkamer)
+  addWall(3.158, 7.10, 3.50, 7.10);               // south wall west of gang door
+  addDoorFrame(3.50, 7.10, 4.43, 7.10);
+  addWall(4.43, 7.10, 6.748, 7.10);               // south wall east of gang door
+
+  // Toilet partition inside the bathroom block (SE corner)
+  addWall(5.818, 5.315, 6.748, 5.315);            // toilet north wall
+  addWall(5.818, 5.315, 5.818, 5.50);             // toilet west wall, above door
+  addDoorFrame(5.818, 5.50, 5.818, 6.43);
+  addWall(5.818, 6.43, 5.818, 7.10);              // toilet west wall, below door
+
+  // Slaapk2 north wall — door at x∈[0.80, 1.73] (near east end, towards gang)
+  addWall(-2.30, 9.00, 0.80, 9.00);
+  addDoorFrame(0.80, 9.00, 1.73, 9.00);
+  addWall(1.73, 9.00, 1.815, 9.00);
+
+  // Slaapk2 east wall — separates from woonkamer south extension
+  addWall(1.815, 9.00, 1.815, 13.802);
+
+  // Badkamer klein (en-suite, NW corner of slaapk2)
+  addWall(-2.30, 11.298, -0.63, 11.298);          // south wall
+  addWall(-0.63, 9.009, -0.63, 10.20);            // east wall north of door
+  addDoorFrame(-0.63, 10.20, -0.63, 11.13);
+  addWall(-0.63, 11.13, -0.63, 11.298);
+
+  // Woonkamer west wall — separates woonkamer east strip from gang
+  // (and from the bathroom east wall, which has its own 0.20 m partition)
+  // Open passage to gang at z∈[6.50, 7.80].
+  addWall(6.948, 4.20, 6.948, 6.50);
+  addDoorFrame(6.948, 6.50, 6.948, 7.80);
+  addWall(6.948, 7.80, 6.948, 9.00);
+
+  // === Sliding door visuals ===
+  addSlidingDoor(0.50, 0.00, 2.50, 0.00);            // top balkon · slaapk1
+  addSlidingDoor(7.50, 0.00, 10.20, 0.00);           // top balkon · woonkamer
+  addSlidingDoor(7.00, 13.802, 10.20, 13.802);       // bottom balkon · woonkamer
+  addSlidingDoor(-1.50, 13.802, 1.30, 13.802);       // bottom balkon · slaapk2
+
+  // === Balcony railings (each balkon spans the full apartment width) ===
   // Top balkon
-  addRailing(-2.10, -8.391, 3.609, -8.391);   // outer (north) edge
-  addRailing(-2.10, -7.06,  -2.10, -8.391);   // west edge
-  addRailing( 3.609, -7.06,  3.609, -8.391);  // east edge
-
+  addRailing(0.00, -1.331, 10.72, -1.331);   // outer (north) edge
+  addRailing(0.00, 0.00, 0.00, -1.331);      // west edge
+  addRailing(10.72, 0.00, 10.72, -1.331);    // east edge
   // Bottom balkon
-  addRailing(-3.00, 10.34, 3.675, 10.34);     // outer (south) edge
-  addRailing(-3.00,  6.74, -3.00, 10.34);     // west edge
-  addRailing( 3.675, 6.74,  3.675, 10.34);    // east edge
+  addRailing(-2.30, 17.402, 10.72, 17.402);  // outer (south) edge
+  addRailing(-2.30, 13.802, -2.30, 17.402);  // west edge
+  addRailing(10.72, 13.802, 10.72, 17.402);  // east edge
 
   // === Sky cyclorama (outside, beyond the balconies) ===
   const skyMat = new THREE.MeshBasicMaterial({
@@ -1420,69 +1453,67 @@ function buildApartment() {
     new THREE.CylinderGeometry(40, 40, 22, 48, 1, true),
     skyMat
   );
-  cyclorama.position.set(0, 5, 1);
+  // Centered roughly on the apartment middle
+  cyclorama.position.set(4.2, 5, 6.9);
   scene.add(cyclorama);
-  // Ground plane far outside (so balconies don't float over the void)
+  // Outdoor ground plane so balconies don't float over the void
   const outdoor = new THREE.Mesh(
     new THREE.PlaneGeometry(80, 80),
     new THREE.MeshStandardMaterial({ color: 0x6e7d4e, roughness: 1.0 })
   );
   outdoor.rotation.x = -Math.PI / 2;
-  outdoor.position.set(0, -2.0, 1);
+  outdoor.position.set(4.2, -2.0, 6.9);
   scene.add(outdoor);
 }
 
 function placeFurniture() {
-  // === Slaapkamer 1 — queen bed centered on east wall facing west, wardrobe S
-  // room x∈[-5.45, 0.108], z∈[-7.06, -2.76]; center ≈ (-2.67, -4.91)
-  addBed(-0.78, -4.50, -Math.PI / 2, 2.00, 1.60);   // head against east wall (x=0.108)
-  addWardrobe(-4.10, -3.06, Math.PI, 2.20, 0.55);   // along south wall, facing north
-  // Bedside table at head of bed
-  const bn = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.50, 0.40), BEDFRAME_MAT);
-  bn.position.set(-0.40, 0.25, -3.20);
-  scene.add(bn);
-  addBoxObstacle(-0.40, -3.20, 0.45, 0.40);
+  // Furniture positions use apartment.json coords (+X east, +Z south,
+  // origin at NW corner of top facade).
 
-  // === Badkamer (groot) — tub on north wall, sink on south
-  addBathtub(-4.90, -2.30, 0, 1.65, 0.75);          // along north wall
-  addSink(-2.85, -2.50, -Math.PI / 2, 0.70);        // east wall
+  // === Slaapkamer 1 (x∈[0, 5.52], z∈[0.20, 4.20])
+  // Queen bed against east wall, head pointing east
+  addBed(4.40, 2.00, -Math.PI / 2, 2.00, 1.60);
+  // Wardrobe along south wall, east of the gang door (door at x=0.80–1.73)
+  addWardrobe(3.50, 3.95, Math.PI, 2.00, 0.55);
 
-  // === Toilet
-  addToiletBowl(-2.05, -1.55, -Math.PI / 2);
+  // === Badkamer (groot) — bath on north, sink on west
+  // Bathtub centered along north wall (z=4.40), 1.65 wide × 0.75 deep
+  addBathtub(4.70, 4.80, 0, 1.65, 0.75);
+  // Sink along west wall (x=3.158, facing east)
+  addSink(3.45, 5.70, Math.PI / 2, 0.55);
 
-  // === Slaapkamer 2 — double bed against west wall, wardrobe along east wall
-  addBed(-4.50,  2.80, Math.PI / 2, 2.00, 1.60);    // head south, foot north; long axis runs N-S
-  addWardrobe(-1.62, 2.20, -Math.PI / 2, 1.80, 0.55); // east wall, facing west
-  // Bedside table next to bed (south of bed's south edge)
-  const bn2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.50, 0.40), BEDFRAME_MAT);
-  bn2.position.set(-3.40, 0.25, 4.20);   // y=0.25 (height/2), z=4.20 (south of bed)
-  scene.add(bn2);
-  addBoxObstacle(-3.40, 4.20, 0.45, 0.40);
+  // === Toilet (inside badkamer SE: x∈[5.818, 6.748], z∈[5.315, 7.10])
+  addToiletBowl(6.28, 6.50, Math.PI);
 
-  // === Badkamer klein (en-suite) — shower + sink + small toilet
-  addShowerStall(-2.55, 3.95, 0, 0.90, 0.90);
-  addSink(-1.60, 3.70, -Math.PI / 2, 0.55);
-  addToiletBowl(-1.60, 5.10, -Math.PI / 2);
+  // === Slaapkamer 2 (x∈[-2.30, 1.815], z∈[9.00, 13.602])
+  // Badk klein occupies the NW corner so bed goes in the main area
+  // Double bed against east wall, head pointing east
+  addBed(0.85, 12.00, -Math.PI / 2, 2.00, 1.60);
+  // Wardrobe along south wall (facing north)
+  addWardrobe(0.90, 13.40, Math.PI, 1.80, 0.55);
 
-  // === Woonkamer === room is L-shape:
-  // Strip: x∈[0.108, 3.68], z∈[-7.06, 6.74]
-  // South ext: x∈[-3.00, 0.108], z∈[4.99, 6.74]
+  // === Badkamer klein (NW of slaapk2, x∈[-2.30, -0.63], z∈[9.009, 11.298])
+  addShowerStall(-1.85, 9.50, 0, 0.90, 0.90);
+  addSink(-0.90, 10.50, -Math.PI / 2, 0.50);
+  addToiletBowl(-1.30, 11.00, Math.PI);
 
-  // Sofa along east wall facing west (sit looking inward)
-  addSofa(3.10, -2.00, -Math.PI / 2);
-  addCoffeeTable(1.80, -2.00);
+  // === Woonkamer (L-shape) ===
+  // Sofa along east wall facing west, in the north strip
+  addSofa(9.80, 2.20, -Math.PI / 2);
+  // Coffee table in front of sofa
+  addCoffeeTable(8.40, 2.20);
 
-  // Dining table near middle of strip
-  addDiningTable(2.00, 1.50);
+  // Dining table in the east strip near woonkamer/gang boundary
+  addDiningTable(8.50, 7.00);
 
-  // Kitchen island in the south extension (the L's foot)
-  addKitchenIsland(-1.45, 6.20, 0, 2.115, 0.70);
+  // Kitchen island in the south extension (left side of bottom of L)
+  addKitchenIsland(3.50, 11.00, 0, 2.115, 0.70);
 
-  // Small side cabinet/console along north end of woonkamer
+  // Side console along the woonkamer north wall (under the balkon door)
   const console_ = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.85, 0.4), CABINET_MAT);
-  console_.position.set(2.00, 0.425, -6.50);
+  console_.position.set(6.50, 0.425, 0.45);
   scene.add(console_);
-  addBoxObstacle(2.00, -6.50, 1.4, 0.4);
+  addBoxObstacle(6.50, 0.45, 1.4, 0.4);
 }
 
 function buildMuseum() {
@@ -1497,15 +1528,18 @@ function setupLights() {
 
   // Per-room ceiling lights. [x, z, color, intensity, range]
   const lights = [
-    [-0.6,  -1.0, 0xfff0d0, 0.85, 5],   // gang
-    [-2.7,  -5.2, 0xfff0d0, 0.85, 6],   // slaapkamer 1
-    [-3.5,   2.7, 0xfff0d0, 0.85, 6],   // slaapkamer 2
-    [-3.9,  -1.4, 0xeef4ff, 0.75, 4],   // badkamer (groot) cooler
-    [-2.0,  -1.0, 0xeef4ff, 0.55, 3],   // toilet cooler
-    [-2.2,   3.7, 0xeef4ff, 0.55, 3],   // badkamer klein
-    [ 2.0,  -3.5, 0xfff0d0, 0.95, 7],   // woonkamer north
-    [ 2.0,   2.0, 0xfff0d0, 0.95, 7],   // woonkamer middle
-    [-1.0,   5.7, 0xfff0d0, 0.95, 7],   // woonkamer / kitchen
+    [ 2.76,  2.20, 0xfff0d0, 0.85, 6],  // slaapkamer 1
+    [-0.50,  2.20, 0xeef4ff, 0.55, 3],  // slaapkamer 1 NW alcove
+    [ 4.65,  5.70, 0xeef4ff, 0.75, 4],  // badkamer (groot) cooler
+    [ 6.28,  6.21, 0xeef4ff, 0.55, 3],  // toilet
+    [ 2.50,  6.50, 0xfff0d0, 0.85, 6],  // gang (center)
+    [-1.00,  7.50, 0xfff0d0, 0.75, 5],  // gang (west bulge)
+    [ 0.85, 11.50, 0xfff0d0, 0.85, 6],  // slaapkamer 2
+    [-1.46, 10.15, 0xeef4ff, 0.55, 3],  // badkamer klein
+    [ 8.00,  2.20, 0xfff0d0, 0.95, 7],  // woonkamer north strip
+    [ 8.50,  6.50, 0xfff0d0, 0.95, 7],  // woonkamer middle (dining)
+    [ 4.00, 11.20, 0xfff0d0, 0.95, 7],  // woonkamer south (kitchen)
+    [ 8.50, 11.50, 0xfff0d0, 0.95, 7],  // woonkamer south (east)
   ];
   for (const [x, z, color, intensity, range] of lights) {
     const pl = new THREE.PointLight(color, intensity, range);
@@ -1784,14 +1818,14 @@ function placePaintings() {
   // All in living areas (woonkamer, slaapk1, slaapk2, gang) per design.
   // ry: 0 → faces +Z (south); π → -Z (north); π/2 → +X (east); -π/2 → -X (west).
   const spots = [
-    { x:  3.57, z: -5.30, ry: -Math.PI / 2 }, // woonkamer east wall, north
-    { x:  3.57, z:  0.20, ry: -Math.PI / 2 }, // woonkamer east wall, middle (above doorway)
-    { x:  3.57, z:  4.40, ry: -Math.PI / 2 }, // woonkamer east wall, south
-    { x:  2.50, z:  6.63, ry: Math.PI },      // woonkamer south wall, east of balkon door
-    { x: -2.60, z: -6.96, ry: 0 },             // slaapkamer 1 north wall (south-facing)
-    { x: -5.35, z: -5.20, ry: Math.PI / 2 },   // slaapkamer 1 west wall (east-facing)
-    { x: -3.50, z:  1.10, ry: 0 },             // slaapkamer 2 north wall (south-facing)
-    { x: -1.28, z:  3.00, ry: Math.PI / 2 },   // corridor west wall (east-facing, on slaapk2 east wall)
+    { x:  3.50, z:  0.30, ry: 0 },              // slaapkamer 1 north wall (south-facing)
+    { x:  5.40, z:  1.00, ry: -Math.PI / 2 },   // slaapkamer 1 east wall, north of bed
+    { x: 10.41, z:  2.50, ry: -Math.PI / 2 },   // woonkamer east wall, north strip
+    { x: 10.41, z:  6.50, ry: -Math.PI / 2 },   // woonkamer east wall, middle
+    { x: 10.41, z: 11.50, ry: -Math.PI / 2 },   // woonkamer east wall, south extension
+    { x:  5.00, z: 13.50, ry: Math.PI },        // woonkamer south wall (north-facing)
+    { x:  1.71, z: 12.00, ry: -Math.PI / 2 },   // slaapkamer 2 east wall, south end
+    { x:  6.84, z:  5.00, ry: -Math.PI / 2 },   // gang east wall (woonkamer side, north of door)
   ];
 
   // 3–5 of the 8 paintings randomly hide a pot; the rest are decoy Mondriaans.
@@ -2243,9 +2277,9 @@ function animate() {
   if (!wallCollide(nx, playerPos.z)) playerPos.x = nx;
   if (!wallCollide(playerPos.x, nz)) playerPos.z = nz;
 
-  // Bounds — apartment + balconies
-  playerPos.x = Math.max(-7.0, Math.min(4.5, playerPos.x));
-  playerPos.z = Math.max(-9.0, Math.min(11.0, playerPos.z));
+  // Bounds — apartment + balconies (apartment.json coords)
+  playerPos.x = Math.max(-2.5, Math.min(10.9, playerPos.x));
+  playerPos.z = Math.max(-1.5, Math.min(17.5, playerPos.z));
 
   camera.position.copy(playerPos);
   camera.rotation.order = 'YXZ';
