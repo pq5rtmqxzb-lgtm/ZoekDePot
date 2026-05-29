@@ -174,18 +174,18 @@ def rooms():
     # interior west wall is at x=6.948 — 0.20 m thick partition).
     # Toilet sits INSIDE the block at the SE corner (user-confirmed).
     # Badkamer is the L-shape that remains (≈ 8.03 m² ≈ label 8.06).
-    b1 = [(3.158, 4.40),  # NW
-          (6.748, 4.40),  # NE
+    b1 = [(3.86, 4.30),   # NW (west wall at x≈3.86 per PDF vectors)
+          (6.748, 4.30),  # NE
           (6.748, 5.315), # east wall continues down to toilet NE corner
-          (5.818, 5.315), # west along toilet north wall
-          (5.818, 7.10),  # south along toilet west wall
-          (3.158, 7.10)]  # west along bathroom south wall
+          (5.66, 5.315),  # west along toilet north wall
+          (5.66, 7.10),   # south along toilet west wall
+          (3.86, 7.10)]   # west along bathroom south wall
     R.append({"name": "badkamer", "label": "8,06 m²", "fill": "#eaf6ec",
               "polygon": b1, "centroid": (4.65, 5.70)})
 
     # Toilet inside badkamer at right-bottom (SE) corner — user-confirmed.
     # 0.93 × 1.785 → 1.66 m² ≈ 1.67. East wall adjacent to woonkamer.
-    t = [(5.818, 5.315), (6.748, 5.315), (6.748, 7.10), (5.818, 7.10)]
+    t = [(5.66, 5.315), (6.748, 5.315), (6.748, 7.10), (5.66, 7.10)]
     R.append({"name": "toilet", "label": "1,67 m²", "fill": "#eef0f4",
               "polygon": t, "centroid": (6.28, 6.21)})
 
