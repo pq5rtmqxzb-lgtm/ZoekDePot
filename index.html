@@ -1559,7 +1559,7 @@ function addSink(x, z, ry, w = 0.7) {
 }
 
 function addWardrobe(x, z, ry, w = 1.6, d = 0.55) {
-  const h = WALL_HEIGHT - 0.10;
+  const h = 2.20;   // freestanding wardrobe height (not floor-to-ceiling)
   const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), WARDROBE_MAT);
   body.position.set(x, h / 2, z);
   body.rotation.y = ry;
@@ -1698,7 +1698,7 @@ function placeFurniture() {
 
   // === Slaapkamer 1 (x∈[0, 5.52], z∈[0.20, 4.20])
   // Queen bed against east wall, head pointing east
-  addBed(4.40, 2.00, -Math.PI / 2, 2.00, 1.60);
+  addBed(4.40, 2.00, -Math.PI / 2, 1.60, 2.00);   // 1.60 wide × 2.00 long, head against east wall
   // Wardrobe along south wall, east of the gang door (door at x=0.80–1.73)
   addWardrobe(3.50, 3.95, Math.PI, 2.00, 0.55);
 
@@ -1713,7 +1713,7 @@ function placeFurniture() {
 
   // === Slaapkamer 2 (x 0..4.31, z 9.50..14.77); en-suite bathroom on the WEST
   // Double bed against the west wall in the south part, head pointing west
-  addBed(1.10, 13.10, Math.PI / 2, 2.00, 1.60);
+  addBed(1.05, 13.10, Math.PI / 2, 1.60, 2.00);   // 1.60 wide × 2.00 long, head against west wall
   // Wardrobe along the south wall (facing north)
   addWardrobe(2.80, 14.40, Math.PI, 1.50, 0.55);
 
@@ -2046,16 +2046,8 @@ function placePaintings() {
   // (wx, wz) = point ON the wall face; painting hangs PAINTING_WALL_GAP forward
   // along its local +Z, which after ry rotation gives the room-side normal.
   // ry: 0 → faces +Z (south); π → -Z (north); π/2 → +X (east); -π/2 → -X (west).
-  const spots = [
-    { wx:  3.50, wz:  0.10, ry: 0 },              // slaapk1 north facade (south-facing)
-    { wx:  5.42, wz:  3.80, ry: -Math.PI / 2 },   // slaapk1 east wall, south of bed (bed footprint x∈[3.60,5.20], z∈[1.00,3.00])
-    { wx: 10.62, wz:  2.50, ry: -Math.PI / 2 },   // woonkamer east facade, north strip
-    { wx: 10.62, wz:  6.50, ry: -Math.PI / 2 },   // woonkamer east facade, middle
-    { wx: 10.62, wz: 11.50, ry: -Math.PI / 2 },   // woonkamer east facade, south extension
-    { wx:  5.00, wz: 13.70, ry: Math.PI },        // woonkamer south facade (north-facing)
-    { wx:  4.02, wz: 13.50, ry: -Math.PI / 2 },   // slaapk2 east wall (bedroom), faces west
-    { wx:  5.20, wz:  7.20, ry: 0 },              // bathroom south wall (south-facing into gang)
-  ];
+  // Paintings removed at the owner's request — no wall art, plinths or spotlights.
+  const spots = [];
 
   // Purely decorative abstract art — no hidden pots, no game.
   spots.forEach((s, idx) => {
