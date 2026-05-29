@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Zoek de Pot</title>
+<title>Ons Nieuwe Huis — 3D inrichtingsstudio</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body {
@@ -26,27 +26,29 @@ canvas { display: block; width: 100%; height: 100%; }
   font-family: 'Georgia', serif;
 }
 #title {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-  color: #fff; font-size: 22px; font-weight: bold;
+  position: absolute; top: 12px; left: 16px;
+  color: #fff; font-size: 18px; font-weight: bold;
   text-shadow: 0 2px 8px rgba(0,0,0,0.7);
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   padding-top: env(safe-area-inset-top, 0px);
 }
-#score {
-  position: absolute; top: 12px; right: 16px;
-  color: #fff; font-size: 16px;
+@media (max-width: 560px) { #title { display: none; } }
+#roomLabel {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  color: #fff; font-size: 15px; font-family: 'Georgia', serif;
   text-shadow: 0 2px 6px rgba(0,0,0,0.7);
-  background: rgba(0,0,0,0.4); padding: 8px 14px; border-radius: 20px;
+  background: rgba(0,0,0,0.4); padding: 8px 16px; border-radius: 20px;
   padding-top: calc(8px + env(safe-area-inset-top, 0px));
+  white-space: nowrap;
 }
-#hintBtn {
-  position: absolute; top: 12px; left: 16px;
+#designToggle {
+  position: absolute; top: 12px; right: 16px;
   pointer-events: auto; cursor: pointer;
-  background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.35);
   padding: 8px 16px; border-radius: 20px; font-size: 14px; font-family: 'Georgia', serif;
   padding-top: calc(8px + env(safe-area-inset-top, 0px));
 }
-#hintBtn:active { background: rgba(255,255,255,0.3); }
+#designToggle:active { background: rgba(255,255,255,0.25); }
 #crosshair {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
   width: 20px; height: 20px; opacity: 0.4;
@@ -83,29 +85,68 @@ canvas { display: block; width: 100%; height: 100%; }
   cursor: pointer; font-family: 'Georgia', serif; letter-spacing: 1px;
 }
 #startBtn:active, #replayBtn:active { background: #a01e1e; }
-#winOverlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.88); z-index: 100;
-  display: none; flex-direction: column; align-items: center; justify-content: center;
-  color: #fff; font-family: 'Georgia', serif; text-align: center;
-  padding: 20px;
+/* ===== Design panel ===== */
+#designPanel {
+  position: fixed; top: 0; right: 0; z-index: 60;
+  width: 320px; max-width: 88vw; height: 100%;
+  background: rgba(20,20,24,0.92); color: #f2efe9;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  pointer-events: auto; overflow-y: auto;
+  transform: translateX(102%); transition: transform 0.28s ease;
+  box-shadow: -6px 0 24px rgba(0,0,0,0.4);
+  padding: 0 18px 28px;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
 }
-#winOverlay h1 { font-size: 30px; margin-bottom: 20px; color: #FFD700; }
-#winOverlay p { font-size: 18px; }
-#foundMsg {
-  position: absolute; top: 45%; left: 50%; transform: translate(-50%,-50%);
-  color: #FFD700; font-size: 28px; font-weight: bold;
-  text-shadow: 0 0 20px rgba(255,215,0,0.8), 0 2px 8px rgba(0,0,0,0.8);
-  opacity: 0; transition: opacity 0.3s;
-  pointer-events: none;
+#designPanel.open { transform: translateX(0); }
+#designPanel h2 {
+  font-size: 18px; font-weight: 600; letter-spacing: .5px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0 12px; border-bottom: 1px solid rgba(255,255,255,0.12); margin-bottom: 14px;
 }
-#missMsg {
-  position: absolute; top: 45%; left: 50%; transform: translate(-50%,-50%);
-  color: #ff6b6b; font-size: 22px; font-weight: bold;
-  text-shadow: 0 0 16px rgba(255,80,80,0.7), 0 2px 6px rgba(0,0,0,0.8);
-  opacity: 0; transition: opacity 0.18s;
-  pointer-events: none;
+#designPanel .closeBtn {
+  cursor: pointer; font-size: 24px; line-height: 1; color: #cfc9bf;
+  background: none; border: none; padding: 0 4px;
 }
+#designPanel .dpRoom { font-size: 13px; color: #b9d3c0; margin-bottom: 4px; }
+#designPanel .dpRoom b { color: #fff; }
+#designPanel .dpHint { font-size: 11px; color: #9a958c; margin: -2px 0 14px; }
+#designPanel section { margin-bottom: 20px; }
+#designPanel section > h3 {
+  font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #cfc9bf; margin-bottom: 9px; font-weight: 600;
+}
+.swatchRow { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch {
+  width: 38px; height: 38px; border-radius: 8px; cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.18); position: relative;
+}
+.swatch.sel { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.35); }
+.swatch span {
+  position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; color: #aaa; white-space: nowrap; display: none;
+}
+.finishList { display: flex; flex-direction: column; gap: 7px; }
+.finishBtn, .modeBtn, .actionBtn {
+  text-align: left; cursor: pointer; font-family: inherit;
+  background: rgba(255,255,255,0.06); color: #f2efe9;
+  border: 1px solid rgba(255,255,255,0.16); border-radius: 8px;
+  padding: 9px 12px; font-size: 13px;
+}
+.finishBtn.sel, .modeBtn.sel { background: rgba(120,170,140,0.32); border-color: #8fce9f; }
+.finishBtn:active, .modeBtn:active, .actionBtn:active { background: rgba(255,255,255,0.18); }
+.modeRow { display: flex; gap: 8px; }
+.modeRow .modeBtn { flex: 1; text-align: center; }
+#accentBtn.armed { background: rgba(210,140,60,0.4); border-color: #e2a05a; }
+.actionRow { display: flex; gap: 8px; }
+.actionRow .actionBtn { flex: 1; text-align: center; }
+#dpToast {
+  position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
+  background: rgba(20,20,24,0.95); color: #fff; padding: 10px 18px;
+  border-radius: 22px; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px;
+  opacity: 0; transition: opacity .25s; z-index: 120; pointer-events: none;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+#dpToast.show { opacity: 1; }
 .mobile-controls { display: none; }
 @media (hover: none) and (pointer: coarse) {
   .mobile-controls { display: block !important; }
@@ -115,28 +156,52 @@ canvas { display: block; width: 100%; height: 100%; }
 </head>
 <body>
 <div id="introOverlay">
-  <h1>Zoek de Pot</h1>
-  <p>Loop door het appartement (Type R3.sp, Ypsilon Park) en zoek de bloempot in elk schilderij!</p>
+  <h1>Ons Nieuwe Huis</h1>
+  <p>Wandel alvast door het appartement (Type R3.sp, Ypsilon Park) en krijg een gevoel voor het huis dat nog gebouwd moet worden.</p>
+  <p>Probeer verschillende muurkleuren, vloeren en sferen via de knop <b>Inrichten</b> rechtsboven.</p>
   <p style="font-size:14px; opacity:0.7;" class="mobile-controls">Joystick links = lopen, veeg rechts = rondkijken</p>
-  <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis = rondkijken, klik = zoek de pot, H = hint</p>
-  <button id="startBtn">Start!</button>
-</div>
-<div id="winOverlay">
-  <h1>Gefeliciteerd!</h1>
-  <p>Je hebt alle bloempotten gevonden!</p>
-  <button id="replayBtn">Speel opnieuw</button>
+  <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis = rondkijken, I = inrichten</p>
+  <button id="startBtn">Begin de rondleiding</button>
 </div>
 <div id="ui">
-  <div id="title">Zoek de Pot</div>
-  <div id="score">Gevonden: 0/?</div>
-  <button id="hintBtn">Hint</button>
+  <div id="title">Ons Nieuwe Huis</div>
+  <div id="roomLabel">—</div>
+  <button id="designToggle">Inrichten</button>
   <div id="crosshair" class="desktop-controls"></div>
   <div id="joystickArea" class="mobile-controls">
     <div id="joystickKnob"></div>
   </div>
-  <div id="foundMsg"></div>
-  <div id="missMsg">Geen pot</div>
 </div>
+<div id="designPanel">
+  <h2>Inrichten <button class="closeBtn" id="dpClose" aria-label="Sluiten">&times;</button></h2>
+  <div class="dpRoom">Huidige kamer: <b id="dpRoomName">—</b></div>
+  <div class="dpHint">Wijzigingen gelden voor de kamer waar je staat.</div>
+  <section>
+    <h3>Muurverf</h3>
+    <div class="swatchRow" id="dpWallSwatches"></div>
+  </section>
+  <section>
+    <h3>Accentmuur</h3>
+    <button class="actionBtn" id="accentBtn" style="width:100%;margin-bottom:9px;">Kies accentmuur</button>
+    <div class="swatchRow" id="dpAccentSwatches"></div>
+  </section>
+  <section>
+    <h3>Vloer</h3>
+    <div class="finishList" id="dpFloors"></div>
+  </section>
+  <section>
+    <h3>Sfeer</h3>
+    <div class="modeRow" id="dpTod"></div>
+  </section>
+  <section>
+    <h3>Schema</h3>
+    <div class="actionRow">
+      <button class="actionBtn" id="dpShare">Bewaar &amp; deel</button>
+      <button class="actionBtn" id="dpReset">Reset</button>
+    </div>
+  </section>
+</div>
+<div id="dpToast"></div>
 
 <script type="importmap">
 {
@@ -187,16 +252,21 @@ const APARTMENT_GEOM = [
   { kind: 'wall',    x1: -1.50, z1: 13.802, x2: -2.30, z2: 13.802 },
   { kind: 'sliding', x1:  7.00, z1: 13.802, x2: 10.20, z2: 13.802 }, // woonkamer
   { kind: 'sliding', x1: -1.50, z1: 13.802, x2:  1.30, z2: 13.802 }, // slaapk2
-  // --- West facade (with bathroom-jog step)
+  // --- West facade (with bathroom-jog step). The gang's upper-west boundary
+  // sits at x=-1.00 (matches apartment.json envelope v5/v6 and the gang floor),
+  // then closes east to x=0 at z=4.10 to meet the NW zigzag.
   { kind: 'wall',    x1: -2.30, z1: 13.802, x2: -2.30, z2:  5.85 },
-  { kind: 'wall',    x1: -2.30, z1:  5.85,  x2:  0.00, z2:  5.85 },
-  { kind: 'wall',    x1:  0.00, z1:  5.85,  x2:  0.00, z2:  4.10 },
-  // --- NW zigzag (six segments around the lift-shaft alcove)
-  { kind: 'wall',    x1:  0.00, z1:  4.10,  x2: -0.60, z2:  4.10 },
-  { kind: 'wall',    x1: -0.60, z1:  4.10,  x2: -1.55, z2:  3.10 },
-  { kind: 'wall',    x1: -1.55, z1:  3.10,  x2: -1.55, z2:  1.70 },
-  { kind: 'wall',    x1: -1.55, z1:  1.70,  x2: -0.60, z2:  0.70 },
-  { kind: 'wall',    x1: -0.60, z1:  0.70,  x2:  0.00, z2:  0.70 },
+  { kind: 'wall',    x1: -2.30, z1:  5.85,  x2: -1.00, z2:  5.85 },
+  { kind: 'wall',    x1: -1.00, z1:  5.85,  x2: -1.00, z2:  4.10 },
+  { kind: 'wall',    x1: -1.00, z1:  4.10,  x2:  0.00, z2:  4.10 },
+  // --- NW zigzag (six segments around the lift-shaft alcove). Step coords
+  // aligned to apartment.json nw_zigzag; the 1397 mm PDF callout labels the
+  // alcove's vertical west face (z 1.70 -> 3.10 = 1.40 m).
+  { kind: 'wall',    x1:  0.00, z1:  4.10,  x2: -0.50, z2:  4.10 },
+  { kind: 'wall',    x1: -0.50, z1:  4.10,  x2: -1.50, z2:  3.10 },
+  { kind: 'wall',    x1: -1.50, z1:  3.10,  x2: -1.50, z2:  1.70 },
+  { kind: 'wall',    x1: -1.50, z1:  1.70,  x2: -0.50, z2:  0.70 },
+  { kind: 'wall',    x1: -0.50, z1:  0.70,  x2:  0.00, z2:  0.70 },
   { kind: 'wall',    x1:  0.00, z1:  0.70,  x2:  0.00, z2:  0.00 },
 
   // --- Slaapk1 east wall
@@ -243,7 +313,68 @@ const APARTMENT_GEOM = [
   { kind: 'railing', x1: 10.72,  z1: 13.802, x2: 10.72, z2: 17.402 }, // east
 ];
 
-// Painting placement (used by placePaintings + checkPaintingClick).
+/* ===== ROOMS =====
+ * Each room groups the floor rectangles (from buildMuseum) it owns, plus a
+ * default floor kind. walls[] and floorMeshes[] are filled at build time so the
+ * design panel can recolour/refloor a single room. Rectangles match the floor
+ * specs and the apartment.json room polygons (verified by tools/plan-overlay.py).
+ * Enclosed rooms (toilet, badkklein) are listed before their container so the
+ * "which room am I in" lookup prefers the smaller space. */
+const ROOMS = [
+  { id: 'toilet',    name: 'Toilet',            kind: 'tegel', rects: [
+      { x1: 5.818, z1: 5.315, x2: 6.748, z2: 7.10 } ] },
+  { id: 'badkklein', name: 'Badkamer (klein)',  kind: 'tegel', rects: [
+      { x1: -2.30, z1: 9.009, x2: -0.63, z2: 11.298 } ] },
+  { id: 'badkamer',  name: 'Badkamer',          kind: 'tegel', rects: [
+      { x1: 3.158, z1: 4.40,  x2: 6.748, z2: 5.315 },
+      { x1: 3.158, z1: 5.315, x2: 5.818, z2: 7.10 } ] },
+  { id: 'slaapk1',   name: 'Slaapkamer 1',      kind: 'hout',  rects: [
+      { x1: 0.00,  z1: 0.20,  x2: 5.52,  z2: 4.20 },
+      { x1: -0.50, z1: 0.70,  x2: 0.00,  z2: 4.10 },
+      { x1: -1.50, z1: 1.70,  x2: -0.50, z2: 3.10 } ] },
+  { id: 'slaapk2',   name: 'Slaapkamer 2',      kind: 'hout',  rects: [
+      { x1: -2.30, z1: 9.00,  x2: 1.815, z2: 13.602 } ] },
+  { id: 'gang',      name: 'Gang',              kind: 'hout',  rects: [
+      { x1: -1.00, z1: 4.20,  x2: 6.948, z2: 4.40 },
+      { x1: -1.00, z1: 4.40,  x2: 3.158, z2: 5.85 },
+      { x1: -2.30, z1: 5.85,  x2: 3.158, z2: 7.10 },
+      { x1: -2.30, z1: 7.10,  x2: 6.948, z2: 9.00 },
+      { x1: 6.748, z1: 4.40,  x2: 6.948, z2: 7.10 } ] },
+  { id: 'woonkamer', name: 'Woonkamer',         kind: 'hout',  rects: [
+      { x1: 5.52,  z1: 0.20,  x2: 10.52, z2: 4.20 },
+      { x1: 6.948, z1: 4.20,  x2: 10.52, z2: 9.00 },
+      { x1: 1.815, z1: 9.00,  x2: 10.52, z2: 13.602 } ] },
+  { id: 'balkon_n',  name: 'Balkon (noord)',    kind: 'steen', rects: [
+      { x1: 0.00,  z1: -1.331, x2: 10.72, z2: 0.00 } ] },
+  { id: 'balkon_z',  name: 'Balkon (zuid)',     kind: 'steen', rects: [
+      { x1: -2.30, z1: 13.802, x2: 10.72, z2: 17.402 } ] },
+];
+ROOMS.forEach(r => { r.walls = []; r.floorMeshes = []; });
+
+// Per-room tile cadence + the base material each floor kind starts from.
+const FLOOR_TILE = { hout: [2.0, 2.5], tegel: [1.2, 1.2], steen: [1.5, 1.5] };
+
+// Wall paint palette (named, real-paint-ish). The plaster map is near-white so
+// material.color multiplies into a believable painted-plaster tint.
+const PAINT_PALETTE = [
+  { name: 'Gebroken wit', hex: 0xf0ece4 },
+  { name: 'Warm crème',   hex: 0xe9dcc4 },
+  { name: 'Zacht salie',  hex: 0xc7cdb8 },
+  { name: 'Saliegroen',   hex: 0x9aa886 },
+  { name: 'Kleigrijs',    hex: 0xbcb3a4 },
+  { name: 'Terracotta',   hex: 0xc08457 },
+  { name: 'Oudroze',      hex: 0xd8b5ad },
+  { name: 'Diepblauw',    hex: 0x3f5670 },
+  { name: 'Antraciet',    hex: 0x55585c },
+  { name: 'Mosterd',      hex: 0xc69a3e },
+  { name: 'Donkergroen',  hex: 0x42584a },
+];
+const DEFAULT_WALL_HEX = 0xf0ece4;
+
+// Default floor finish id per kind (set once FLOOR_FINISHES is built).
+const KIND_DEFAULT_FINISH = { hout: 'naturel_eiken', tegel: 'tegel', steen: 'natuursteen' };
+
+// Painting placement (decorative Mondriaan art on the walls).
 const PAINTING_CENTER_Y   = 1.55;        // painting centre height
 const PAINTING_WALL_GAP   = 0.06;        // distance from wall face to painting back
 const PLINTH_SIZE         = { w: 0.6, h: 0.5, d: 0.4 };
@@ -261,15 +392,18 @@ const playerPos = new THREE.Vector3(2.0, PLAYER_H, 8.0);
 let yaw = 0, pitch = 0;
 let moveF = 0, moveR = 0;
 const paintings = [];
-let foundCount = 0;
-let totalPots = 0;
-const shakingGroups = [];
 let gameStarted = false;
 const wallSegs = [];
-const particles = [];
-let hintActive = false;
-let hintTimer = null;
-let hintTarget = null;
+const wallMeshes = [];      // { mesh, seg, index } for every solid wall
+let currentRoom = null;     // room the player is standing in (design target)
+let accentArm = false;      // accent-wall pick mode active
+let accentHex = 0xc08457;   // currently selected accent colour
+let FLOOR_FINISHES = [];    // [{ id, name, mat }], built in setupTextures
+let skyMat = null;          // sky cyclorama material (tinted by time-of-day)
+let hemiLight = null, sunLight = null;
+const pointLightInfo = [];  // { light, baseI, disc, baseColor }
+// Per-room design choices, serialised for save/share.
+const scheme = { v: 1, tod: 'dag', rooms: {}, acc: {} };
 
 /* Keyboard state */
 const keys = {};
@@ -369,6 +503,12 @@ function init() {
   setupLights();
   placePaintings();
   setupInput();
+
+  // Design tool: build the panel, then load any saved/shared scheme and apply it.
+  buildDesignPanel();
+  loadScheme();
+  applyScheme();
+  refreshPanel();
 
   window.addEventListener('resize', () => {
     camera.aspect = innerWidth / innerHeight;
@@ -711,6 +851,9 @@ function setupTextures() {
   skyTex.wrapS = THREE.RepeatWrapping;
   skyTex.wrapT = THREE.ClampToEdgeWrapping;
   skyTex.anisotropy = aniso;
+
+  // Floor-finish library (depends on FLOOR_MAT's plank map existing).
+  buildFloorFinishes(aniso);
 }
 
 /* ===== MUSEUM GEOMETRY ===== */
@@ -722,7 +865,9 @@ function addWall(x1, z1, x2, z2) {
   const angle = Math.atan2(dx, dz);
 
   const geo = new THREE.BoxGeometry(WALL_THICK, WALL_HEIGHT, len);
-  const wall = new THREE.Mesh(geo, WALL_MAT);
+  // Each wall gets its own material clone (sharing the plaster map) so the
+  // design panel can repaint individual rooms / accent walls independently.
+  const wall = new THREE.Mesh(geo, WALL_MAT.clone());
   wall.position.set(cx, WALL_HEIGHT / 2, cz);
   wall.rotation.y = angle;
   scene.add(wall);
@@ -762,6 +907,7 @@ function addWall(x1, z1, x2, z2) {
   scene.add(cmTrim);
 
   wallSegs.push({ x1, z1, x2, z2, len, angle });
+  return wall;
 }
 
 function addDoorFrame(x1, z1, x2, z2) {
@@ -1048,19 +1194,31 @@ function addRailing(x1, z1, x2, z2) {
 }
 
 /* Per-room floor + ceiling. mat = floor material clone. */
-function addRoomFloor(rect, baseMat = FLOOR_MAT, tileW = 4, tileD = 2) {
-  const { x1, z1, x2, z2 } = rect;
-  const w = x2 - x1, d = z2 - z1;
-  const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
+// Clone baseMat onto a floor mesh, scaling its texture repeat to the mesh's
+// footprint (stored in userData) so plank/tile cadence stays constant across
+// room sizes. Reused both at build time and when the design panel swaps floors.
+function applyFloorTiling(mesh, baseMat) {
+  const { w, d, tileW, tileD } = mesh.userData;
   const fMat = baseMat.clone();
   if (baseMat.map) {
     fMat.map = baseMat.map.clone();
     fMat.map.needsUpdate = true;
     fMat.map.wrapS = fMat.map.wrapT = THREE.RepeatWrapping;
+    fMat.map.center.copy(baseMat.map.center);
+    fMat.map.rotation = baseMat.map.rotation;
     fMat.map.repeat.set(Math.max(1, w / tileW), Math.max(1, d / tileD));
     fMat.map.anisotropy = baseMat.map.anisotropy;
   }
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d), fMat);
+  mesh.material = fMat;
+}
+
+function addRoomFloor(rect, baseMat = FLOOR_MAT, tileW = 4, tileD = 2) {
+  const { x1, z1, x2, z2 } = rect;
+  const w = x2 - x1, d = z2 - z1;
+  const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d), baseMat);
+  floor.userData = { w, d, tileW, tileD };
+  applyFloorTiling(floor, baseMat);
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(cx, 0.001, cz);
   scene.add(floor);
@@ -1079,6 +1237,7 @@ function addRoomFloor(rect, baseMat = FLOOR_MAT, tileW = 4, tileD = 2) {
   ceil.rotation.x = Math.PI / 2;
   ceil.position.set(cx, WALL_HEIGHT - 0.001, cz);
   scene.add(ceil);
+  return floor;
 }
 
 /* ===== FURNITURE HELPERS ===== */
@@ -1453,37 +1612,13 @@ function buildApartment() {
   //
   // Door positions: see apartment.json `openings`.
 
-  // === Floor + ceiling per room ===
-  // Slaapkamer 1 main rectangle + NW alcove (zigzag area approximated by
-  // overlapping rectangles, walls trace the diagonal segments)
-  addRoomFloor({ x1: 0.00, z1: 0.20, x2: 5.52, z2: 4.20 }, FLOOR_MAT, 2.0, 2.5);
-  addRoomFloor({ x1: -0.60, z1: 0.70, x2: 0.00, z2: 4.10 }, FLOOR_MAT, 2.0, 2.5);
-  addRoomFloor({ x1: -1.55, z1: 1.70, x2: -0.60, z2: 3.10 }, FLOOR_MAT, 2.0, 2.5);
-
-  // Gang (C-shape around the bathroom block)
-  addRoomFloor({ x1: -1.00, z1: 4.20, x2: 6.948, z2: 4.40 }, FLOOR_MAT, 2.0, 2.5); // top sliver under slaapk1
-  addRoomFloor({ x1: -1.00, z1: 4.40, x2: 3.158, z2: 5.85 }, FLOOR_MAT, 2.0, 2.5); // west of bathroom
-  addRoomFloor({ x1: -2.30, z1: 5.85, x2: 3.158, z2: 7.10 }, FLOOR_MAT, 2.0, 2.5); // wider west bulge
-  addRoomFloor({ x1: -2.30, z1: 7.10, x2: 6.948, z2: 9.00 }, FLOOR_MAT, 2.0, 2.5); // bottom row
-  addRoomFloor({ x1: 6.748, z1: 4.40, x2: 6.948, z2: 7.10 }, FLOOR_MAT, 0.3, 2.5); // sliver east of bathroom
-
-  // Bathroom block — badkamer (L-shape) + toilet (SE corner)
-  addRoomFloor({ x1: 3.158, z1: 4.40, x2: 6.748, z2: 5.315 }, TILE_MAT, 1.2, 1.2); // top of bath
-  addRoomFloor({ x1: 3.158, z1: 5.315, x2: 5.818, z2: 7.10 }, TILE_MAT, 1.2, 1.2); // L-bottom of bath
-  addRoomFloor({ x1: 5.818, z1: 5.315, x2: 6.748, z2: 7.10 }, TILE_MAT, 1.0, 1.0); // toilet
-
-  // Slaapkamer 2 (en-suite badk klein overlaid)
-  addRoomFloor({ x1: -2.30, z1: 9.00, x2: 1.815, z2: 13.602 }, FLOOR_MAT, 2.0, 2.5);
-  addRoomFloor({ x1: -2.30, z1: 9.009, x2: -0.63, z2: 11.298 }, TILE_MAT, 1.2, 1.2);
-
-  // Woonkamer — north strip + east strip + south extension
-  addRoomFloor({ x1: 5.52, z1: 0.20, x2: 10.52, z2: 4.20 }, FLOOR_MAT, 2.0, 2.5);
-  addRoomFloor({ x1: 6.948, z1: 4.20, x2: 10.52, z2: 9.00 }, FLOOR_MAT, 2.0, 2.5);
-  addRoomFloor({ x1: 1.815, z1: 9.00, x2: 10.52, z2: 13.602 }, FLOOR_MAT, 2.0, 2.5);
-
-  // Balcony floors (outdoor stone tile)
-  addRoomFloor({ x1: 0.00, z1: -1.331, x2: 10.72, z2: 0.00 }, STONE_TILE_MAT, 1.5, 1.5);
-  addRoomFloor({ x1: -2.30, z1: 13.802, x2: 10.72, z2: 17.402 }, STONE_TILE_MAT, 1.5, 1.5);
+  // === Floor + ceiling per room (data-driven from ROOMS) ===
+  const KIND_BASE_MAT = { hout: FLOOR_MAT, tegel: TILE_MAT, steen: STONE_TILE_MAT };
+  for (const room of ROOMS) {
+    const [tw, td] = FLOOR_TILE[room.kind];
+    const base = KIND_BASE_MAT[room.kind];
+    room.floorMeshes = room.rects.map(r => addRoomFloor(r, base, tw, td));
+  }
 
   // Walls, doors, sliding-door visuals and railings — driven by APARTMENT_GEOM.
   const geomDispatch = {
@@ -1492,12 +1627,25 @@ function buildApartment() {
     sliding: addSlidingDoor,
     railing: addRailing,
   };
-  for (const g of APARTMENT_GEOM) {
-    geomDispatch[g.kind](g.x1, g.z1, g.x2, g.z2);
+  APARTMENT_GEOM.forEach((g, i) => {
+    const mesh = geomDispatch[g.kind](g.x1, g.z1, g.x2, g.z2);
+    if (g.kind === 'wall' && mesh) {
+      mesh.userData.geomIndex = i;
+      wallMeshes.push({ mesh, seg: g, index: i });
+    }
+  });
+
+  // Assign each solid wall to every room whose floor-rect edge it lies on, so
+  // the design panel can repaint a single room. Shared walls land in both
+  // neighbours' lists (acceptable — repainting either room paints the party wall).
+  for (const wm of wallMeshes) {
+    for (const room of ROOMS) {
+      if (room.rects.some(r => segOnRectEdge(wm.seg, r))) room.walls.push(wm);
+    }
   }
 
   // === Sky cyclorama (outside, beyond the balconies) ===
-  const skyMat = new THREE.MeshBasicMaterial({
+  skyMat = new THREE.MeshBasicMaterial({
     map: skyTex,
     side: THREE.BackSide,
     fog: false,
@@ -1577,7 +1725,8 @@ function buildMuseum() {
 /* ===== LIGHTING ===== */
 function setupLights() {
   // Hemisphere fill — slightly cooler sky for a daytime-residential feel
-  scene.add(new THREE.HemisphereLight(0xeff4fa, 0x3a3028, 0.7));
+  hemiLight = new THREE.HemisphereLight(0xeff4fa, 0x3a3028, 0.7);
+  scene.add(hemiLight);
 
   // Per-room ceiling lights. [x, z, color, intensity, range]
   const lights = [
@@ -1605,12 +1754,13 @@ function setupLights() {
     );
     disc.position.set(x, WALL_HEIGHT - 0.01, z);
     scene.add(disc);
+    pointLightInfo.push({ light: pl, baseI: intensity, disc });
   }
 
   // Sun key from above — daylit balconies
-  const dir = new THREE.DirectionalLight(0xfff4d8, 0.55);
-  dir.position.set(6, 18, -8);
-  scene.add(dir);
+  sunLight = new THREE.DirectionalLight(0xfff4d8, 0.55);
+  sunLight.position.set(6, 18, -8);
+  scene.add(sunLight);
 }
 
 /* ===== MONDRIAAN GENERATOR =====
@@ -1881,18 +2031,10 @@ function placePaintings() {
     { wx:  5.20, wz:  7.20, ry: 0 },              // bathroom south wall (south-facing into gang)
   ];
 
-  // 3–5 of the 8 paintings randomly hide a pot; the rest are decoy Mondriaans.
-  const potCount = 3 + Math.floor(Math.random() * 3);
-  totalPots = potCount;
-  const potIndices = new Set();
-  while (potIndices.size < potCount) {
-    potIndices.add(Math.floor(Math.random() * spots.length));
-  }
-  document.getElementById('score').textContent = `Gevonden: 0/${totalPots}`;
-
+  // Purely decorative abstract art — no hidden pots, no game.
   spots.forEach((s, idx) => {
     const potInfo = { u0: 0, v0: 0, u1: 0, v1: 0 };
-    const hasPot = potIndices.has(idx);
+    const hasPot = false;
     const paintCanvas = generateMondriaan(512, 400, potInfo, hasPot);
 
     const tex = new THREE.CanvasTexture(paintCanvas);
@@ -2017,24 +2159,21 @@ function setupInput() {
   addEventListener('keydown', e => {
     keys[e.code] = true;
     if (!gameStarted) return;
-    if (e.code === 'KeyH') showHint();
-    if (e.code === 'Escape') {
-      const winOv = document.getElementById('winOverlay');
-      if (winOv.style.display === 'flex') winOv.style.display = 'none';
-    }
+    if (e.code === 'KeyI') { e.preventDefault(); toggleDesignPanel(); }
+    if (e.code === 'Escape' && designPanelOpen()) toggleDesignPanel(false);
   });
   addEventListener('keyup', e => { keys[e.code] = false; });
 
-  // Pointer lock (desktop)
+  // Pointer lock (desktop). While the design panel is open we leave the cursor
+  // free so the user can click swatches.
   let isLocked = false;
   renderer.domElement.addEventListener('click', () => {
-    if (!gameStarted) return;
+    if (!gameStarted || designPanelOpen()) return;
     if (!isMobile && !isLocked) {
       renderer.domElement.requestPointerLock();
+      return;
     }
-    if (isLocked) {
-      checkPaintingClick(innerWidth / 2, innerHeight / 2);
-    }
+    if (isLocked && accentArm) pickAccentWall(innerWidth / 2, innerHeight / 2);
   });
   document.addEventListener('pointerlockchange', () => {
     isLocked = document.pointerLockElement === renderer.domElement;
@@ -2081,10 +2220,10 @@ function setupInput() {
     for (const t of e.changedTouches) {
       if (t.identifier === lookTouchId) {
         const s = touchStarts[t.identifier];
-        // Only treat as a search-tap if total path length stayed small
-        // throughout the gesture, not just start-to-end.
-        if (s && Date.now() - s.t < 300 && s.dist < 15) {
-          checkPaintingClick(t.clientX, t.clientY);
+        // A short, still tap while the accent-wall picker is armed selects the
+        // wall under the finger; otherwise taps do nothing (design tool, no game).
+        if (s && Date.now() - s.t < 300 && s.dist < 15 && accentArm) {
+          pickAccentWall(t.clientX, t.clientY);
         }
         delete touchStarts[t.identifier];
         lookTouchId = null;
@@ -2131,18 +2270,10 @@ function setupInput() {
   joystickEl.addEventListener('touchend', endJoystick, { passive: false });
   joystickEl.addEventListener('touchcancel', endJoystick, { passive: false });
 
-  // Hint
-  document.getElementById('hintBtn').addEventListener('click', e => { e.stopPropagation(); showHint(); });
-
-  // Start button
+  // Start button — begin the walkthrough
   document.getElementById('startBtn').addEventListener('click', () => {
     gameStarted = true;
     document.getElementById('introOverlay').style.display = 'none';
-  });
-
-  // Replay button — reload to a fresh procedurally-generated museum
-  document.getElementById('replayBtn').addEventListener('click', () => {
-    location.reload();
   });
 }
 
@@ -2155,153 +2286,364 @@ function updateJoystick(tx, ty) {
   moveR = dx / max;
 }
 
-/* ===== PAINTING CLICK ===== */
-const _ndc = new THREE.Vector2();
-function checkPaintingClick(sx, sy) {
-  _ndc.set((sx / innerWidth) * 2 - 1, -(sy / innerHeight) * 2 + 1);
-  raycaster.setFromCamera(_ndc, camera);
-  raycaster.far = 4.0;
+/* =====================================================================
+ * DESIGN SYSTEM — per-room wall paint, floor finishes, accent walls,
+ * time-of-day lighting, and a save/share scheme. Drives the #designPanel.
+ * ===================================================================== */
+let texAniso = 1;
+let lastRoom = null;          // most recent room we were inside (edit fallback)
+const _accNdc = new THREE.Vector2();
 
-  const meshes = paintings.filter(p => !p.found).map(p => p.mesh);
-  if (meshes.length === 0) return;
-  const hits = raycaster.intersectObjects(meshes);
-  if (hits.length === 0) return;
+const hex2css = h => '#' + h.toString(16).padStart(6, '0');
 
-  const hit = hits[0];
-  const painting = paintings.find(p => p.mesh === hit.object);
-  if (!painting || painting.found || !hit.uv) return;
-
-  // Decoy painting (no pot composed in its grid) — shake and flash.
-  if (!painting.hasPot) {
-    triggerMiss(painting);
-    return;
-  }
-
-  const u = hit.uv.x;
-  const v = 1 - hit.uv.y; // flip V
-  const pi = painting.potInfo;
-  const pad = PAINTING_HIT_PAD;
-
-  if (u >= pi.u0 - pad && u <= pi.u1 + pad && v >= pi.v0 - pad && v <= pi.v1 + pad) {
-    onFoundPot(painting);
-  }
+/* --- room lookup ----------------------------------------------------- */
+// A wall belongs to a room if its midpoint sits on (near) one of that room's
+// floor-rect edges and within the rect's extent. Diagonal alcove walls that
+// match no axis-aligned edge simply keep the default colour.
+function segOnRectEdge(seg, rect, tol = 0.26) {
+  const mx = (seg.x1 + seg.x2) / 2, mz = (seg.z1 + seg.z2) / 2;
+  const xlo = Math.min(rect.x1, rect.x2), xhi = Math.max(rect.x1, rect.x2);
+  const zlo = Math.min(rect.z1, rect.z2), zhi = Math.max(rect.z1, rect.z2);
+  if (mx < xlo - tol || mx > xhi + tol || mz < zlo - tol || mz > zhi + tol) return false;
+  const d = Math.min(Math.abs(mx - xlo), Math.abs(mx - xhi),
+                     Math.abs(mz - zlo), Math.abs(mz - zhi));
+  return d < tol;
 }
 
-function triggerMiss(painting) {
-  const g = painting.group;
-  if (!g.userData._shakeBaseRz) g.userData._shakeBaseRz = g.rotation.z;
-  g.userData._shakeStart = performance.now();
-  if (!shakingGroups.includes(g)) shakingGroups.push(g);
+function rectArea(r) { return Math.abs((r.x2 - r.x1) * (r.z2 - r.z1)); }
 
-  const m = document.getElementById('missMsg');
-  if (m) {
-    m.style.opacity = '1';
-    setTimeout(() => { m.style.opacity = '0'; }, 600);
-  }
-}
-
-function tickShakes() {
-  const now = performance.now();
-  for (let i = shakingGroups.length - 1; i >= 0; i--) {
-    const g = shakingGroups[i];
-    const t = (now - g.userData._shakeStart) / 350;
-    if (t >= 1) {
-      g.rotation.z = g.userData._shakeBaseRz || 0;
-      shakingGroups.splice(i, 1);
-      continue;
+// Which room is the point in? Prefer the smallest matching rect so an enclosed
+// room (toilet, en-suite) wins over the larger room around it.
+function roomAt(x, z) {
+  let best = null, bestA = Infinity;
+  for (const room of ROOMS) {
+    for (const r of room.rects) {
+      const xlo = Math.min(r.x1, r.x2), xhi = Math.max(r.x1, r.x2);
+      const zlo = Math.min(r.z1, r.z2), zhi = Math.max(r.z1, r.z2);
+      if (x >= xlo && x <= xhi && z >= zlo && z <= zhi) {
+        const a = rectArea(r);
+        if (a < bestA) { bestA = a; best = room; }
+      }
     }
-    g.rotation.z = (g.userData._shakeBaseRz || 0) + Math.sin(t * Math.PI * 6) * 0.06 * (1 - t);
+  }
+  return best;
+}
+
+function editTarget() { return currentRoom || lastRoom || ROOMS.find(r => r.id === 'woonkamer'); }
+
+/* --- low-level apply (visual only; scheme is written by the handlers) - */
+function paintRoomWalls(room, hex) {
+  for (const wm of room.walls) wm.mesh.material.color.setHex(hex);
+}
+function paintAccent(geomIndex, hex) {
+  const wm = wallMeshes.find(w => w.index === geomIndex);
+  if (wm) wm.mesh.material.color.setHex(hex);
+}
+function reapplyAccents() {
+  for (const [idx, hex] of Object.entries(scheme.acc)) paintAccent(+idx, hex);
+}
+function finishById(id) { return FLOOR_FINISHES.find(f => f.id === id) || FLOOR_FINISHES[0]; }
+function setRoomFloor(room, finishId) {
+  const base = finishById(finishId).mat;
+  for (const m of room.floorMeshes) applyFloorTiling(m, base);
+}
+
+/* --- accent-wall picker (raycast the wall you're looking at) ---------- */
+function pickAccentWall(sx, sy) {
+  _accNdc.set((sx / innerWidth) * 2 - 1, -(sy / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(_accNdc, camera);
+  raycaster.far = 8.0;
+  const hits = raycaster.intersectObjects(wallMeshes.map(w => w.mesh));
+  if (!hits.length) { showToast('Geen muur in zicht'); return; }
+  const wm = wallMeshes.find(w => w.mesh === hits[0].object);
+  if (!wm) return;
+  scheme.acc[wm.index] = accentHex;
+  paintAccent(wm.index, accentHex);
+  showToast('Accentmuur geschilderd');
+}
+
+/* --- time-of-day ----------------------------------------------------- */
+const TOD = {
+  dag:   { hemiSky: 0xeff4fa, hemiGround: 0x3a3028, hemiI: 0.70,
+           sun: 0xfff4d8, sunI: 0.55, sunPos: [6, 18, -8],
+           bg: 0xb8c8d8, fog: 0xb8c8d8, fogNear: 22, fogFar: 60,
+           exposure: 1.10, pointMul: 1.0, sky: 0xffffff },
+  avond: { hemiSky: 0xf3ddc4, hemiGround: 0x2a2018, hemiI: 0.42,
+           sun: 0xffb066, sunI: 0.34, sunPos: [-10, 9, -6],
+           bg: 0xc99a72, fog: 0xb9885f, fogNear: 16, fogFar: 52,
+           exposure: 1.06, pointMul: 1.3, sky: 0xffc596 },
+  nacht: { hemiSky: 0x202a3c, hemiGround: 0x141009, hemiI: 0.16,
+           sun: 0x35435f, sunI: 0.10, sunPos: [4, 14, 6],
+           bg: 0x141821, fog: 0x10131b, fogNear: 12, fogFar: 46,
+           exposure: 1.22, pointMul: 1.8, sky: 0x2a3552 },
+};
+function setTimeOfDay(mode) {
+  const t = TOD[mode] || TOD.dag;
+  if (hemiLight) {
+    hemiLight.color.setHex(t.hemiSky);
+    hemiLight.groundColor.setHex(t.hemiGround);
+    hemiLight.intensity = t.hemiI;
+  }
+  if (sunLight) {
+    sunLight.color.setHex(t.sun);
+    sunLight.intensity = t.sunI;
+    sunLight.position.set(...t.sunPos);
+  }
+  for (const p of pointLightInfo) p.light.intensity = p.baseI * t.pointMul;
+  if (scene.background) scene.background.setHex(t.bg);
+  if (scene.fog) { scene.fog.color.setHex(t.fog); scene.fog.near = t.fogNear; scene.fog.far = t.fogFar; }
+  if (renderer) renderer.toneMappingExposure = t.exposure;
+  if (skyMat) skyMat.color.setHex(t.sky);
+  scheme.tod = mode;
+}
+
+/* --- floor-finish materials (built from setupTextures) --------------- */
+function makePlankMat(palette, grainRGB, seamRGBA, rough = 0.55) {
+  const tex = makeTexture((ctx, w, h) => {
+    const planks = 4, plankH = h / planks;
+    for (let py = 0; py < planks; py++) {
+      const baseY = py * plankH, segs = 3, offset = (py % 2) * 0.5;
+      for (let s = 0; s < segs; s++) {
+        const x0 = ((s + offset) % segs) * (w / segs), segW = w / segs;
+        ctx.fillStyle = palette[(py * 7 + s * 13) % palette.length];
+        ctx.fillRect(x0, baseY, segW, plankH);
+        for (let g = 0; g < 14; g++) {
+          ctx.strokeStyle = `rgba(${grainRGB}, ${0.06 + Math.random() * 0.10})`;
+          ctx.lineWidth = 0.6 + Math.random() * 0.9;
+          const gx = x0 + Math.random() * segW;
+          ctx.beginPath(); ctx.moveTo(gx, baseY);
+          ctx.bezierCurveTo(gx + (Math.random() - 0.5) * 14, baseY + plankH * 0.4,
+                            gx + (Math.random() - 0.5) * 14, baseY + plankH * 0.7,
+                            gx + (Math.random() - 0.5) * 14, baseY + plankH);
+          ctx.stroke();
+        }
+        if (Math.random() < 0.30) {
+          const kx = x0 + Math.random() * segW, ky = baseY + plankH * (0.3 + Math.random() * 0.4);
+          ctx.fillStyle = `rgba(${grainRGB}, 0.35)`;
+          ctx.beginPath(); ctx.ellipse(kx, ky, 3 + Math.random() * 4, 1.5 + Math.random() * 2.5, 0, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      ctx.fillStyle = seamRGBA; ctx.fillRect(0, baseY + plankH - 1, w, 2);
+    }
+    ctx.fillStyle = seamRGBA;
+    for (let s = 1; s < 3; s++) ctx.fillRect((w / 3) * s - 1, 0, 2, h);
+  }, 1024, 512);
+  tex.anisotropy = texAniso;
+  return new THREE.MeshStandardMaterial({ map: tex, roughness: rough, metalness: 0.04 });
+}
+
+function makeConcreteMat() {
+  const tex = makeTexture((ctx, w, h) => {
+    ctx.fillStyle = '#b8b6b1'; ctx.fillRect(0, 0, w, h);
+    const img = ctx.getImageData(0, 0, w, h);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const n = (Math.random() - 0.5) * 26;
+      img.data[i] += n; img.data[i + 1] += n; img.data[i + 2] += n;
+    }
+    ctx.putImageData(img, 0, 0);
+    for (let i = 0; i < 60; i++) {
+      ctx.fillStyle = `rgba(110,108,104,${0.04 + Math.random() * 0.06})`;
+      ctx.beginPath();
+      ctx.arc(Math.random() * w, Math.random() * h, 30 + Math.random() * 90, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }, 512, 512);
+  tex.anisotropy = texAniso;
+  return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, metalness: 0.02 });
+}
+
+// Built once, after the base textures exist. Reuses FLOOR_MAT / TILE_MAT /
+// STONE_TILE_MAT for the naturel/tile/stone options.
+function buildFloorFinishes(aniso) {
+  texAniso = aniso;
+  const diagMat = FLOOR_MAT.clone();
+  diagMat.map = FLOOR_MAT.map.clone();
+  diagMat.map.center.set(0.5, 0.5);
+  diagMat.map.rotation = Math.PI / 4;
+  diagMat.map.needsUpdate = true;
+  FLOOR_FINISHES = [
+    { id: 'naturel_eiken', name: 'Naturel eiken',     mat: FLOOR_MAT },
+    { id: 'licht_eiken',   name: 'Licht eiken',       mat: makePlankMat(
+        ['#efe0c6', '#e8d6b8', '#f1e4cd', '#e3d3b0', '#ece0c2'], '150, 120, 80', 'rgba(120,95,60,0.4)') },
+    { id: 'walnoot',       name: 'Walnoot',           mat: makePlankMat(
+        ['#6b4a2f', '#5b3d27', '#73503a', '#4a3320', '#624a32'], '30, 18, 8', 'rgba(18,10,4,0.6)') },
+    { id: 'grijs_eiken',   name: 'Grijs eiken',       mat: makePlankMat(
+        ['#cfcabf', '#c3beb3', '#d6d1c7', '#bbb6ab', '#c8c3b8'], '90, 88, 82', 'rgba(70,68,62,0.4)') },
+    { id: 'diagonaal',     name: 'Diagonale planken', mat: diagMat },
+    { id: 'beton',         name: 'Beton',             mat: makeConcreteMat() },
+    { id: 'tegel',         name: 'Tegel',             mat: TILE_MAT },
+    { id: 'natuursteen',   name: 'Natuursteen',       mat: STONE_TILE_MAT },
+  ];
+}
+
+/* --- scheme save / load --------------------------------------------- */
+function resetSchemeToDefaults() {
+  scheme.v = 1; scheme.tod = 'dag'; scheme.rooms = {}; scheme.acc = {};
+  for (const room of ROOMS) {
+    scheme.rooms[room.id] = { w: DEFAULT_WALL_HEX, f: KIND_DEFAULT_FINISH[room.kind] };
+  }
+}
+function applyScheme() {
+  for (const room of ROOMS) {
+    const rs = scheme.rooms[room.id];
+    if (!rs) continue;
+    paintRoomWalls(room, rs.w);
+    setRoomFloor(room, rs.f);
+  }
+  reapplyAccents();
+  setTimeOfDay(scheme.tod);
+}
+function encodeScheme() {
+  try { return btoa(JSON.stringify(scheme)); } catch (e) { return ''; }
+}
+function loadScheme() {
+  resetSchemeToDefaults();
+  let enc = null;
+  const m = location.hash.match(/scheme=([^&]+)/);
+  if (m) enc = decodeURIComponent(m[1]);
+  else { try { enc = localStorage.getItem('huisScheme'); } catch (e) {} }
+  if (enc) {
+    try {
+      const s = JSON.parse(atob(enc));
+      if (s && s.v === 1) {
+        scheme.tod = s.tod || 'dag';
+        scheme.acc = s.acc || {};
+        for (const room of ROOMS) {
+          if (s.rooms && s.rooms[room.id]) {
+            scheme.rooms[room.id].w = s.rooms[room.id].w ?? DEFAULT_WALL_HEX;
+            scheme.rooms[room.id].f = s.rooms[room.id].f ?? KIND_DEFAULT_FINISH[room.kind];
+          }
+        }
+      }
+    } catch (e) { /* ignore corrupt scheme */ }
+  }
+}
+function saveAndShare() {
+  const enc = encodeScheme();
+  try { localStorage.setItem('huisScheme', enc); } catch (e) {}
+  const url = location.origin + location.pathname + '#scheme=' + enc;
+  try { history.replaceState(null, '', '#scheme=' + enc); } catch (e) {}
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(
+      () => showToast('Link gekopieerd — bewaard & deelbaar'),
+      () => showToast('Bewaard (kopiëren niet toegestaan)'));
+  } else {
+    showToast('Bewaard in deze browser');
   }
 }
 
-function onFoundPot(p) {
-  p.found = true;
-  foundCount++;
-  document.getElementById('score').textContent = `Gevonden: ${foundCount}/${totalPots}`;
-
-  // If this painting is currently the hint target, cancel the hint reset so
-  // the green found-glow isn't wiped when the hint timer fires.
-  if (hintTarget === p) {
-    if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
-    hintActive = false;
-    hintTarget = null;
+/* --- panel UI -------------------------------------------------------- */
+let _toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('dpToast');
+  if (!el) return;
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 1900);
+}
+function designPanelOpen() {
+  const p = document.getElementById('designPanel');
+  return p && p.classList.contains('open');
+}
+function toggleDesignPanel(force) {
+  const p = document.getElementById('designPanel');
+  if (!p) return;
+  const open = (force === undefined) ? !p.classList.contains('open') : force;
+  p.classList.toggle('open', open);
+  if (open) {
+    if (document.exitPointerLock) document.exitPointerLock();
+    refreshPanel();
   }
-
-  // Flash message
-  const msg = document.getElementById('foundMsg');
-  msg.textContent = 'Bloempot gevonden!';
-  msg.style.opacity = '1';
-  setTimeout(() => { msg.style.opacity = '0'; }, 1800);
-
-  // Glow on painting
-  p.mesh.material.emissive.setHex(0x44CC44);
-  p.mesh.material.emissiveIntensity = 0.4;
-  setTimeout(() => { p.mesh.material.emissiveIntensity = 0.12; }, 2500);
-
-  // Particles
-  spawnParticles(p.worldPos);
-
-  // Win check
-  if (foundCount >= totalPots) {
-    setTimeout(() => {
-      const winP = document.querySelector('#winOverlay p');
-      if (winP) winP.textContent = `Je hebt alle ${totalPots} bloempotten gevonden!`;
-      document.getElementById('winOverlay').style.display = 'flex';
-    }, 2500);
-  }
+  // Note: accent-arm intentionally persists across close so the user can shut
+  // the panel and then click/look at the wall to paint (desktop ignores canvas
+  // clicks while the panel is open).
 }
 
-function spawnParticles(pos) {
-  const cols = [0xFFD700, 0xFF4444, 0x44FF44, 0x4488FF, 0xFF8800];
-  for (let i = 0; i < 25; i++) {
-    const g = new THREE.BoxGeometry(0.04, 0.04, 0.04);
-    const m = new THREE.MeshBasicMaterial({
-      color: cols[Math.floor(Math.random() * cols.length)],
-      transparent: true,
+function buildDesignPanel() {
+  const accentIdx = [5, 7, 8, 3, 10, 9]; // terracotta, diepblauw, antraciet, salie, donkergroen, mosterd
+
+  const wallRow = document.getElementById('dpWallSwatches');
+  PAINT_PALETTE.forEach(p => {
+    const s = document.createElement('div');
+    s.className = 'swatch'; s.dataset.hex = p.hex;
+    s.style.background = hex2css(p.hex); s.title = p.name;
+    s.addEventListener('click', () => {
+      const room = editTarget();
+      scheme.rooms[room.id].w = p.hex;
+      paintRoomWalls(room, p.hex);
+      reapplyAccents();
+      showToast(`${room.name}: ${p.name}`);
+      refreshPanel();
     });
-    const mesh = new THREE.Mesh(g, m);
-    mesh.position.set(
-      pos.x + (Math.random() - 0.5) * 0.4,
-      pos.y + (Math.random() - 0.5) * 0.4,
-      pos.z + (Math.random() - 0.5) * 0.4
-    );
-    const vel = new THREE.Vector3(
-      (Math.random() - 0.5) * 3.5,
-      Math.random() * 4 + 2,
-      (Math.random() - 0.5) * 3.5
-    );
-    scene.add(mesh);
-    particles.push({ mesh, vel, life: 2.0 });
-  }
+    wallRow.appendChild(s);
+  });
+
+  const accentRow = document.getElementById('dpAccentSwatches');
+  accentIdx.forEach(i => {
+    const p = PAINT_PALETTE[i];
+    const s = document.createElement('div');
+    s.className = 'swatch'; s.dataset.hex = p.hex;
+    s.style.background = hex2css(p.hex); s.title = p.name;
+    if (p.hex === accentHex) s.classList.add('sel');
+    s.addEventListener('click', () => {
+      accentHex = p.hex;
+      accentRow.querySelectorAll('.swatch').forEach(el => el.classList.remove('sel'));
+      s.classList.add('sel');
+    });
+    accentRow.appendChild(s);
+  });
+
+  document.getElementById('accentBtn').addEventListener('click', () => {
+    accentArm = !accentArm;
+    document.getElementById('accentBtn').classList.toggle('armed', accentArm);
+    showToast(accentArm
+      ? (isMobile ? 'Tik op een muur om de accentkleur te plaatsen'
+                  : 'Sluit dit menu, kijk naar een muur en klik')
+      : 'Accentmuur uit');
+  });
+
+  const floorList = document.getElementById('dpFloors');
+  FLOOR_FINISHES.forEach(f => {
+    const b = document.createElement('button');
+    b.className = 'finishBtn'; b.dataset.fid = f.id; b.textContent = f.name;
+    b.addEventListener('click', () => {
+      const room = editTarget();
+      scheme.rooms[room.id].f = f.id;
+      setRoomFloor(room, f.id);
+      showToast(`${room.name}: ${f.name}`);
+      refreshPanel();
+    });
+    floorList.appendChild(b);
+  });
+
+  const todRow = document.getElementById('dpTod');
+  [['dag', 'Dag'], ['avond', 'Avond'], ['nacht', 'Nacht']].forEach(([id, label]) => {
+    const b = document.createElement('button');
+    b.className = 'modeBtn'; b.dataset.tod = id; b.textContent = label;
+    b.addEventListener('click', () => { setTimeOfDay(id); refreshPanel(); });
+    todRow.appendChild(b);
+  });
+
+  document.getElementById('dpShare').addEventListener('click', saveAndShare);
+  document.getElementById('dpReset').addEventListener('click', () => {
+    resetSchemeToDefaults(); applyScheme(); refreshPanel(); showToast('Teruggezet naar standaard');
+  });
+  document.getElementById('dpClose').addEventListener('click', () => toggleDesignPanel(false));
+  document.getElementById('designToggle').addEventListener('click', () => toggleDesignPanel());
 }
 
-/* ===== HINT ===== */
-function showHint() {
-  if (hintActive) return;
-  const unfound = paintings.filter(p => !p.found && p.hasPot);
-  if (!unfound.length) return;
-
-  let nearest = unfound[0], nd = playerPos.distanceTo(nearest.worldPos);
-  for (const p of unfound) {
-    const d = playerPos.distanceTo(p.worldPos);
-    if (d < nd) { nd = d; nearest = p; }
-  }
-
-  hintActive = true;
-  hintTarget = nearest;
-  nearest.mesh.material.emissive.setHex(0xFFD700);
-  nearest.mesh.material.emissiveIntensity = 0.6;
-
-  if (hintTimer) clearTimeout(hintTimer);
-  hintTimer = setTimeout(() => {
-    if (!nearest.found) {
-      nearest.mesh.material.emissive.setHex(0x000000);
-      nearest.mesh.material.emissiveIntensity = 0;
-    }
-    hintActive = false;
-    hintTimer = null;
-    if (hintTarget === nearest) hintTarget = null;
-  }, 2500);
+// Sync the panel's highlights with the room we're editing + the current scheme.
+function refreshPanel() {
+  const room = editTarget();
+  const nameEl = document.getElementById('dpRoomName');
+  if (nameEl) nameEl.textContent = room ? room.name : '—';
+  const rs = scheme.rooms[room.id] || {};
+  document.querySelectorAll('#dpWallSwatches .swatch').forEach(el =>
+    el.classList.toggle('sel', +el.dataset.hex === rs.w));
+  document.querySelectorAll('#dpFloors .finishBtn').forEach(el =>
+    el.classList.toggle('sel', el.dataset.fid === rs.f));
+  document.querySelectorAll('#dpTod .modeBtn').forEach(el =>
+    el.classList.toggle('sel', el.dataset.tod === scheme.tod));
 }
 
 /* ===== GAME LOOP ===== */
@@ -2340,29 +2682,18 @@ function animate() {
 
   camera.position.copy(playerPos);
   camera.rotation.order = 'YXZ';
-  camera.rotation.y = yaw;
   camera.rotation.x = pitch;
+  camera.rotation.y = yaw;
 
-  // Particles
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.life -= dt;
-    p.vel.y -= 9.8 * dt;
-    p.mesh.position.x += p.vel.x * dt;
-    p.mesh.position.y += p.vel.y * dt;
-    p.mesh.position.z += p.vel.z * dt;
-    p.mesh.rotation.x += dt * 3;
-    p.mesh.rotation.z += dt * 2;
-    p.mesh.material.opacity = Math.max(0, p.life / 2);
-    if (p.life <= 0) {
-      scene.remove(p.mesh);
-      p.mesh.geometry.dispose();
-      p.mesh.material.dispose();
-      particles.splice(i, 1);
-    }
+  // Track which room we're standing in for the HUD + design-panel target.
+  const r = roomAt(playerPos.x, playerPos.z);
+  if (r !== currentRoom) {
+    currentRoom = r;
+    if (r) lastRoom = r;
+    const label = r ? r.name : 'Onderweg…';
+    document.getElementById('roomLabel').textContent = label;
+    if (designPanelOpen()) refreshPanel();
   }
-
-  tickShakes();
 
   renderer.render(scene, camera);
 }
@@ -2371,11 +2702,11 @@ function animate() {
 try {
   init();
 } catch (err) {
-  console.error('Zoek de Pot kon niet starten:', err);
+  console.error('Ons Nieuwe Huis kon niet starten:', err);
   const intro = document.getElementById('introOverlay');
   if (intro) {
     intro.innerHTML =
-      '<h1>Zoek de Pot</h1>' +
+      '<h1>Ons Nieuwe Huis</h1>' +
       '<p>Je browser ondersteunt geen 3D &mdash; probeer een nieuwere browser.</p>';
   }
 }

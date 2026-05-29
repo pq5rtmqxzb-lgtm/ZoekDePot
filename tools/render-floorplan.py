@@ -10,7 +10,8 @@ import json
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DATA = json.loads((ROOT / "apartment.json").read_text())
+FLOORPLAN_DIR = ROOT / "floorplan"
+DATA = json.loads((FLOORPLAN_DIR / "apartment.json").read_text())
 
 # 1:50 scale → 1 m reality = 20 mm paper. At 96 DPI: 1 mm = 96/25.4 px = 3.7795 px.
 PX_PER_MM_PAPER = 96.0 / 25.4
@@ -285,6 +286,6 @@ def render():
 
 if __name__ == "__main__":
     svg = render()
-    out_path = ROOT / "floorplan.svg"
+    out_path = FLOORPLAN_DIR / "floorplan.svg"
     out_path.write_text(svg)
     print(f"Wrote {out_path} ({len(svg)} bytes)")
