@@ -157,47 +157,50 @@ def rooms():
     R.append({"name": "woonkamer", "label": "67,11 m²", "fill": "#e8f4ff",
               "polygon": w, "centroid": (8.6, 5.5)})
 
-    # Gang — fills the entire central strip between slaapk1 (north) and
-    # slaapk2 (south), from west facade to woonkamer west wall. The
-    # bathroom block (drawn after gang) overlays in the middle so the
-    # gang appears C-shaped wrapping around the bathrooms.
+    # Gang — C-shape wrapping the central block (badkamer/berging/toilet at
+    # x 3.86..6.86, z 4.30..7.95): west arm + a south arm that reaches the
+    # living-room west wall (x=6.948), where the gang→living door is.
     g = [(0.00, 4.20),    # NW: meets slaapk1 south wall at the west facade
-         (6.948, 4.20),   # east along slaapk1 south wall to woonkamer west wall
-         (6.948, 9.50),   # south along woonkamer west wall to slaapk2 north
-         (0.00, 9.50),    # west along slaapk2 north wall to the west facade
+         (3.86, 4.20),    # east to the central block's west wall
+         (3.86, 8.07),    # south down the block's west wall
+         (6.948, 8.07),   # east along the block's south wall to the living-room wall
+         (6.948, 9.50),   # south to the slaapk2 dividing wall
+         (0.00, 9.50),    # west along the dividing wall to the facade
         ]
     R.append({"name": "gang", "label": "13,77 m²", "fill": "#fcf6e3",
-              "polygon": g, "centroid": (1.80, 7.50)})
+              "polygon": g, "centroid": (1.80, 6.50)})
 
-    # Bathroom block: x=3.158–6.748, y=4.40–7.10 (3.59 × 2.70 = 9.69 m²).
-    # East wall (x=6.748) is the shared wall with woonkamer (whose
-    # interior west wall is at x=6.948 — 0.20 m thick partition).
-    # Toilet sits INSIDE the block at the SE corner (user-confirmed).
-    # Badkamer is the L-shape that remains (≈ 8.03 m² ≈ label 8.06).
-    b1 = [(3.86, 4.30),   # NW (west wall at x≈3.86 per PDF vectors)
-          (6.748, 4.30),  # NE
-          (6.748, 5.315), # east wall continues down to toilet NE corner
-          (5.66, 5.315),  # west along toilet north wall
-          (5.66, 7.10),   # south along toilet west wall
-          (3.86, 7.10)]   # west along bathroom south wall
+    # Badkamer (large) — north room of the central block, x 3.86..6.86,
+    # z 4.30..6.85 (bathtub + shower). East wall is hard against the living
+    # room (x=6.948); there is no door on that side.
+    b1 = [(3.86, 4.30), (6.86, 4.30), (6.86, 6.85), (3.86, 6.85)]
     R.append({"name": "badkamer", "label": "8,06 m²", "fill": "#eaf6ec",
-              "polygon": b1, "centroid": (4.65, 5.70)})
+              "polygon": b1, "centroid": (5.30, 5.40)})
 
-    # Toilet inside badkamer at right-bottom (SE) corner — user-confirmed.
-    # 0.93 × 1.785 → 1.66 m² ≈ 1.67. East wall adjacent to woonkamer.
-    t = [(5.66, 5.315), (6.748, 5.315), (6.748, 7.10), (5.66, 7.10)]
+    # Toilet — SEPARATE room SOUTH of the badkamer (SE), x 5.04..6.86,
+    # z 6.85..8.07, entered from the gang. East wall against the living room.
+    t = [(5.04, 6.85), (6.86, 6.85), (6.86, 8.07), (5.04, 8.07)]
     R.append({"name": "toilet", "label": "1,67 m²", "fill": "#eef0f4",
-              "polygon": t, "centroid": (6.28, 6.21)})
+              "polygon": t, "centroid": (5.95, 7.46)})
 
-    # slaapkamer 2 — 4.115 × 4.593, SW area
-    s2 = [(0.00, 9.50), (4.31, 9.50), (4.31, 14.765), (0.00, 14.765)]
+    # Berging — storage closet south of the badkamer (SW), beside the toilet.
+    bg = [(3.86, 6.85), (5.04, 6.85), (5.04, 8.07), (3.86, 8.07)]
+    R.append({"name": "berging", "label": "1,67 m²", "fill": "#f0eee6",
+              "polygon": bg, "centroid": (4.45, 7.46)})
+
+    # slaapkamer 2 — L-shape bedroom. En-suite bathroom is in the WEST (NW
+    # corner); the east strip (x 2.54..4.31, z 9.50..11.29) is the entry
+    # hallway from the gang door.
+    s2 = [(0.00, 11.29), (2.54, 11.29), (2.54, 9.50), (4.31, 9.50),
+          (4.31, 14.765), (0.00, 14.765)]
     R.append({"name": "slaapkamer 2", "label": "18,90 m²", "fill": "#fff4e6",
-              "polygon": s2, "centroid": (1.60, 13.00)})
+              "polygon": s2, "centroid": (1.30, 13.00)})
 
-    # badkamer (klein) — en-suite in slaapk2's NE corner (by the living-room door)
-    bk = [(2.445, 9.50), (4.31, 9.50), (4.31, 11.29), (2.445, 11.29)]
+    # badkamer (klein) — slaapk2 en-suite on the WEST side (NW corner),
+    # x 0..2.54, z 9.50..11.29 (shower on the far west + sink).
+    bk = [(0.00, 9.50), (2.54, 9.50), (2.54, 11.29), (0.00, 11.29)]
     R.append({"name": "badkamer (klein)", "label": "3,81 m²", "fill": "#eaf6ec",
-              "polygon": bk, "centroid": (3.28, 10.10)})
+              "polygon": bk, "centroid": (1.27, 10.40)})
 
     # balkon (top) — spans FULL apartment top facade width (user-confirmed)
     bt = [(0.00, -1.331), (10.72, -1.331), (10.72, 0.0), (0.00, 0.0)]
