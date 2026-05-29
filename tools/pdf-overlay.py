@@ -32,15 +32,14 @@ INDEX = ROOT / "index.html"
 OUT_PNG = FLOORPLAN_DIR / "pdf-overlay.png"
 
 # world (meters) -> PDF pixel.
-# Calibrated from apartment.json's own PDF-point mapping (pt = 146 + 56.7*x,
-# 174.6 + 56.7*z) combined with the measured facades (east facade x=10.72 at
-# col 1372; top facade z=0 at row 78; bottom facade z=13.802 at row 1729).
-# This yields square pixels (~119.6 px/m). NOTE: the PNG is cropped on the
-# west — its left edge is x~-0.75, so the apartment's western jut (x<-0.75:
-# slaapkamer 2 west side, gang west bulge, west balcony) is OUTSIDE the scan
-# and cannot be checked against this PDF.
-BX, AX = 119.6, 89.6     # col = AX + BX * x
-BZ, AZ = 119.6, 78.0     # row = AZ + BZ * z
+# floorplan-pdf.png is now the FULL page rendered from YP_bouwnummer_25.pdf at
+# 2x (2382x3368). Square-pixel calibration fitted to the measured facades:
+#   east facade x=10.72 -> col 1509 ; top facade z=0 -> row 326 ;
+#   bottom facade z=13.802 -> row 1912  => 114.91 px/m.
+# The whole apartment (incl. the western jut: slaapkamer 2 west side, gang
+# bulge, NW zigzag, west balcony) is now visible.
+BX, AX = 114.91, 277.2   # col = AX + BX * x
+BZ, AZ = 114.91, 326.0   # row = AZ + BZ * z
 def cx(x): return AX + BX * x
 def cz(z): return AZ + BZ * z
 
