@@ -51,7 +51,7 @@ KIND_STYLE = {
 def parse_apartment_geom():
     """Pull the APARTMENT_GEOM array out of index.html as a list of dicts."""
     src = INDEX.read_text()
-    m = re.search(r"const APARTMENT_GEOM\s*=\s*\[(.*?)\];", src, re.S)
+    m = re.search(r"const APARTMENT_GEOM\s*=\s*\[(.*?)\n\];", src, re.S)
     if not m:
         raise SystemExit("Could not find APARTMENT_GEOM in index.html")
     body = m.group(1)
