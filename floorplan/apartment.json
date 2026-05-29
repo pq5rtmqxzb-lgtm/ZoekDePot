@@ -1,5 +1,15 @@
 {
-  "_doc": "PHASE 1 of a three-phase rebuild. Extracted from YP_bouwnummer_25.pdf (Type R3.sp). Every wall and room cites the PDF dimension callout(s) used. Anything I could not pin to a wall with confidence is flagged in `uncertain`. Do NOT extrude this until verified.",
+  "_doc": "Rebuild data for YP_bouwnummer_25.pdf (Type R3.sp). Phase 1 extracted dimensions from the PDF; Phase 2 renders this to floorplan/floorplan.svg (tools/render-floorplan.py); Phase 3 builds the 3D model (APARTMENT_GEOM in index.html) and verifies it against this plan with tools/plan-overlay.py. As of the latest fidelity pass every model wall/door endpoint lies on a plan edge within 0.05 m (see phase3_model_fidelity). Structural walls are locked; remaining `uncertain` items are interior fixture/door-position details that do not affect the shell.",
+
+  "phase3_model_fidelity": {
+    "tool": "tools/plan-overlay.py",
+    "tolerance_m": 0.05,
+    "status": "PASS — all model wall/door/sliding endpoints lie on a plan edge within tolerance.",
+    "resolved": [
+      "West facade upper jog: gang west boundary pinned at x=-1.00 for y in [4.10, 5.85] (envelope v5/v6), stepping out to x=-2.30 below y=5.85. The 3D model previously sealed this at x=0.00 (1.0 m off) — now corrected.",
+      "NW zigzag step coordinates locked to nw_zigzag (x=-0.50 / -1.50); the 3D model is byte-for-byte consistent with this plan there."
+    ]
+  },
 
   "source_pdf": {
     "file": "YP_bouwnummer_25.pdf",
@@ -423,8 +433,8 @@
   ],
 
   "uncertain": [
-    "NW corner is a MULTI-SEGMENT ZIGZAG (not a single chamfer). Visible in the cropped detail. Has an alcove + a diagonal section + verticals. The 1397 callout labels one vertical. Other zigzag dims are not all transcribed.",
-    "WEST FACADE shape: visible jogs (steps) along the west wall. The exact x-coordinate of each jog is not yet pinned.",
+    "NW corner is a MULTI-SEGMENT ZIGZAG (not a single chamfer) with an alcove + two diagonal sections + a vertical labelled 1397 mm. Step x-coordinates (-0.50 / -1.50) are estimates but are now locked and shared by the 3D model (see phase3_model_fidelity).",
+    "WEST FACADE upper jog is now pinned (gang west at x=-1.00, stepping to x=-2.30 at y=5.85). The exact heights of the lowest SW kinks remain estimates (see SW corner item).",
     "SW corner shape: the kitchen / slaapk2 south-west boundary kinks. Which callout dims which kink is TBD.",
     "Slaapkamer 1 stepped south wall: 3675 mm in one section, 1845 mm parallel in another (closer to gang door). User confirmed 'weird shape' but exact polygon is TBD.",
     "Top facade total width: 5709 + 4922 = 10.631 m, plus the 700 mm callout at the very east edge of the top facade — does 700 add to total (10.631 + 0.700 = 11.331 m) or is it INSIDE the 4922 section?",

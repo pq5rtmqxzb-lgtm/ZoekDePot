@@ -187,16 +187,21 @@ const APARTMENT_GEOM = [
   { kind: 'wall',    x1: -1.50, z1: 13.802, x2: -2.30, z2: 13.802 },
   { kind: 'sliding', x1:  7.00, z1: 13.802, x2: 10.20, z2: 13.802 }, // woonkamer
   { kind: 'sliding', x1: -1.50, z1: 13.802, x2:  1.30, z2: 13.802 }, // slaapk2
-  // --- West facade (with bathroom-jog step)
+  // --- West facade (with bathroom-jog step). The gang's upper-west boundary
+  // sits at x=-1.00 (matches apartment.json envelope v5/v6 and the gang floor),
+  // then closes east to x=0 at z=4.10 to meet the NW zigzag.
   { kind: 'wall',    x1: -2.30, z1: 13.802, x2: -2.30, z2:  5.85 },
-  { kind: 'wall',    x1: -2.30, z1:  5.85,  x2:  0.00, z2:  5.85 },
-  { kind: 'wall',    x1:  0.00, z1:  5.85,  x2:  0.00, z2:  4.10 },
-  // --- NW zigzag (six segments around the lift-shaft alcove)
-  { kind: 'wall',    x1:  0.00, z1:  4.10,  x2: -0.60, z2:  4.10 },
-  { kind: 'wall',    x1: -0.60, z1:  4.10,  x2: -1.55, z2:  3.10 },
-  { kind: 'wall',    x1: -1.55, z1:  3.10,  x2: -1.55, z2:  1.70 },
-  { kind: 'wall',    x1: -1.55, z1:  1.70,  x2: -0.60, z2:  0.70 },
-  { kind: 'wall',    x1: -0.60, z1:  0.70,  x2:  0.00, z2:  0.70 },
+  { kind: 'wall',    x1: -2.30, z1:  5.85,  x2: -1.00, z2:  5.85 },
+  { kind: 'wall',    x1: -1.00, z1:  5.85,  x2: -1.00, z2:  4.10 },
+  { kind: 'wall',    x1: -1.00, z1:  4.10,  x2:  0.00, z2:  4.10 },
+  // --- NW zigzag (six segments around the lift-shaft alcove). Step coords
+  // aligned to apartment.json nw_zigzag; the 1397 mm PDF callout labels the
+  // alcove's vertical west face (z 1.70 -> 3.10 = 1.40 m).
+  { kind: 'wall',    x1:  0.00, z1:  4.10,  x2: -0.50, z2:  4.10 },
+  { kind: 'wall',    x1: -0.50, z1:  4.10,  x2: -1.50, z2:  3.10 },
+  { kind: 'wall',    x1: -1.50, z1:  3.10,  x2: -1.50, z2:  1.70 },
+  { kind: 'wall',    x1: -1.50, z1:  1.70,  x2: -0.50, z2:  0.70 },
+  { kind: 'wall',    x1: -0.50, z1:  0.70,  x2:  0.00, z2:  0.70 },
   { kind: 'wall',    x1:  0.00, z1:  0.70,  x2:  0.00, z2:  0.00 },
 
   // --- Slaapk1 east wall
@@ -1457,8 +1462,8 @@ function buildApartment() {
   // Slaapkamer 1 main rectangle + NW alcove (zigzag area approximated by
   // overlapping rectangles, walls trace the diagonal segments)
   addRoomFloor({ x1: 0.00, z1: 0.20, x2: 5.52, z2: 4.20 }, FLOOR_MAT, 2.0, 2.5);
-  addRoomFloor({ x1: -0.60, z1: 0.70, x2: 0.00, z2: 4.10 }, FLOOR_MAT, 2.0, 2.5);
-  addRoomFloor({ x1: -1.55, z1: 1.70, x2: -0.60, z2: 3.10 }, FLOOR_MAT, 2.0, 2.5);
+  addRoomFloor({ x1: -0.50, z1: 0.70, x2: 0.00, z2: 4.10 }, FLOOR_MAT, 2.0, 2.5);
+  addRoomFloor({ x1: -1.50, z1: 1.70, x2: -0.50, z2: 3.10 }, FLOOR_MAT, 2.0, 2.5);
 
   // Gang (C-shape around the bathroom block)
   addRoomFloor({ x1: -1.00, z1: 4.20, x2: 6.948, z2: 4.40 }, FLOOR_MAT, 2.0, 2.5); // top sliver under slaapk1
