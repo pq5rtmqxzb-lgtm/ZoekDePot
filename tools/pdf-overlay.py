@@ -32,14 +32,12 @@ INDEX = ROOT / "index.html"
 OUT_PNG = FLOORPLAN_DIR / "pdf-overlay.png"
 
 # world (meters) -> PDF pixel.
-# floorplan-pdf.png is now the FULL page rendered from YP_bouwnummer_25.pdf at
-# 2x (2382x3368). Square-pixel calibration fitted to the measured facades:
-#   east facade x=10.72 -> col 1509 ; top facade z=0 -> row 326 ;
-#   bottom facade z=13.802 -> row 1912  => 114.91 px/m.
-# The whole apartment (incl. the western jut: slaapkamer 2 west side, gang
-# bulge, NW zigzag, west balcony) is now visible.
-BX, AX = 114.91, 277.2   # col = AX + BX * x
-BZ, AZ = 114.91, 326.0   # row = AZ + BZ * z
+# floorplan-pdf.png is the FULL page rendered from YP_bouwnummer_25.pdf at 2x.
+# Scale is authoritative: pt_per_meter=56.7 (from the PDF) x 2 = 113.4 px/m.
+# Offsets balanced so interior walls (slaapk1 east) and the facades both land
+# within ~0.1 m. The whole apartment incl. the NW alcove is visible.
+BX, AX = 113.4, 306.0    # col = AX + BX * x
+BZ, AZ = 113.4, 347.0    # row = AZ + BZ * z
 def cx(x): return AX + BX * x
 def cz(z): return AZ + BZ * z
 
