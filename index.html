@@ -280,45 +280,50 @@ const APARTMENT_GEOM = [
   // corner to the woonkamer west wall, separating the living-room north strip
   // from the gang/bathroom (PDF: solid wall at z~4.3, x 5.52->6.948).
   { kind: 'wall',    x1:  5.52, z1:  4.20,  x2:  6.948, z2:  4.20 },
-  // --- Bathroom block (PDF vector walls: west x≈3.86, north z≈4.30, south
-  //     z≈7.13). Old west wall x=3.158 sat inside the berging closet; the real
-  //     badkamer west wall is x≈3.86. Gang door on the south wall at the SW,
-  //     per the door-swing arc at x≈3.95..4.88.
-  { kind: 'wall',    x1:  3.86,  z1: 4.30,  x2:  6.748, z2: 4.30 },
-  { kind: 'wall',    x1:  3.86,  z1: 4.30,  x2:  3.86,  z2: 7.10 },
-  { kind: 'wall',    x1:  6.748, z1: 4.30,  x2:  6.748, z2: 7.10 },
-  { kind: 'wall',    x1:  3.86,  z1: 7.10,  x2:  3.95,  z2: 7.10 },
-  { kind: 'door',    x1:  3.95,  z1: 7.10,  x2:  4.88,  z2: 7.10 },
-  { kind: 'wall',    x1:  4.88,  z1: 7.10,  x2:  6.748, z2: 7.10 },
-  // --- Toilet partition (inside bathroom SE corner) — west face at x≈5.66
-  //     (PDF), door on west wall at z∈[5.50, 6.43]
-  { kind: 'wall',    x1:  5.66,  z1: 5.315, x2:  6.748, z2: 5.315 },
-  { kind: 'wall',    x1:  5.66,  z1: 5.315, x2:  5.66,  z2: 5.50 },
-  { kind: 'door',    x1:  5.66,  z1: 5.50,  x2:  5.66,  z2: 6.43 },
-  { kind: 'wall',    x1:  5.66,  z1: 6.43,  x2:  5.66,  z2: 7.10 },
-  // --- Slaapk2 north wall (z=9, shared with gang); en-suite is in the NE corner.
-  { kind: 'wall',    x1:  0.00,  z1: 9.50,  x2:  4.31, z2: 9.50 },
-  // --- Kitchen/living-room north wall (z=9) with the wide opening from the gang
-  //     (your "door to the living room", x~4.5-6.0).
-  { kind: 'wall',    x1:  4.31, z1: 9.50,  x2:  4.50,  z2: 9.50 },
-  { kind: 'door',    x1:  4.50,  z1: 9.50,  x2:  6.00,  z2: 9.50 },
+  // --- Central block (PDF layout, north→south): BADKAMER (large) on top, then
+  //     a [BERGING | TOILET] band, then the GANG. The block's east wall (x≈6.86)
+  //     is hard against the living-room west wall (x=6.948) — no door there.
+  //     Badkamer x 3.86..6.86, z 4.30..6.85 (bathtub + shower). Door from the
+  //     gang's west arm on the west wall.
+  { kind: 'wall',    x1:  3.86,  z1: 4.30,  x2:  6.86,  z2: 4.30 },  // badkamer north
+  { kind: 'wall',    x1:  3.86,  z1: 4.30,  x2:  3.86,  z2: 5.50 },  // badkamer west (N of door)
+  { kind: 'door',    x1:  3.86,  z1: 5.50,  x2:  3.86,  z2: 6.43 },  // badkamer door (from gang)
+  { kind: 'wall',    x1:  3.86,  z1: 6.43,  x2:  3.86,  z2: 6.85 },  // badkamer west (S of door)
+  { kind: 'wall',    x1:  6.86,  z1: 4.30,  x2:  6.86,  z2: 6.85 },  // badkamer east (vs living room)
+  { kind: 'wall',    x1:  3.86,  z1: 6.85,  x2:  6.86,  z2: 6.85 },  // badkamer south
+  // --- Berging (SW) + Toilet (SE), the band SOUTH of the badkamer (z 6.85..8.07).
+  { kind: 'wall',    x1:  5.04,  z1: 6.85,  x2:  5.04,  z2: 8.07 },  // berging/toilet divider
+  { kind: 'wall',    x1:  6.86,  z1: 6.85,  x2:  6.86,  z2: 8.07 },  // toilet east (vs living room)
+  { kind: 'wall',    x1:  3.86,  z1: 6.85,  x2:  3.86,  z2: 8.07 },  // berging west (vs gang arm)
+  // south wall of the band, with a berging door and a toilet door into the gang
+  { kind: 'wall',    x1:  3.86,  z1: 8.07,  x2:  4.10,  z2: 8.07 },
+  { kind: 'door',    x1:  4.10,  z1: 8.07,  x2:  4.70,  z2: 8.07 },  // berging door (from gang)
+  { kind: 'wall',    x1:  4.70,  z1: 8.07,  x2:  5.50,  z2: 8.07 },
+  { kind: 'door',    x1:  5.50,  z1: 8.07,  x2:  6.40,  z2: 8.07 },  // toilet door (from gang)
+  { kind: 'wall',    x1:  6.40,  z1: 8.07,  x2:  6.86,  z2: 8.07 },
+  // --- Dividing wall (gang ↔ slaapk2 / kitchen) at z=9.50. Gang→slaapk2 door
+  //     into the slaapk2 entry hallway (east side), plus the gang→kitchen opening.
+  { kind: 'wall',    x1:  0.00,  z1: 9.50,  x2:  3.00, z2: 9.50 },
+  { kind: 'door',    x1:  3.00,  z1: 9.50,  x2:  3.93, z2: 9.50 },  // gang → slaapk2 hallway
+  { kind: 'wall',    x1:  3.93,  z1: 9.50,  x2:  4.50, z2: 9.50 },
+  { kind: 'door',    x1:  4.50,  z1: 9.50,  x2:  6.00,  z2: 9.50 },  // gang → kitchen
   { kind: 'wall',    x1:  6.00,  z1: 9.50,  x2:  6.948, z2: 9.50 },
-  // --- Slaapk2 east wall (slaapk2 <-> living room), z 9..14.765. Door to the
-  //     living room at z 11.5..12.4, right beside the en-suite so the bathroom
-  //     partly blocks it (as you described).
-  { kind: 'wall',    x1:  4.31, z1: 9.50,   x2:  4.31, z2: 11.50 },
-  { kind: 'door',    x1:  4.31, z1: 11.50,  x2:  4.31, z2: 12.40 },
-  { kind: 'wall',    x1:  4.31, z1: 12.40,  x2:  4.31, z2: 14.765 },
-  // --- Badkamer klein (en-suite) — NE corner of slaapk2, x∈[2.445,4.31] z∈[9,11.29];
-  //     door from the bedroom on its west wall at z∈[9.80,10.73].
-  { kind: 'wall',    x1:  2.445, z1:  9.50,  x2:  2.445, z2:  9.80 },
-  { kind: 'door',    x1:  2.445, z1:  9.80,  x2:  2.445, z2: 10.73 },
-  { kind: 'wall',    x1:  2.445, z1: 10.73,  x2:  2.445, z2: 11.29 },
-  { kind: 'wall',    x1:  2.445, z1: 11.29,  x2:  4.31, z2: 11.29 },
-  // --- Woonkamer west wall — open passage to gang at z∈[6.50, 7.80]
-  { kind: 'wall',    x1:  6.948, z1: 4.20,  x2:  6.948, z2: 6.50 },
-  { kind: 'door',    x1:  6.948, z1: 6.50,  x2:  6.948, z2: 7.80 },
-  { kind: 'wall',    x1:  6.948, z1: 7.80,  x2:  6.948, z2: 9.50 },
+  // --- Slaapk2 east wall (slaapk2 <-> living room), z 9.50..14.765 — SOLID
+  //     (no door between slaapk2 and the living room).
+  { kind: 'wall',    x1:  4.31, z1: 9.50,   x2:  4.31, z2: 14.765 },
+  // --- Badkamer klein (slaapk2 en-suite) — WEST side, x 0..2.54, z 9.50..11.29.
+  //     (The east strip x 2.54..4.31 is the entry hallway from the gang door.)
+  //     Bathroom door is on its east wall, opening from the hallway.
+  { kind: 'wall',    x1:  2.54,  z1:  9.50,  x2:  2.54,  z2: 10.00 },
+  { kind: 'door',    x1:  2.54,  z1: 10.00,  x2:  2.54,  z2: 10.90 },
+  { kind: 'wall',    x1:  2.54,  z1: 10.90,  x2:  2.54,  z2: 11.29 },
+  { kind: 'wall',    x1:  0.00,  z1: 11.29,  x2:  2.54,  z2: 11.29 },
+  // --- Woonkamer west wall. SOLID from the slaapk1 divider down past the
+  //     badkamer/toilet (they're attached to the living room); the gang→living
+  //     door is SOUTH of the toilet, in the gang (z≈8.16..8.96).
+  { kind: 'wall',    x1:  6.948, z1: 4.20,  x2:  6.948, z2: 8.16 },
+  { kind: 'door',    x1:  6.948, z1: 8.16,  x2:  6.948, z2: 8.96 },  // gang → living room
+  { kind: 'wall',    x1:  6.948, z1: 8.96,  x2:  6.948, z2: 9.50 },
 
   // --- Top balkon railings
   { kind: 'railing', x1:  0.00,  z1: -1.331, x2: 10.72, z2: -1.331 }, // outer (N)
@@ -340,23 +345,23 @@ const APARTMENT_GEOM = [
  * "which room am I in" lookup prefers the smaller space. */
 const ROOMS = [
   { id: 'toilet',    name: 'Toilet',            kind: 'tegel', rects: [
-      { x1: 5.66, z1: 5.315, x2: 6.748, z2: 7.10 } ] },
+      { x1: 5.04, z1: 6.85, x2: 6.86, z2: 8.07 } ] },
+  { id: 'berging',   name: 'Berging',           kind: 'tegel', rects: [
+      { x1: 3.86, z1: 6.85, x2: 5.04, z2: 8.07 } ] },
   { id: 'badkklein', name: 'Badkamer (klein)',  kind: 'tegel', rects: [
-      { x1: 2.445, z1: 9.50, x2: 4.31, z2: 11.29 } ] },
+      { x1: 0.00, z1: 9.50, x2: 2.54, z2: 11.29 } ] },
   { id: 'badkamer',  name: 'Badkamer',          kind: 'tegel', rects: [
-      { x1: 3.86, z1: 4.30,  x2: 6.748, z2: 5.315 },
-      { x1: 3.86, z1: 5.315, x2: 5.66, z2: 7.10 } ] },
+      { x1: 3.86, z1: 4.30, x2: 6.86, z2: 6.85 } ] },
   { id: 'slaapk1',   name: 'Slaapkamer 1',      kind: 'hout',  rects: [
       { x1: 0.00,  z1: 0.20,  x2: 5.52,  z2: 4.20 },
       { x1: -0.75, z1: 1.20,  x2: 0.00,  z2: 3.00 } ] },
   { id: 'slaapk2',   name: 'Slaapkamer 2',      kind: 'hout',  rects: [
-      { x1: 0.00,  z1: 9.50,  x2: 2.445, z2: 14.765 },
-      { x1: 2.445, z1: 11.29, x2: 4.31, z2: 14.765 } ] },
+      { x1: 0.00,  z1: 11.29, x2: 4.31, z2: 14.765 },
+      { x1: 2.54,  z1: 9.50,  x2: 4.31, z2: 11.29 } ] },
   { id: 'gang',      name: 'Gang',              kind: 'hout',  rects: [
       { x1: 0.00, z1: 4.20,  x2: 6.948, z2: 4.40 },
-      { x1: 0.00, z1: 4.40,  x2: 3.86, z2: 7.10 },
-      { x1: 0.00, z1: 7.10,  x2: 6.948, z2: 9.50 },
-      { x1: 6.748, z1: 4.40,  x2: 6.948, z2: 7.10 } ] },
+      { x1: 0.00, z1: 4.40,  x2: 3.86,  z2: 9.50 },
+      { x1: 3.86, z1: 8.07,  x2: 6.948, z2: 9.50 } ] },
   { id: 'woonkamer', name: 'Woonkamer',         kind: 'hout',  rects: [
       { x1: 5.52,  z1: 0.20,  x2: 10.52, z2: 4.20 },
       { x1: 6.948, z1: 4.20,  x2: 10.52, z2: 9.50 },
@@ -1697,25 +1702,26 @@ function placeFurniture() {
   // Wardrobe along south wall, east of the gang door (door at x=0.80–1.73)
   addWardrobe(3.50, 3.95, Math.PI, 2.00, 0.55);
 
-  // === Badkamer (groot) — bath on north, sink on west
-  // Bathtub centered along north wall (z=4.40), 1.65 wide × 0.75 deep
-  addBathtub(4.70, 4.80, 0, 1.65, 0.75);
-  // Sink along west wall (x=3.158, facing east)
-  addSink(3.45, 5.70, Math.PI / 2, 0.55);
+  // === Badkamer (groot) — x 3.86..6.86, z 4.30..6.85. Bath on north, sink on east.
+  // Bathtub centered along the north wall (z=4.30), 1.65 wide × 0.75 deep
+  addBathtub(4.80, 4.85, 0, 1.65, 0.75);
+  // Sink along the east wall (x=6.86, facing west)
+  addSink(6.55, 5.40, -Math.PI / 2, 0.55);
 
-  // === Toilet (inside badkamer SE: x∈[5.818, 6.748], z∈[5.315, 7.10])
-  addToiletBowl(6.28, 6.50, Math.PI);
+  // === Toilet — separate room SOUTH of the badkamer (x 5.04..6.86, z 6.85..8.07)
+  addToiletBowl(5.95, 7.55, Math.PI);
 
-  // === Slaapkamer 2 (x∈[0, 4.31], z∈[9.50, 14.77]); en-suite in the NE corner
-  // Double bed against the west wall, head pointing west
+  // === Slaapkamer 2 (x 0..4.31, z 9.50..14.77); en-suite bathroom on the WEST
+  // Double bed against the west wall in the south part, head pointing west
   addBed(1.10, 13.10, Math.PI / 2, 2.00, 1.60);
   // Wardrobe along the south wall (facing north)
-  addWardrobe(1.30, 14.40, Math.PI, 1.50, 0.55);
+  addWardrobe(2.80, 14.40, Math.PI, 1.50, 0.55);
 
-  // === Badkamer klein (en-suite, NE of slaapk2, x∈[2.445, 4.31], z∈[9.50, 11.29])
-  addShowerStall(2.90, 9.50, 0, 0.90, 0.90);
-  addSink(3.70, 10.00, Math.PI / 2, 0.50);
-  addToiletBowl(3.10, 10.90, Math.PI);
+  // === Badkamer klein (slaapk2 en-suite) on the WEST: x 0..2.54, z 9.50..11.29.
+  // Shower on the far west, sink + toilet to its east.
+  addShowerStall(0.70, 10.30, 0, 0.90, 0.90);
+  addSink(1.60, 9.85, Math.PI, 0.50);
+  addToiletBowl(2.10, 10.95, Math.PI / 2);
 
   // === Woonkamer (L-shape) ===
   // Sofa along east wall facing west, in the north strip
