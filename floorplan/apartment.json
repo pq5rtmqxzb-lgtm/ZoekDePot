@@ -2,12 +2,17 @@
   "_doc": "Rebuild data for YP_bouwnummer_25.pdf (Type R3.sp). Phase 1 extracted dimensions from the PDF; Phase 2 renders this to floorplan/floorplan.svg (tools/render-floorplan.py); Phase 3 builds the 3D model (APARTMENT_GEOM in index.html) and verifies it against this plan with tools/plan-overlay.py. As of the latest fidelity pass every model wall/door endpoint lies on a plan edge within 0.05 m (see phase3_model_fidelity). Structural walls are locked; remaining `uncertain` items are interior fixture/door-position details that do not affect the shell.",
 
   "phase3_model_fidelity": {
-    "tool": "tools/plan-overlay.py",
+    "tool": "tools/plan-overlay.py (model<->plan) and tools/pdf-overlay.py (plan<->full PDF)",
     "tolerance_m": 0.05,
-    "status": "PASS — all model wall/door/sliding endpoints lie on a plan edge within tolerance.",
+    "status": "PASS — all 50 model segments' endpoints lie on a plan edge within tolerance; model overlays the full PDF correctly.",
     "resolved": [
-      "West facade upper jog: gang west boundary pinned at x=-1.00 for y in [4.10, 5.85] (envelope v5/v6), stepping out to x=-2.30 below y=5.85. The 3D model previously sealed this at x=0.00 (1.0 m off) — now corrected.",
-      "NW zigzag step coordinates locked to nw_zigzag (x=-0.50 / -1.50); the 3D model is byte-for-byte consistent with this plan there."
+      "MAJOR: the apartment's western strip (west facade at x=-2.30, gang west bulge, west balcony) was page margin in the old cropped scan, not apartment. Using the full-page PDF, the west outer wall is at x=0; the apartment is a ~10.7 m-wide rectangle (x 0..10.72) plus the NW alcove and balconies. Removed the phantom west geometry.",
+      "Slaapkamer 2 repositioned to x 0..4.115, z 9..13.602; en-suite badkamer klein moved to its NW corner (x 0..1.67, z 9..11.29); bottom balcony now x 0..10.72.",
+      "Added the missing woonkamer/gang divider wall (z=4.20, x 5.52..6.948).",
+      "NW zigzag step coordinates locked to nw_zigzag (x=-0.50 / -1.50)."
+    ],
+    "still_uncertain": [
+      "Exact position of the en-suite WITHIN slaapkamer 2 (placed on the west side per user; the low-res scan's fixtures/labels are ambiguous between west and east)."
     ]
   },
 
@@ -117,26 +122,21 @@
   ],
 
   "envelope_preliminary": {
-    "_doc": "BEST-EFFORT outline of the apartment exterior plus balconies. Many western/southern segments are UNCERTAIN — see `uncertain`. Coordinates are in meters with origin at NW exterior corner of top facade.",
+    "_doc": "Apartment exterior outline plus balconies. CORRECTED against the full-page PDF: the apartment is a ~10.7 m-wide rectangle (x 0..10.72) with the NW alcove and two balconies. The earlier x=-2.30 western jut was the scan's page margin (the thin far-left line is the drawing border, not a wall) — removed. Coordinates in meters, origin at NW exterior corner of top facade.",
     "polygon_clockwise_from_origin": [
       [0.00, 0.00],
       [10.72, 0.00],
       [10.72, 13.802],
-      [-2.30, 13.802],
-      [-2.30, 5.85],
-      [-1.00, 5.85],
-      [-1.00, 1.00],
-      [0.00, 0.00]
+      [0.00, 13.802],
+      [0.00, 4.10]
     ],
     "vertex_notes": [
-      "v0 (0.00, 0.00): NW corner — chamfer east end / top facade west end (origin)",
-      "v1 (10.72, 0.00): NE corner — 5.709 (balkon) + 4.922 (east section) + ~0.09 m wall stub",
+      "v0 (0.00, 0.00): NW corner — top facade west end (origin)",
+      "v1 (10.72, 0.00): NE corner — 5.709 (balkon) + 4.922 (east section)",
       "v2 (10.72, 13.802): SE corner — east facade length 13.802 m (HIGH confidence)",
-      "v3 (-2.30, 13.802): SW corner — apartment is L-shaped on south; western extent UNCERTAIN",
-      "v4 (-2.30, 5.85): jog going north along kitchen/slaapk2 SW exterior; UNCERTAIN coordinates",
-      "v5 (-1.00, 5.85): jog east — slaapk2/badkamer-klein west wall meets the bathroom jog; UNCERTAIN",
-      "v6 (-1.00, 1.00): start of NW-corner zigzag — REPLACEMENT NEEDED. NOT a single chamfer; multi-segment stepped wall with alcove. 1397 callout labels one vertical segment.",
-      "v7 back to (0.00, 0.00): closes via the NW-corner zigzag"
+      "v3 (0.00, 13.802): SW corner — west outer wall at x=0 (was wrongly at -2.30)",
+      "v4 (0.00, 4.10): west wall runs straight up to the NW zigzag",
+      "then the NW-corner zigzag (nw_zigzag, alcove to x=-1.5) closes back to (0,0)"
     ]
   },
 
@@ -188,9 +188,9 @@
       "name": "slaapkamer 2",
       "level": "L0",
       "labeled_area_m2": 18.90,
-      "shape_note": "Approximate rectangle 4.115 × 4.593 in the SW area",
-      "x_range_m": [-2.30, 1.815],
-      "y_range_m": [9.009, 13.602],
+      "shape_note": "Rectangle ~4.115 × 4.6 in the SW, west wall at x=0 (corrected from the full PDF). En-suite badkamer klein carved into the NW corner.",
+      "x_range_m": [0.00, 4.115],
+      "y_range_m": [9.00, 13.602],
       "dimension_citations": [
         "PDF callout 4115 → E-W width 4.115 m",
         "Derived N-S depth = 4.593 m so area matches 18.90 m²",
@@ -282,10 +282,10 @@
       "labeled_area_m2": 3.81,
       "access": "en-suite within slaapkamer 2 — door is in slaapk2 (user-confirmed).",
       "side_in_slaapk2": "WEST (LEFT) side of slaapkamer 2 (user-confirmed)",
-      "x_range_m": [-2.30, -0.63],
-      "y_range_m": [9.009, 11.298],
+      "x_range_m": [0.00, 1.67],
+      "y_range_m": [9.00, 11.29],
       "interior_w_m": 1.670,
-      "interior_d_m": 2.289,
+      "interior_d_m": 2.29,
       "computed_area_m2": 3.823,
       "dimension_citations": [
         "PDF callout 1670 → E-W = 1.670 m",
@@ -312,7 +312,7 @@
       "labeled_area_m2": 24.03,
       "labeled_area_note": "24.03 m² is the OFFICIAL labelled portion. User confirms the balkon spans the COMPLETE south facade — accessible from BOTH woonkamer AND slaapkamer 2 via sliding doors.",
       "shape_note": "Spans the full apartment south facade (~13.02 m including the SW slaapk2 frontage). N-S depth = 3.600 m (PDF callout 3600).",
-      "x_range_m": [-2.30, 10.72],
+      "x_range_m": [0.00, 10.72],
       "y_range_m": [13.802, 17.402],
       "dimension_citations": [
         "PDF callout 3600 → N-S depth",
