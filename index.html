@@ -216,7 +216,7 @@ import * as THREE from 'three';
 /* ===== CONSTANTS ===== */
 const WALL_HEIGHT = 2.80;
 const WALL_THICK = 0.20;
-const PLAYER_H = 1.6;
+const PLAYER_H = 1.70;   // eye height for a 1.80 m-tall person (~0.10 m below the crown)
 const PLAYER_R = 0.32;
 const MOVE_SPEED = 3.0;
 const LOOK_SPEED = 0.003;
@@ -1732,8 +1732,9 @@ function placeFurniture() {
   // Dining table in the east strip near woonkamer/gang boundary
   addDiningTable(8.50, 7.00);
 
-  // Kitchen island in the south extension (left side of bottom of L)
-  addKitchenIsland(3.50, 11.00, 0, 2.115, 0.70);
+  // Kitchen counter ("keukenopstelling D") — a north–south peninsula on the
+  // east side of the kitchen column (x 4.31..6.46), with cooktop + sink, per PDF.
+  addKitchenIsland(6.10, 12.40, Math.PI / 2, 2.50, 0.65);
 
   // Side console along the woonkamer north wall (under the balkon door)
   const console_ = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.85, 0.4), CABINET_MAT);
