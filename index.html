@@ -251,9 +251,9 @@ const APARTMENT_GEOM = [
   // Sliding doors give balcony access from slaapk2, the kitchen and the woonkamer.
   { kind: 'wall',    x1:  0.00, z1: 14.765, x2:  1.00, z2: 14.765 }, // slaapk2 south (deep)
   { kind: 'sliding', x1:  1.00, z1: 14.765, x2:  3.00, z2: 14.765 },
-  { kind: 'wall',    x1:  3.00, z1: 14.765, x2:  4.115, z2: 14.765 },
-  { kind: 'wall',    x1:  4.115,z1: 14.765, x2:  4.115, z2: 15.60 },  // step to kitchen depth
-  { kind: 'wall',    x1:  4.115,z1: 15.60,  x2:  4.60,  z2: 15.60 },  // kitchen south (deepest)
+  { kind: 'wall',    x1:  3.00, z1: 14.765, x2:  4.31, z2: 14.765 },
+  { kind: 'wall',    x1:  4.31,z1: 14.765, x2:  4.31, z2: 15.60 },  // step to kitchen depth
+  { kind: 'wall',    x1:  4.31,z1: 15.60,  x2:  4.60,  z2: 15.60 },  // kitchen south (deepest)
   { kind: 'sliding', x1:  4.60, z1: 15.60,  x2:  6.00, z2: 15.60 },
   { kind: 'wall',    x1:  6.00, z1: 15.60,  x2:  6.46, z2: 15.60 },
   { kind: 'wall',    x1:  6.46, z1: 15.60,  x2:  6.46, z2: 13.802 }, // step up to woonkamer depth
@@ -262,15 +262,13 @@ const APARTMENT_GEOM = [
   { kind: 'wall',    x1: 10.20, z1: 13.802, x2: 10.72, z2: 13.802 },
   // --- West facade: x=0 from the (deep) slaapk2 SW corner up to the NW zigzag.
   { kind: 'wall',    x1:  0.00, z1: 14.765, x2:  0.00, z2:  4.10 },
-  // --- NW zigzag (six segments around the lift-shaft alcove). Step coords
-  // aligned to apartment.json nw_zigzag; the 1397 mm PDF callout labels the
-  // alcove's vertical west face (z 1.70 -> 3.10 = 1.40 m).
-  { kind: 'wall',    x1:  0.00, z1:  4.10,  x2: -0.50, z2:  4.10 },
-  { kind: 'wall',    x1: -0.50, z1:  4.10,  x2: -1.50, z2:  3.10 },
-  { kind: 'wall',    x1: -1.50, z1:  3.10,  x2: -1.50, z2:  1.70 },
-  { kind: 'wall',    x1: -1.50, z1:  1.70,  x2: -0.50, z2:  0.70 },
-  { kind: 'wall',    x1: -0.50, z1:  0.70,  x2:  0.00, z2:  0.70 },
-  { kind: 'wall',    x1:  0.00, z1:  0.70,  x2:  0.00, z2:  0.00 },
+  // --- NW chevron (the lift-shaft bay). The PDF's vector facade here is two
+  // straight diagonal facets meeting at a west apex; the 1397 mm callout is how
+  // far the apex juts west of the x=0 line (apex ≈ (-1.40, 2.10)). The facets
+  // run from the top-facade NW corner (0,0) down to the apex and back up to the
+  // west-facade start (0,4.10), staying west of x=0 (exterior bay).
+  { kind: 'wall',    x1:  0.00, z1:  4.10,  x2: -1.40, z2:  2.10 },
+  { kind: 'wall',    x1: -1.40, z1:  2.10,  x2:  0.00, z2:  0.00 },
 
   // --- Slaapk1 east wall
   { kind: 'wall',    x1:  5.52, z1:  0.20,  x2:  5.52, z2:  4.20 },
@@ -282,41 +280,45 @@ const APARTMENT_GEOM = [
   // corner to the woonkamer west wall, separating the living-room north strip
   // from the gang/bathroom (PDF: solid wall at z~4.3, x 5.52->6.948).
   { kind: 'wall',    x1:  5.52, z1:  4.20,  x2:  6.948, z2:  4.20 },
-  // --- Bathroom block — door to gang on south wall at x∈[3.50, 4.43]
-  { kind: 'wall',    x1:  3.158, z1: 4.40,  x2:  6.748, z2: 4.40 },
-  { kind: 'wall',    x1:  3.158, z1: 4.40,  x2:  3.158, z2: 7.10 },
-  { kind: 'wall',    x1:  6.748, z1: 4.40,  x2:  6.748, z2: 7.10 },
-  { kind: 'wall',    x1:  3.158, z1: 7.10,  x2:  3.50,  z2: 7.10 },
-  { kind: 'door',    x1:  3.50,  z1: 7.10,  x2:  4.43,  z2: 7.10 },
-  { kind: 'wall',    x1:  4.43,  z1: 7.10,  x2:  6.748, z2: 7.10 },
-  // --- Toilet partition (inside bathroom SE corner) — door on west wall at z∈[5.50, 6.43]
-  { kind: 'wall',    x1:  5.818, z1: 5.315, x2:  6.748, z2: 5.315 },
-  { kind: 'wall',    x1:  5.818, z1: 5.315, x2:  5.818, z2: 5.50 },
-  { kind: 'door',    x1:  5.818, z1: 5.50,  x2:  5.818, z2: 6.43 },
-  { kind: 'wall',    x1:  5.818, z1: 6.43,  x2:  5.818, z2: 7.10 },
+  // --- Bathroom block (PDF vector walls: west x≈3.86, north z≈4.30, south
+  //     z≈7.13). Old west wall x=3.158 sat inside the berging closet; the real
+  //     badkamer west wall is x≈3.86. Gang door on the south wall at the SW,
+  //     per the door-swing arc at x≈3.95..4.88.
+  { kind: 'wall',    x1:  3.86,  z1: 4.30,  x2:  6.748, z2: 4.30 },
+  { kind: 'wall',    x1:  3.86,  z1: 4.30,  x2:  3.86,  z2: 7.10 },
+  { kind: 'wall',    x1:  6.748, z1: 4.30,  x2:  6.748, z2: 7.10 },
+  { kind: 'wall',    x1:  3.86,  z1: 7.10,  x2:  3.95,  z2: 7.10 },
+  { kind: 'door',    x1:  3.95,  z1: 7.10,  x2:  4.88,  z2: 7.10 },
+  { kind: 'wall',    x1:  4.88,  z1: 7.10,  x2:  6.748, z2: 7.10 },
+  // --- Toilet partition (inside bathroom SE corner) — west face at x≈5.66
+  //     (PDF), door on west wall at z∈[5.50, 6.43]
+  { kind: 'wall',    x1:  5.66,  z1: 5.315, x2:  6.748, z2: 5.315 },
+  { kind: 'wall',    x1:  5.66,  z1: 5.315, x2:  5.66,  z2: 5.50 },
+  { kind: 'door',    x1:  5.66,  z1: 5.50,  x2:  5.66,  z2: 6.43 },
+  { kind: 'wall',    x1:  5.66,  z1: 6.43,  x2:  5.66,  z2: 7.10 },
   // --- Slaapk2 north wall (z=9, shared with gang); en-suite is in the NE corner.
-  { kind: 'wall',    x1:  0.00,  z1: 9.00,  x2:  4.115, z2: 9.00 },
+  { kind: 'wall',    x1:  0.00,  z1: 9.50,  x2:  4.31, z2: 9.50 },
   // --- Kitchen/living-room north wall (z=9) with the wide opening from the gang
   //     (your "door to the living room", x~4.5-6.0).
-  { kind: 'wall',    x1:  4.115, z1: 9.00,  x2:  4.50,  z2: 9.00 },
-  { kind: 'door',    x1:  4.50,  z1: 9.00,  x2:  6.00,  z2: 9.00 },
-  { kind: 'wall',    x1:  6.00,  z1: 9.00,  x2:  6.948, z2: 9.00 },
+  { kind: 'wall',    x1:  4.31, z1: 9.50,  x2:  4.50,  z2: 9.50 },
+  { kind: 'door',    x1:  4.50,  z1: 9.50,  x2:  6.00,  z2: 9.50 },
+  { kind: 'wall',    x1:  6.00,  z1: 9.50,  x2:  6.948, z2: 9.50 },
   // --- Slaapk2 east wall (slaapk2 <-> living room), z 9..14.765. Door to the
   //     living room at z 11.5..12.4, right beside the en-suite so the bathroom
   //     partly blocks it (as you described).
-  { kind: 'wall',    x1:  4.115, z1: 9.00,   x2:  4.115, z2: 11.50 },
-  { kind: 'door',    x1:  4.115, z1: 11.50,  x2:  4.115, z2: 12.40 },
-  { kind: 'wall',    x1:  4.115, z1: 12.40,  x2:  4.115, z2: 14.765 },
-  // --- Badkamer klein (en-suite) — NE corner of slaapk2, x∈[2.445,4.115] z∈[9,11.29];
+  { kind: 'wall',    x1:  4.31, z1: 9.50,   x2:  4.31, z2: 11.50 },
+  { kind: 'door',    x1:  4.31, z1: 11.50,  x2:  4.31, z2: 12.40 },
+  { kind: 'wall',    x1:  4.31, z1: 12.40,  x2:  4.31, z2: 14.765 },
+  // --- Badkamer klein (en-suite) — NE corner of slaapk2, x∈[2.445,4.31] z∈[9,11.29];
   //     door from the bedroom on its west wall at z∈[9.80,10.73].
-  { kind: 'wall',    x1:  2.445, z1:  9.00,  x2:  2.445, z2:  9.80 },
+  { kind: 'wall',    x1:  2.445, z1:  9.50,  x2:  2.445, z2:  9.80 },
   { kind: 'door',    x1:  2.445, z1:  9.80,  x2:  2.445, z2: 10.73 },
   { kind: 'wall',    x1:  2.445, z1: 10.73,  x2:  2.445, z2: 11.29 },
-  { kind: 'wall',    x1:  2.445, z1: 11.29,  x2:  4.115, z2: 11.29 },
+  { kind: 'wall',    x1:  2.445, z1: 11.29,  x2:  4.31, z2: 11.29 },
   // --- Woonkamer west wall — open passage to gang at z∈[6.50, 7.80]
   { kind: 'wall',    x1:  6.948, z1: 4.20,  x2:  6.948, z2: 6.50 },
   { kind: 'door',    x1:  6.948, z1: 6.50,  x2:  6.948, z2: 7.80 },
-  { kind: 'wall',    x1:  6.948, z1: 7.80,  x2:  6.948, z2: 9.00 },
+  { kind: 'wall',    x1:  6.948, z1: 7.80,  x2:  6.948, z2: 9.50 },
 
   // --- Top balkon railings
   { kind: 'railing', x1:  0.00,  z1: -1.331, x2: 10.72, z2: -1.331 }, // outer (N)
@@ -338,34 +340,33 @@ const APARTMENT_GEOM = [
  * "which room am I in" lookup prefers the smaller space. */
 const ROOMS = [
   { id: 'toilet',    name: 'Toilet',            kind: 'tegel', rects: [
-      { x1: 5.818, z1: 5.315, x2: 6.748, z2: 7.10 } ] },
+      { x1: 5.66, z1: 5.315, x2: 6.748, z2: 7.10 } ] },
   { id: 'badkklein', name: 'Badkamer (klein)',  kind: 'tegel', rects: [
-      { x1: 2.445, z1: 9.00, x2: 4.115, z2: 11.29 } ] },
+      { x1: 2.445, z1: 9.50, x2: 4.31, z2: 11.29 } ] },
   { id: 'badkamer',  name: 'Badkamer',          kind: 'tegel', rects: [
-      { x1: 3.158, z1: 4.40,  x2: 6.748, z2: 5.315 },
-      { x1: 3.158, z1: 5.315, x2: 5.818, z2: 7.10 } ] },
+      { x1: 3.86, z1: 4.30,  x2: 6.748, z2: 5.315 },
+      { x1: 3.86, z1: 5.315, x2: 5.66, z2: 7.10 } ] },
   { id: 'slaapk1',   name: 'Slaapkamer 1',      kind: 'hout',  rects: [
       { x1: 0.00,  z1: 0.20,  x2: 5.52,  z2: 4.20 },
-      { x1: -0.50, z1: 0.70,  x2: 0.00,  z2: 4.10 },
-      { x1: -1.50, z1: 1.70,  x2: -0.50, z2: 3.10 } ] },
+      { x1: -0.75, z1: 1.20,  x2: 0.00,  z2: 3.00 } ] },
   { id: 'slaapk2',   name: 'Slaapkamer 2',      kind: 'hout',  rects: [
-      { x1: 0.00,  z1: 9.00,  x2: 2.445, z2: 14.765 },
-      { x1: 2.445, z1: 11.29, x2: 4.115, z2: 14.765 } ] },
+      { x1: 0.00,  z1: 9.50,  x2: 2.445, z2: 14.765 },
+      { x1: 2.445, z1: 11.29, x2: 4.31, z2: 14.765 } ] },
   { id: 'gang',      name: 'Gang',              kind: 'hout',  rects: [
       { x1: 0.00, z1: 4.20,  x2: 6.948, z2: 4.40 },
-      { x1: 0.00, z1: 4.40,  x2: 3.158, z2: 7.10 },
-      { x1: 0.00, z1: 7.10,  x2: 6.948, z2: 9.00 },
+      { x1: 0.00, z1: 4.40,  x2: 3.86, z2: 7.10 },
+      { x1: 0.00, z1: 7.10,  x2: 6.948, z2: 9.50 },
       { x1: 6.748, z1: 4.40,  x2: 6.948, z2: 7.10 } ] },
   { id: 'woonkamer', name: 'Woonkamer',         kind: 'hout',  rects: [
       { x1: 5.52,  z1: 0.20,  x2: 10.52, z2: 4.20 },
-      { x1: 6.948, z1: 4.20,  x2: 10.52, z2: 9.00 },
-      { x1: 4.115, z1: 9.00,  x2: 6.46,  z2: 15.60 },   // deep kitchen
-      { x1: 6.46,  z1: 9.00,  x2: 10.52, z2: 13.602 } ] }, // shallow living
+      { x1: 6.948, z1: 4.20,  x2: 10.52, z2: 9.50 },
+      { x1: 4.31, z1: 9.50,  x2: 6.46,  z2: 15.60 },   // deep kitchen
+      { x1: 6.46,  z1: 9.50,  x2: 10.52, z2: 13.602 } ] }, // shallow living
   { id: 'balkon_n',  name: 'Balkon (noord)',    kind: 'steen', rects: [
       { x1: 0.00,  z1: -1.331, x2: 10.72, z2: 0.00 } ] },
   { id: 'balkon_z',  name: 'Balkon (zuid)',     kind: 'steen', rects: [
-      { x1: 0.00,  z1: 14.765, x2: 4.115, z2: 17.402 },
-      { x1: 4.115, z1: 15.60,  x2: 6.46,  z2: 17.402 },
+      { x1: 0.00,  z1: 14.765, x2: 4.31, z2: 17.402 },
+      { x1: 4.31, z1: 15.60,  x2: 6.46,  z2: 17.402 },
       { x1: 6.46,  z1: 13.802, x2: 10.72, z2: 17.402 } ] },
 ];
 ROOMS.forEach(r => { r.walls = []; r.floorMeshes = []; });
@@ -1705,13 +1706,13 @@ function placeFurniture() {
   // === Toilet (inside badkamer SE: x∈[5.818, 6.748], z∈[5.315, 7.10])
   addToiletBowl(6.28, 6.50, Math.PI);
 
-  // === Slaapkamer 2 (x∈[0, 4.115], z∈[9.00, 14.77]); en-suite in the NE corner
+  // === Slaapkamer 2 (x∈[0, 4.31], z∈[9.50, 14.77]); en-suite in the NE corner
   // Double bed against the west wall, head pointing west
   addBed(1.10, 13.10, Math.PI / 2, 2.00, 1.60);
   // Wardrobe along the south wall (facing north)
   addWardrobe(1.30, 14.40, Math.PI, 1.50, 0.55);
 
-  // === Badkamer klein (en-suite, NE of slaapk2, x∈[2.445, 4.115], z∈[9.00, 11.29])
+  // === Badkamer klein (en-suite, NE of slaapk2, x∈[2.445, 4.31], z∈[9.50, 11.29])
   addShowerStall(2.90, 9.50, 0, 0.90, 0.90);
   addSink(3.70, 10.00, Math.PI / 2, 0.50);
   addToiletBowl(3.10, 10.90, Math.PI);

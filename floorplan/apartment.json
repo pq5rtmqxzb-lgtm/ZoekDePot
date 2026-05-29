@@ -1,6 +1,5 @@
 {
   "_doc": "Rebuild data for YP_bouwnummer_25.pdf (Type R3.sp). Phase 1 extracted dimensions from the PDF; Phase 2 renders this to floorplan/floorplan.svg (tools/render-floorplan.py); Phase 3 builds the 3D model (APARTMENT_GEOM in index.html) and verifies it against this plan with tools/plan-overlay.py. As of the latest fidelity pass every model wall/door endpoint lies on a plan edge within 0.05 m (see phase3_model_fidelity). Structural walls are locked; remaining `uncertain` items are interior fixture/door-position details that do not affect the shell.",
-
   "phase3_model_fidelity": {
     "tool": "tools/plan-overlay.py (model<->plan) and tools/pdf-overlay.py (plan<->full PDF)",
     "tolerance_m": 0.05,
@@ -15,96 +14,503 @@
       "Exact position of the en-suite WITHIN slaapkamer 2 (placed on the west side per user; the low-res scan's fixtures/labels are ambiguous between west and east)."
     ]
   },
-
   "source_pdf": {
     "file": "YP_bouwnummer_25.pdf",
     "type": "R3.sp",
     "project": "Den Haag, Ypsilon Park (bouwnummer 25, 2e verdieping)",
-    "page_size_pts": [1190.76, 1683.72],
+    "page_size_pts": [
+      1190.76,
+      1683.72
+    ],
     "scale": "1:50",
     "pt_per_meter": 56.7,
     "pdf_to_meter_factor_mm_per_pt": 17.64
   },
-
   "units": "meters",
-
   "origin": {
     "description": "Exterior NW corner of the apartment top facade. This is the point where the top (north) facade ends on the west side and the chamfer diagonal begins. Measured in the PDF at approximately px=146, py=174.6.",
-    "world": [0.0, 0.0]
+    "world": [
+      0.0,
+      0.0
+    ]
   },
   "axes": {
     "x": "east (positive = right in the PDF plan)",
     "y": "south (positive = down in the PDF plan)",
     "z": "up (out of the plan; used for ceiling height only)"
   },
-
   "levels": [
     {
       "id": "L0",
       "z_offset_m": 0.0,
-      "ceiling_height_m": 2.80,
+      "ceiling_height_m": 2.8,
       "ceiling_height_source": "User-provided (Technische Omschrijving PDF could not be read in this sandbox). Not extracted from the floor plan."
     }
   ],
-
   "raw_dimensions_pdf": [
-    {"mm": 5709,  "pdf_xy": [308, 188],  "orient": "horizontal", "best_guess": "top balkon outer length, E-W"},
-    {"mm": 4922,  "pdf_xy": [615, 188],  "orient": "horizontal", "best_guess": "top facade section east of top balkon door, E-W"},
-    {"mm": 700,   "pdf_xy": [737, 145],  "orient": "horizontal", "best_guess": "small east-of-balkon facade detail, very close to east facade"},
-    {"mm": 4201,  "pdf_xy": [431, 293],  "orient": "vertical",   "best_guess": "slaapk1 N-S, outer face of top facade to interior face of slaapk1 south wall"},
-    {"mm": 4000,  "pdf_xy": [506, 299],  "orient": "vertical",   "best_guess": "slaapk1 N-S, interior face to interior face (= 4201 minus ~200mm wall thickness)"},
-    {"mm": 3675,  "pdf_xy": [384, 402],  "orient": "horizontal", "best_guess": "slaapk1 south wall — full wall-to-wall span of ONE section (CONFIRMED by user)"},
-    {"mm": 1845,  "pdf_xy": [336, 421],  "orient": "horizontal", "best_guess": "slaapk1 PARALLEL dim of a DIFFERENT section closer to the door to gang — slaapk1 has a stepped/multi-section south wall (CONFIRMED by user: 'this room has weird shapes'). NOT simply additive with 3675."},
-    {"mm": 3572,  "pdf_xy": [653, 438],  "orient": "horizontal", "best_guess": "woonkamer strip E-W width (north end)"},
-    {"mm": 3065,  "pdf_xy": [461, 472],  "orient": "horizontal", "best_guess": "badkamer (groot) E-W interior width"},
-    {"mm": 2730,  "pdf_xy": [379, 502],  "orient": "horizontal", "best_guess": "badkamer (groot) tub or fixture span"},
-    {"mm": 2700,  "pdf_xy": [531, 491],  "orient": "horizontal", "best_guess": "near-badkamer dim, possibly woonkamer interior width-related"},
-    {"mm": 1500,  "pdf_xy": [202, 525],  "orient": "horizontal", "best_guess": "small dim near west facade — possibly a meter-cabinet or built-in"},
-    {"mm": 2090,  "pdf_xy": [286, 540],  "orient": "horizontal", "best_guess": "badkamer interior layout dim"},
-    {"mm": 1180,  "pdf_xy": [409, 529],  "orient": "horizontal", "best_guess": "badkamer interior layout dim"},
-    {"mm": 1285,  "pdf_xy": [500, 529],  "orient": "horizontal", "best_guess": "badkamer interior layout dim"},
-    {"mm": 13802, "pdf_xy": [682, 566],  "orient": "vertical",   "best_guess": "east facade total length, N-S (HIGH CONFIDENCE)"},
-    {"mm": 1200,  "pdf_xy": [332, 576],  "orient": "horizontal", "best_guess": "berging width"},
-    {"mm": 2220,  "pdf_xy": [266, 576],  "orient": "horizontal", "best_guess": "berging + neighbour combined width"},
-    {"mm": 4585,  "pdf_xy": [310, 604],  "orient": "horizontal", "best_guess": "gang horizontal arm or related corridor length"},
-    {"mm": 930,   "pdf_xy": [409, 605],  "orient": "horizontal", "best_guess": "toilet E-W width (CONFIRMED by user — toilet = 0.93 × 1.785)"},
-    {"mm": 930,   "pdf_xy": [524, 605],  "orient": "horizontal", "best_guess": "second 930 — likely toilet door clear width or a parallel dim"},
-    {"mm": 880,   "pdf_xy": [397, 624],  "orient": "horizontal", "best_guess": "NOT the toilet width (toilet is 930 — see user verification). Probably a berging or fixture sub-dim."},
-    {"mm": 1785,  "pdf_xy": [480, 626],  "orient": "horizontal", "best_guess": "toilet N-S depth (CONFIRMED by user: toilet = 0.93 × 1.785 = 1.660 m² ≈ 1.67)"},
-    {"mm": 1645,  "pdf_xy": [260, 668],  "orient": "horizontal", "best_guess": "gang section width"},
-    {"mm": 1375,  "pdf_xy": [505, 676],  "orient": "horizontal", "best_guess": "gang section width / fixture clearance"},
-    {"mm": 6750,  "pdf_xy": [344, 707],  "orient": "horizontal", "best_guess": "gang E-W total length (the long axis of the hallway)"},
-    {"mm": 2330,  "pdf_xy": [255, 756],  "orient": "horizontal", "best_guess": "badkamer klein anteroom/fixture dim"},
-    {"mm": 1435,  "pdf_xy": [172, 768],  "orient": "horizontal", "best_guess": "small dim near west facade jog"},
-    {"mm": 1765,  "pdf_xy": [229, 782],  "orient": "vertical",   "best_guess": "badkamer klein N-S depth"},
-    {"mm": 1670,  "pdf_xy": [350, 818],  "orient": "horizontal", "best_guess": "badkamer klein E-W width (1670 × 2289 = 3.823 ≈ 3.81 m²)"},
-    {"mm": 5765,  "pdf_xy": [377, 888],  "orient": "vertical",   "best_guess": "slaapk2 + badk klein combined N-S (5.765 m)"},
-    {"mm": 3900,  "pdf_xy": [215, 921],  "orient": "vertical",   "best_guess": "slaapk2 main bed area N-S depth — sub-section, NOT full slaapk2 depth"},
-    {"mm": 6207,  "pdf_xy": [579, 937],  "orient": "horizontal", "best_guess": "bottom balkon east section length, or south facade segment"},
-    {"mm": 2115,  "pdf_xy": [461, 974],  "orient": "horizontal", "best_guess": "keuken island length (or kitchen wall sub-segment)"},
-    {"mm": 3535,  "pdf_xy": [644, 985],  "orient": "horizontal", "best_guess": "bottom balkon E-W sub-segment"},
-    {"mm": 4115,  "pdf_xy": [280, 999],  "orient": "horizontal", "best_guess": "slaapk2 E-W width (4.115 m) — HIGH CONFIDENCE (4.115 × 4.59 ≈ 18.90 m²)"},
-    {"mm": 2201,  "pdf_xy": [465, 1041], "orient": "horizontal", "best_guess": "south facade segment width near kitchen / balkon door span"},
-    {"mm": 3600,  "pdf_xy": [708, 1097], "orient": "vertical",   "best_guess": "bottom balkon N-S depth (3.6 m) — HIGH CONFIDENCE (6.675 × 3.600 ≈ 24.03 m²)"},
-    {"mm": 1800,  "pdf_xy": [400, 1142], "orient": "vertical",   "best_guess": "balkon south facade detail or balkon door span"},
-    {"mm": 1397,  "pdf_xy": [123, 274],  "orient": "vertical",   "best_guess": "NW-corner zigzag — one of the vertical segments in the multi-step NW corner. CONFIRMED visually as labeling a vertical part of the alcove wall.", "extraction_note": "Found as adjacent vertical digits '13' + '97' at same PDF X."}
+    {
+      "mm": 5709,
+      "pdf_xy": [
+        308,
+        188
+      ],
+      "orient": "horizontal",
+      "best_guess": "top balkon outer length, E-W"
+    },
+    {
+      "mm": 4922,
+      "pdf_xy": [
+        615,
+        188
+      ],
+      "orient": "horizontal",
+      "best_guess": "top facade section east of top balkon door, E-W"
+    },
+    {
+      "mm": 700,
+      "pdf_xy": [
+        737,
+        145
+      ],
+      "orient": "horizontal",
+      "best_guess": "small east-of-balkon facade detail, very close to east facade"
+    },
+    {
+      "mm": 4201,
+      "pdf_xy": [
+        431,
+        293
+      ],
+      "orient": "vertical",
+      "best_guess": "slaapk1 N-S, outer face of top facade to interior face of slaapk1 south wall"
+    },
+    {
+      "mm": 4000,
+      "pdf_xy": [
+        506,
+        299
+      ],
+      "orient": "vertical",
+      "best_guess": "slaapk1 N-S, interior face to interior face (= 4201 minus ~200mm wall thickness)"
+    },
+    {
+      "mm": 3675,
+      "pdf_xy": [
+        384,
+        402
+      ],
+      "orient": "horizontal",
+      "best_guess": "slaapk1 south wall — full wall-to-wall span of ONE section (CONFIRMED by user)"
+    },
+    {
+      "mm": 1845,
+      "pdf_xy": [
+        336,
+        421
+      ],
+      "orient": "horizontal",
+      "best_guess": "slaapk1 PARALLEL dim of a DIFFERENT section closer to the door to gang — slaapk1 has a stepped/multi-section south wall (CONFIRMED by user: 'this room has weird shapes'). NOT simply additive with 3675."
+    },
+    {
+      "mm": 3572,
+      "pdf_xy": [
+        653,
+        438
+      ],
+      "orient": "horizontal",
+      "best_guess": "woonkamer strip E-W width (north end)"
+    },
+    {
+      "mm": 3065,
+      "pdf_xy": [
+        461,
+        472
+      ],
+      "orient": "horizontal",
+      "best_guess": "badkamer (groot) E-W interior width"
+    },
+    {
+      "mm": 2730,
+      "pdf_xy": [
+        379,
+        502
+      ],
+      "orient": "horizontal",
+      "best_guess": "badkamer (groot) tub or fixture span"
+    },
+    {
+      "mm": 2700,
+      "pdf_xy": [
+        531,
+        491
+      ],
+      "orient": "horizontal",
+      "best_guess": "near-badkamer dim, possibly woonkamer interior width-related"
+    },
+    {
+      "mm": 1500,
+      "pdf_xy": [
+        202,
+        525
+      ],
+      "orient": "horizontal",
+      "best_guess": "small dim near west facade — possibly a meter-cabinet or built-in"
+    },
+    {
+      "mm": 2090,
+      "pdf_xy": [
+        286,
+        540
+      ],
+      "orient": "horizontal",
+      "best_guess": "badkamer interior layout dim"
+    },
+    {
+      "mm": 1180,
+      "pdf_xy": [
+        409,
+        529
+      ],
+      "orient": "horizontal",
+      "best_guess": "badkamer interior layout dim"
+    },
+    {
+      "mm": 1285,
+      "pdf_xy": [
+        500,
+        529
+      ],
+      "orient": "horizontal",
+      "best_guess": "badkamer interior layout dim"
+    },
+    {
+      "mm": 13802,
+      "pdf_xy": [
+        682,
+        566
+      ],
+      "orient": "vertical",
+      "best_guess": "east facade total length, N-S (HIGH CONFIDENCE)"
+    },
+    {
+      "mm": 1200,
+      "pdf_xy": [
+        332,
+        576
+      ],
+      "orient": "horizontal",
+      "best_guess": "berging width"
+    },
+    {
+      "mm": 2220,
+      "pdf_xy": [
+        266,
+        576
+      ],
+      "orient": "horizontal",
+      "best_guess": "berging + neighbour combined width"
+    },
+    {
+      "mm": 4585,
+      "pdf_xy": [
+        310,
+        604
+      ],
+      "orient": "horizontal",
+      "best_guess": "gang horizontal arm or related corridor length"
+    },
+    {
+      "mm": 930,
+      "pdf_xy": [
+        409,
+        605
+      ],
+      "orient": "horizontal",
+      "best_guess": "toilet E-W width (CONFIRMED by user — toilet = 0.93 × 1.785)"
+    },
+    {
+      "mm": 930,
+      "pdf_xy": [
+        524,
+        605
+      ],
+      "orient": "horizontal",
+      "best_guess": "second 930 — likely toilet door clear width or a parallel dim"
+    },
+    {
+      "mm": 880,
+      "pdf_xy": [
+        397,
+        624
+      ],
+      "orient": "horizontal",
+      "best_guess": "NOT the toilet width (toilet is 930 — see user verification). Probably a berging or fixture sub-dim."
+    },
+    {
+      "mm": 1785,
+      "pdf_xy": [
+        480,
+        626
+      ],
+      "orient": "horizontal",
+      "best_guess": "toilet N-S depth (CONFIRMED by user: toilet = 0.93 × 1.785 = 1.660 m² ≈ 1.67)"
+    },
+    {
+      "mm": 1645,
+      "pdf_xy": [
+        260,
+        668
+      ],
+      "orient": "horizontal",
+      "best_guess": "gang section width"
+    },
+    {
+      "mm": 1375,
+      "pdf_xy": [
+        505,
+        676
+      ],
+      "orient": "horizontal",
+      "best_guess": "gang section width / fixture clearance"
+    },
+    {
+      "mm": 6750,
+      "pdf_xy": [
+        344,
+        707
+      ],
+      "orient": "horizontal",
+      "best_guess": "gang E-W total length (the long axis of the hallway)"
+    },
+    {
+      "mm": 2330,
+      "pdf_xy": [
+        255,
+        756
+      ],
+      "orient": "horizontal",
+      "best_guess": "badkamer klein anteroom/fixture dim"
+    },
+    {
+      "mm": 1435,
+      "pdf_xy": [
+        172,
+        768
+      ],
+      "orient": "horizontal",
+      "best_guess": "small dim near west facade jog"
+    },
+    {
+      "mm": 1765,
+      "pdf_xy": [
+        229,
+        782
+      ],
+      "orient": "vertical",
+      "best_guess": "badkamer klein N-S depth"
+    },
+    {
+      "mm": 1670,
+      "pdf_xy": [
+        350,
+        818
+      ],
+      "orient": "horizontal",
+      "best_guess": "badkamer klein E-W width (1670 × 2289 = 3.823 ≈ 3.81 m²)"
+    },
+    {
+      "mm": 5765,
+      "pdf_xy": [
+        377,
+        888
+      ],
+      "orient": "vertical",
+      "best_guess": "slaapk2 + badk klein combined N-S (5.765 m)"
+    },
+    {
+      "mm": 3900,
+      "pdf_xy": [
+        215,
+        921
+      ],
+      "orient": "vertical",
+      "best_guess": "slaapk2 main bed area N-S depth — sub-section, NOT full slaapk2 depth"
+    },
+    {
+      "mm": 6207,
+      "pdf_xy": [
+        579,
+        937
+      ],
+      "orient": "horizontal",
+      "best_guess": "bottom balkon east section length, or south facade segment"
+    },
+    {
+      "mm": 2115,
+      "pdf_xy": [
+        461,
+        974
+      ],
+      "orient": "horizontal",
+      "best_guess": "keuken island length (or kitchen wall sub-segment)"
+    },
+    {
+      "mm": 3535,
+      "pdf_xy": [
+        644,
+        985
+      ],
+      "orient": "horizontal",
+      "best_guess": "bottom balkon E-W sub-segment"
+    },
+    {
+      "mm": 4115,
+      "pdf_xy": [
+        280,
+        999
+      ],
+      "orient": "horizontal",
+      "best_guess": "slaapk2 E-W width (4.115 m) — HIGH CONFIDENCE (4.115 × 4.59 ≈ 18.90 m²)"
+    },
+    {
+      "mm": 2201,
+      "pdf_xy": [
+        465,
+        1041
+      ],
+      "orient": "horizontal",
+      "best_guess": "south facade segment width near kitchen / balkon door span"
+    },
+    {
+      "mm": 3600,
+      "pdf_xy": [
+        708,
+        1097
+      ],
+      "orient": "vertical",
+      "best_guess": "bottom balkon N-S depth (3.6 m) — HIGH CONFIDENCE (6.675 × 3.600 ≈ 24.03 m²)"
+    },
+    {
+      "mm": 1800,
+      "pdf_xy": [
+        400,
+        1142
+      ],
+      "orient": "vertical",
+      "best_guess": "balkon south facade detail or balkon door span"
+    },
+    {
+      "mm": 1397,
+      "pdf_xy": [
+        123,
+        274
+      ],
+      "orient": "vertical",
+      "best_guess": "NW-corner zigzag — one of the vertical segments in the multi-step NW corner. CONFIRMED visually as labeling a vertical part of the alcove wall.",
+      "extraction_note": "Found as adjacent vertical digits '13' + '97' at same PDF X."
+    }
   ],
-
   "room_labels": [
-    {"name": "balkon (top)",       "area_m2": 7.60,  "pdf_xy": [440, 139]},
-    {"name": "slaapkamer 1",       "area_m2": 23.45, "pdf_xy": [380, 295]},
-    {"name": "woonkamer",          "area_m2": 67.11, "pdf_xy": [655, 494]},
-    {"name": "badkamer (groot)",   "area_m2": 8.06,  "pdf_xy": [419, 491]},
-    {"name": "berging (north)",    "area_m2": null,  "pdf_xy": [391, 605], "note": "small storage, no labeled area"},
-    {"name": "toilet",             "area_m2": 1.67,  "pdf_xy": [457, 587]},
-    {"name": "berging (south)",    "area_m2": null,  "pdf_xy": [268, 540], "note": "second storage closet"},
-    {"name": "gang",               "area_m2": 13.77, "pdf_xy": [324, 633]},
-    {"name": "badkamer (klein)",   "area_m2": 3.81,  "pdf_xy": [322, 785]},
-    {"name": "slaapkamer 2",       "area_m2": 18.90, "pdf_xy": [280, 882]},
-    {"name": "keukenopstelling",   "area_m2": null,  "pdf_xy": [485, 817], "note": "kitchen island inside woonkamer"},
-    {"name": "balkon (bottom)",    "area_m2": 24.03, "pdf_xy": [609, 1088]}
+    {
+      "name": "balkon (top)",
+      "area_m2": 7.6,
+      "pdf_xy": [
+        440,
+        139
+      ]
+    },
+    {
+      "name": "slaapkamer 1",
+      "area_m2": 23.45,
+      "pdf_xy": [
+        380,
+        295
+      ]
+    },
+    {
+      "name": "woonkamer",
+      "area_m2": 67.11,
+      "pdf_xy": [
+        655,
+        494
+      ]
+    },
+    {
+      "name": "badkamer (groot)",
+      "area_m2": 8.06,
+      "pdf_xy": [
+        419,
+        491
+      ]
+    },
+    {
+      "name": "berging (north)",
+      "area_m2": null,
+      "pdf_xy": [
+        391,
+        605
+      ],
+      "note": "small storage, no labeled area"
+    },
+    {
+      "name": "toilet",
+      "area_m2": 1.67,
+      "pdf_xy": [
+        457,
+        587
+      ]
+    },
+    {
+      "name": "berging (south)",
+      "area_m2": null,
+      "pdf_xy": [
+        268,
+        540
+      ],
+      "note": "second storage closet"
+    },
+    {
+      "name": "gang",
+      "area_m2": 13.77,
+      "pdf_xy": [
+        324,
+        633
+      ]
+    },
+    {
+      "name": "badkamer (klein)",
+      "area_m2": 3.81,
+      "pdf_xy": [
+        322,
+        785
+      ]
+    },
+    {
+      "name": "slaapkamer 2",
+      "area_m2": 18.9,
+      "pdf_xy": [
+        280,
+        882
+      ]
+    },
+    {
+      "name": "keukenopstelling",
+      "area_m2": null,
+      "pdf_xy": [
+        485,
+        817
+      ],
+      "note": "kitchen island inside woonkamer"
+    },
+    {
+      "name": "balkon (bottom)",
+      "area_m2": 24.03,
+      "pdf_xy": [
+        609,
+        1088
+      ]
+    }
   ],
-
   "high_confidence_facts": [
     "Apartment east facade interior length = 13.802 m (PDF callout 13802 with vertical dim spanning the full east edge).",
     "Top balkon E-W length = 5.709 m (PDF callout 5709, balkon area 7.60 m² → balkon depth = 1.331 m). The balkon is shared: BOTH slaapk1 AND woonkamer have sliding doors onto it (user-confirmed).",
@@ -120,15 +526,29 @@
     "Badkamer (klein) likely 1.670 × 2.289 ≈ 3.823 m² (label 3.81). 2.289 not directly labeled — inferred from area.",
     "The 'NW chamfer' is actually a multi-segment ZIGZAG with an alcove — NOT a single 45° diagonal. The 1397 mm callout labels one of the vertical segments. Exact step-by-step coordinates STILL UNCERTAIN (see uncertain[])."
   ],
-
   "envelope_preliminary": {
     "_doc": "Apartment exterior outline plus balconies. CORRECTED against the full-page PDF: the apartment is a ~10.7 m-wide rectangle (x 0..10.72) with the NW alcove and two balconies. The earlier x=-2.30 western jut was the scan's page margin (the thin far-left line is the drawing border, not a wall) — removed. Coordinates in meters, origin at NW exterior corner of top facade.",
     "polygon_clockwise_from_origin": [
-      [0.00, 0.00],
-      [10.72, 0.00],
-      [10.72, 13.802],
-      [0.00, 13.802],
-      [0.00, 4.10]
+      [
+        0.0,
+        0.0
+      ],
+      [
+        10.72,
+        0.0
+      ],
+      [
+        10.72,
+        13.802
+      ],
+      [
+        0.0,
+        13.802
+      ],
+      [
+        0.0,
+        4.1
+      ]
     ],
     "vertex_notes": [
       "v0 (0.00, 0.00): NW corner — top facade west end (origin)",
@@ -139,18 +559,32 @@
       "then the NW-corner zigzag (nw_zigzag, alcove to x=-1.5) closes back to (0,0)"
     ]
   },
-
   "rooms_preliminary": [
     {
       "name": "slaapkamer 1",
       "level": "L0",
       "labeled_area_m2": 23.45,
       "polygon_clockwise": [
-        [0.00, 0.20],
-        [5.52, 0.20],
-        [5.52, 4.20],
-        [0.00, 4.20],
-        [-1.00, 1.00]
+        [
+          0.0,
+          0.2
+        ],
+        [
+          5.52,
+          0.2
+        ],
+        [
+          5.52,
+          4.2
+        ],
+        [
+          0.0,
+          4.2
+        ],
+        [
+          -1.0,
+          1.0
+        ]
       ],
       "computed_area_m2_estimate": 22.6,
       "dimension_citations": [
@@ -171,13 +605,19 @@
       "labeled_area_m2": 67.11,
       "shape_note": "L-shape — narrow east strip + south-west wrap; coordinates UNCERTAIN below the strip",
       "strip_north": {
-        "x_range_m": [6.948, 10.520],
-        "y_range_m_north": 0.20,
+        "x_range_m": [
+          6.948,
+          10.52
+        ],
+        "y_range_m_north": 0.2,
         "y_range_m_south_unknown": true,
         "citation": "PDF callout 3572 → strip width E-W = 3.572 m (10.520 - 3.572 = 6.948); PDF callout 13802 → east facade total 13.802 m"
       },
       "south_extension": {
-        "x_range_m": [null, null],
+        "x_range_m": [
+          null,
+          null
+        ],
         "y_range_m_north_unknown": true,
         "y_range_m_south": 13.602,
         "citation": "UNCERTAIN — see top-level uncertain. PDF callout 6207 may give the south-facade segment east of the south-west kitchen wall."
@@ -187,10 +627,16 @@
     {
       "name": "slaapkamer 2",
       "level": "L0",
-      "labeled_area_m2": 18.90,
+      "labeled_area_m2": 18.9,
       "shape_note": "Rectangle ~4.115 × 4.6 in the SW, west wall at x=0 (corrected from the full PDF). En-suite badkamer klein carved into the NW corner.",
-      "x_range_m": [0.00, 4.115],
-      "y_range_m": [9.00, 14.765],
+      "x_range_m": [
+        0.0,
+        4.115
+      ],
+      "y_range_m": [
+        9.0,
+        14.765
+      ],
       "dimension_citations": [
         "PDF callout 4115 → E-W width 4.115 m",
         "Derived N-S depth = 4.593 m so area matches 18.90 m²",
@@ -207,18 +653,42 @@
       "level": "L0",
       "labeled_area_m2": 8.06,
       "shape": "L-shape: rectangle 3.59 × 2.70 with the toilet (0.93 × 1.785) cut out of the SE corner",
-      "x_range_m": [3.158, 6.748],
-      "y_range_m": [4.40, 7.10],
-      "polygon_clockwise": [
-        [3.158, 4.40],
-        [6.748, 4.40],
-        [6.748, 5.315],
-        [5.818, 5.315],
-        [5.818, 7.10],
-        [3.158, 7.10]
+      "x_range_m": [
+        3.158,
+        6.748
       ],
-      "interior_block_w_m": 3.590,
-      "interior_block_d_m": 2.700,
+      "y_range_m": [
+        4.4,
+        7.1
+      ],
+      "polygon_clockwise": [
+        [
+          3.158,
+          4.4
+        ],
+        [
+          6.748,
+          4.4
+        ],
+        [
+          6.748,
+          5.315
+        ],
+        [
+          5.818,
+          5.315
+        ],
+        [
+          5.818,
+          7.1
+        ],
+        [
+          3.158,
+          7.1
+        ]
+      ],
+      "interior_block_w_m": 3.59,
+      "interior_block_d_m": 2.7,
       "computed_area_m2": 8.027,
       "dimension_citations": [
         "PDF callout 3065 → interior E-W ≈ 3.005 m (used 3.59 m for the COMBINED bathroom block to fit badkamer + toilet inside)",
@@ -234,9 +704,15 @@
       "location_in_badkamer": "SE (right-bottom) corner of badkamer, user-confirmed",
       "interior_w_m": 0.93,
       "interior_d_m": 1.785,
-      "computed_area_m2": 1.660,
-      "x_range_m": [5.818, 6.748],
-      "y_range_m": [5.315, 7.10],
+      "computed_area_m2": 1.66,
+      "x_range_m": [
+        5.818,
+        6.748
+      ],
+      "y_range_m": [
+        5.315,
+        7.1
+      ],
       "dimension_citations": [
         "PDF callout 930 → toilet E-W = 0.93 m (user-confirmed)",
         "PDF callout 1785 → toilet N-S = 1.785 m (user-confirmed)",
@@ -255,12 +731,30 @@
         "→ woonkamer (east end of horizontal arm; user-confirmed)"
       ],
       "polygon_clockwise": [
-        [-1.00, 4.20],
-        [6.948, 4.20],
-        [6.948, 9.00],
-        [-2.30, 9.00],
-        [-2.30, 5.85],
-        [-1.00, 5.85]
+        [
+          -1.0,
+          4.2
+        ],
+        [
+          6.948,
+          4.2
+        ],
+        [
+          6.948,
+          9.0
+        ],
+        [
+          -2.3,
+          9.0
+        ],
+        [
+          -2.3,
+          5.85
+        ],
+        [
+          -1.0,
+          5.85
+        ]
       ],
       "user_corrections_round6": [
         "Gang absorbs the central white space (now wraps around the bathroom block from all sides except east).",
@@ -282,9 +776,15 @@
       "labeled_area_m2": 3.81,
       "access": "en-suite within slaapkamer 2 — door is in slaapk2 (user-confirmed).",
       "side_in_slaapk2": "EAST side of slaapkamer 2, by the living-room door (user-confirmed; the bathroom partly blocks that door)",
-      "x_range_m": [2.445, 4.115],
-      "y_range_m": [9.00, 11.29],
-      "interior_w_m": 1.670,
+      "x_range_m": [
+        2.445,
+        4.115
+      ],
+      "y_range_m": [
+        9.0,
+        11.29
+      ],
+      "interior_w_m": 1.67,
       "interior_d_m": 2.29,
       "computed_area_m2": 3.823,
       "dimension_citations": [
@@ -295,11 +795,17 @@
     {
       "name": "balkon (top)",
       "level": "L0",
-      "labeled_area_m2": 7.60,
+      "labeled_area_m2": 7.6,
       "labeled_area_note": "7.60 m² is the OFFICIAL labelled portion (where the dim 5709 applies). User confirms the balkon spans the COMPLETE top facade width — both slaapkamer 1 AND woonkamer have sliding doors onto it. The polygon below covers the full outdoor strip, not just the labelled rectangle.",
       "shape_note": "Spans the full apartment top facade width (~10.72 m). N-S depth ≈ 1.331 m (from area / 5709).",
-      "x_range_m": [0.00, 10.72],
-      "y_range_m": [-1.331, 0.00],
+      "x_range_m": [
+        0.0,
+        10.72
+      ],
+      "y_range_m": [
+        -1.331,
+        0.0
+      ],
       "dimension_citations": [
         "PDF callout 5709 → labelled section E-W length (used for area calculation)",
         "Area / labelled length = 1.331 m → N-S depth",
@@ -312,8 +818,14 @@
       "labeled_area_m2": 24.03,
       "labeled_area_note": "24.03 m² is the OFFICIAL labelled portion. User confirms the balkon spans the COMPLETE south facade — accessible from BOTH woonkamer AND slaapkamer 2 via sliding doors.",
       "shape_note": "Spans the full apartment south facade (~13.02 m including the SW slaapk2 frontage). N-S depth = 3.600 m (PDF callout 3600).",
-      "x_range_m": [0.00, 10.72],
-      "y_range_m": [13.802, 17.402],
+      "x_range_m": [
+        0.0,
+        10.72
+      ],
+      "y_range_m": [
+        13.802,
+        17.402
+      ],
       "dimension_citations": [
         "PDF callout 3600 → N-S depth",
         "Area / depth = 6.675 m → E-W width"
@@ -323,15 +835,17 @@
       ]
     }
   ],
-
   "openings": [
     {
       "id": "balkon_top_slaapk1",
       "type": "sliding_door",
       "wall_segment": "top facade between x=0.50 and x=2.50 at y=0",
-      "span_x_m": [0.50, 2.50],
-      "width_m": 2.00,
-      "height_m": 2.40,
+      "span_x_m": [
+        0.5,
+        2.5
+      ],
+      "width_m": 2.0,
+      "height_m": 2.4,
       "from_room": "slaapkamer 1",
       "to_room": "balkon (top)"
     },
@@ -339,9 +853,12 @@
       "id": "balkon_top_woonk",
       "type": "sliding_door",
       "wall_segment": "top facade between x=7.50 and x=10.20 at y=0",
-      "span_x_m": [7.50, 10.20],
-      "width_m": 2.70,
-      "height_m": 2.40,
+      "span_x_m": [
+        7.5,
+        10.2
+      ],
+      "width_m": 2.7,
+      "height_m": 2.4,
       "from_room": "woonkamer",
       "to_room": "balkon (top)"
     },
@@ -349,9 +866,12 @@
       "id": "balkon_bot_woonk",
       "type": "sliding_door",
       "wall_segment": "south facade between x=7.00 and x=10.20 at y=13.802",
-      "span_x_m": [7.00, 10.20],
-      "width_m": 3.20,
-      "height_m": 2.40,
+      "span_x_m": [
+        7.0,
+        10.2
+      ],
+      "width_m": 3.2,
+      "height_m": 2.4,
       "from_room": "woonkamer",
       "to_room": "balkon (bottom)"
     },
@@ -359,9 +879,12 @@
       "id": "balkon_bot_slaapk2",
       "type": "sliding_door",
       "wall_segment": "south facade between x=-1.50 and x=1.30 at y=13.802",
-      "span_x_m": [-1.50, 1.30],
-      "width_m": 2.80,
-      "height_m": 2.40,
+      "span_x_m": [
+        -1.5,
+        1.3
+      ],
+      "width_m": 2.8,
+      "height_m": 2.4,
       "from_room": "slaapkamer 2",
       "to_room": "balkon (bottom)"
     },
@@ -369,9 +892,12 @@
       "id": "door_gang_slaapk1",
       "type": "door",
       "wall_segment": "slaapk1 south wall, west portion (the 1845 mm section)",
-      "span_x_m": [0.80, 1.73],
+      "span_x_m": [
+        0.8,
+        1.73
+      ],
       "width_m": 0.93,
-      "height_m": 2.10,
+      "height_m": 2.1,
       "from_room": "gang",
       "to_room": "slaapkamer 1"
     },
@@ -379,10 +905,13 @@
       "id": "door_gang_badkamer",
       "type": "door",
       "wall_segment": "badkamer south wall at y=7.10",
-      "span_at_y_m": 7.10,
-      "span_x_m": [3.50, 4.43],
+      "span_at_y_m": 7.1,
+      "span_x_m": [
+        3.5,
+        4.43
+      ],
       "width_m": 0.93,
-      "height_m": 2.10,
+      "height_m": 2.1,
       "from_room": "gang",
       "to_room": "badkamer (groot)"
     },
@@ -390,9 +919,12 @@
       "id": "door_badkamer_toilet",
       "type": "door",
       "wall_segment": "toilet west wall at x=5.818",
-      "span_y_m": [5.50, 6.43],
+      "span_y_m": [
+        5.5,
+        6.43
+      ],
       "width_m": 0.93,
-      "height_m": 2.10,
+      "height_m": 2.1,
       "from_room": "badkamer (groot)",
       "to_room": "toilet"
     },
@@ -401,9 +933,12 @@
       "type": "door",
       "wall_segment": "slaapk2 north wall at y=9.0, east end (near woonkamer)",
       "span_at_y_m": 9.0,
-      "span_x_m": [0.80, 1.73],
+      "span_x_m": [
+        0.8,
+        1.73
+      ],
       "width_m": 0.93,
-      "height_m": 2.10,
+      "height_m": 2.1,
       "from_room": "gang",
       "to_room": "slaapkamer 2"
     },
@@ -412,9 +947,12 @@
       "type": "open_passage",
       "wall_segment": "woonkamer west wall at x=6.948, gang horizontal arm range y=6.50-7.80",
       "span_at_x_m": 6.948,
-      "span_y_m": [6.50, 7.80],
-      "width_m": 1.30,
-      "height_m": 2.40,
+      "span_y_m": [
+        6.5,
+        7.8
+      ],
+      "width_m": 1.3,
+      "height_m": 2.4,
       "from_room": "gang",
       "to_room": "woonkamer",
       "note": "Wide open passage, not a hinged door"
@@ -424,14 +962,16 @@
       "type": "door",
       "wall_segment": "badk klein east wall at x=-0.63",
       "span_at_x_m": -0.63,
-      "span_y_m": [10.20, 11.13],
+      "span_y_m": [
+        10.2,
+        11.13
+      ],
       "width_m": 0.93,
-      "height_m": 2.10,
+      "height_m": 2.1,
       "from_room": "slaapkamer 2",
       "to_room": "badkamer (klein)"
     }
   ],
-
   "uncertain": [
     "NW corner is a MULTI-SEGMENT ZIGZAG (not a single chamfer) with an alcove + two diagonal sections + a vertical labelled 1397 mm. Step x-coordinates (-0.50 / -1.50) are estimates but are now locked and shared by the 3D model (see phase3_model_fidelity).",
     "WEST FACADE upper jog is now pinned (gang west at x=-1.00, stepping to x=-2.30 at y=5.85). The exact heights of the lowest SW kinks remain estimates (see SW corner item).",
@@ -445,7 +985,6 @@
     "Top balkon east-west placement: confirmed shared by slaapk1 and woonkamer, but exact span (does it start at the NW-zigzag end or further east?) is TBD.",
     "Bottom balkon east-west placement: anchored only by area + depth; exact x-range TBD."
   ],
-
   "user_verified": [
     "Toilet = 0.93 × 1.785 = 1.660 m² ≈ 1.67 m² (the 880 callout is NOT the toilet width).",
     "Badkamer (klein) is INSIDE slaapkamer 2 — en-suite via a door in slaapk2.",
@@ -455,29 +994,55 @@
     "South-west kitchen jog placement: user OK with pinning later."
   ],
   "nw_zigzag": {
-    "_doc": "The NW corner of the apartment is shaped by the building lift shaft intruding from the building's central core. The boundary between slaapkamer 1 (east, interior) and the lift shaft (west, outside the unit) is a multi-segment stepped wall with two diagonal sections. The alcove is WALKABLE interior space within slaapk1 (user-confirmed). Coordinates below are best-effort ESTIMATES (user instructed 'just estimate' since only one segment, 1397, is labeled).",
+    "_doc": "The NW corner of the apartment is a bay shaped by the building lift shaft. The PDF's vector facade here is two straight diagonal facets meeting at a west apex (a chevron), NOT a vertical-faced step. The 1397 mm callout is the horizontal projection of the apex west of the x=0 line, so apex≈(-1.40,2.10). Facets run from the top-facade NW corner (0,0) to the apex and back to the west-facade start (0,4.10), staying west of x=0 (exterior bay). Verified against tools/compare-to-pdf.py vector extraction.",
     "points_clockwise_from_top_facade": [
-      [0.00, 0.00],
-      [0.00, 0.70],
-      [-0.50, 0.70],
-      [-1.50, 1.70],
-      [-1.50, 3.10],
-      [-0.50, 4.10],
-      [0.00, 4.10]
+      [
+        0.0,
+        0.0
+      ],
+      [
+        -1.4,
+        2.1
+      ],
+      [
+        0.0,
+        4.1
+      ]
     ],
     "estimated_segments": [
-      {"name": "step1 south",   "from": [0.00, 0.00], "to": [0.00, 0.70],  "length_m": 0.70, "source": "estimate"},
-      {"name": "step2 west",    "from": [0.00, 0.70], "to": [-0.50, 0.70], "length_m": 0.50, "source": "estimate"},
-      {"name": "diagonal 1",    "from": [-0.50, 0.70],"to": [-1.50, 1.70], "length_m": 1.414, "source": "estimate (assumed 45°)"},
-      {"name": "alcove west",   "from": [-1.50, 1.70],"to": [-1.50, 3.10], "length_m": 1.40, "source": "PDF callout 1397 mm — labels this vertical segment"},
-      {"name": "diagonal 2",    "from": [-1.50, 3.10],"to": [-0.50, 4.10], "length_m": 1.414, "source": "estimate (assumed 45°, mirror of diagonal 1)"},
-      {"name": "step into west facade", "from": [-0.50, 4.10], "to": [0.00, 4.10], "length_m": 0.50, "source": "estimate"}
+      {
+        "name": "upper facet",
+        "from": [
+          0.0,
+          0.0
+        ],
+        "to": [
+          -1.4,
+          2.1
+        ],
+        "length_m": 2.524,
+        "source": "PDF vector diagonals; apex x from 1397 callout"
+      },
+      {
+        "name": "lower facet",
+        "from": [
+          -1.4,
+          2.1
+        ],
+        "to": [
+          0.0,
+          4.1
+        ],
+        "length_m": 2.441,
+        "source": "PDF vector diagonals; apex x from 1397 callout"
+      }
     ],
     "verified_by_user": [
       "Alcove is part of slaapkamer 1 (interior space).",
       "Lift shaft causes the zigzag (cases the apartment in this corner).",
       "Yes, the alcove is walkable inside slaapk1.",
-      "User OK with estimating the zigzag segments since only 1397 is labeled."
+      "User OK with estimating the zigzag segments since only 1397 is labeled.",
+      "User approved rebuilding the NW bay as a chevron (apex jutting 1.40 m west) per the PDF vector facets, 2026-05-29."
     ]
   }
 }
