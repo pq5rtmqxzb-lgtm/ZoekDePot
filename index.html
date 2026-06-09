@@ -217,7 +217,19 @@ import * as THREE from 'three';
 const WALL_HEIGHT = 2.80;
 const WALL_THICK = 0.20;
 const PLAYER_H = 1.70;   // eye height for a 1.80 m-tall person (~0.10 m below the crown)
-const PLAYER_R = 0.32;
+const PLAYER_R = 0.26;   // collision radius — small enough to stand right up to a counter
+
+// Camera field of view. A wide FOV makes rooms/furniture look much smaller
+// than real life (the screen only fills ~40° of your visual field, so a 100°+
+// horizontal rendering minifies everything). We hold the HORIZONTAL fov at
+// ~80° and derive the vertical fov from the aspect ratio, clamped for
+// portrait phones. PerspectiveCamera takes the VERTICAL fov in degrees.
+const HORIZ_FOV_DEG = 80;
+function scaledFov(aspect) {
+  const h = (HORIZ_FOV_DEG * Math.PI) / 360;          // half horizontal fov, rad
+  const v = 2 * Math.atan(Math.tan(h) / aspect) * (180 / Math.PI);
+  return Math.max(45, Math.min(80, v));
+}
 const MOVE_SPEED = 3.0;
 const LOOK_SPEED = 0.003;
 const NUM_PAINTINGS = 8;
@@ -561,7 +573,8 @@ function init() {
   scene.background = new THREE.Color(0xb8c8d8);
   scene.fog = new THREE.Fog(0xb8c8d8, 22, 60);
 
-  camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 50);
+  camera = new THREE.PerspectiveCamera(scaledFov(innerWidth / innerHeight),
+                                       innerWidth / innerHeight, 0.1, 50);
   camera.position.copy(playerPos);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -585,6 +598,7 @@ function init() {
 
   window.addEventListener('resize', () => {
     camera.aspect = innerWidth / innerHeight;
+    camera.fov = scaledFov(camera.aspect);
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
