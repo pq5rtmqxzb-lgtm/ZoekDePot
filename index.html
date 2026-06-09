@@ -147,6 +147,21 @@ canvas { display: block; width: 100%; height: 100%; }
   border: 1px solid rgba(255,255,255,0.2);
 }
 #dpToast.show { opacity: 1; }
+#minimap {
+  position: absolute; right: 16px; bottom: 16px;
+  width: 150px; height: 224px;   /* ENV aspect ~12.3 x 18.6 m */
+  background: rgba(10,12,16,0.55); border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px; display: none;
+}
+#minimap.show { display: block; }
+#mapToggle {
+  position: absolute; right: 16px; bottom: 30px;
+  pointer-events: auto; cursor: pointer;
+  background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.35);
+  padding: 8px 14px; border-radius: 20px; font-size: 13px; font-family: 'Georgia', serif;
+}
+#mapToggle:active { background: rgba(255,255,255,0.25); }
+#minimap.show + #mapToggle { bottom: 250px; }
 .mobile-controls { display: none; }
 @media (hover: none) and (pointer: coarse) {
   .mobile-controls { display: block !important; }
@@ -160,7 +175,7 @@ canvas { display: block; width: 100%; height: 100%; }
   <p>Wandel alvast door het appartement (Type R3.sp, Ypsilon Park) en krijg een gevoel voor het huis dat nog gebouwd moet worden.</p>
   <p>Probeer verschillende muurkleuren, vloeren en sferen via de knop <b>Inrichten</b> rechtsboven.</p>
   <p style="font-size:14px; opacity:0.7;" class="mobile-controls"><b>Tik op de vloer</b> en je loopt er vanzelf naartoe. Vegen = rondkijken.</p>
-  <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis = rondkijken, I = inrichten</p>
+  <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis = rondkijken, I = inrichten, M = plattegrond</p>
   <button id="startBtn">Begin de rondleiding</button>
 </div>
 <div id="ui">
@@ -171,6 +186,8 @@ canvas { display: block; width: 100%; height: 100%; }
   <div id="joystickArea" class="mobile-controls">
     <div id="joystickKnob"></div>
   </div>
+  <canvas id="minimap"></canvas>
+  <button id="mapToggle" class="mobile-controls" aria-label="Plattegrond">Kaart</button>
 </div>
 <div id="designPanel">
   <h2>Inrichten <button class="closeBtn" id="dpClose" aria-label="Sluiten">&times;</button></h2>
@@ -231,6 +248,11 @@ function scaledFov(aspect) {
   return Math.max(45, Math.min(80, v));
 }
 const MOVE_SPEED = 3.0;
+const ACCEL = 14.0;         // 1/s — exponential approach rate to target velocity
+const DECEL = 11.0;         // slightly softer stop
+const JOY_DEADZONE = 0.18;  // fraction of the joystick radius that does nothing
+const BOB_AMP = 0.018;      // m — head-bob amplitude at full walking speed
+const BOB_FREQ = 9.0;       // rad/s — head-bob frequency at full walking speed
 const LOOK_SPEED = 0.003;
 const NUM_PAINTINGS = 8;
 const PW = 1.1;   // painting width  (residential scale)
@@ -479,6 +501,8 @@ let camera, scene, renderer, clock;
 const playerPos = new THREE.Vector3(1.90, PLAYER_H, 8.75);
 let yaw = 0, pitch = 0;
 let moveF = 0, moveR = 0;
+let velX = 0, velZ = 0;     // smoothed world-space walking velocity
+let bobPhase = 0;           // head-bob oscillator phase
 const paintings = [];
 let gameStarted = false;
 const wallSegs = [];
@@ -600,18 +624,24 @@ function init() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
+  if (!isMobile) {
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  }
   document.body.insertBefore(renderer.domElement, document.getElementById('ui'));
 
   setupTextures();
   buildMuseum();
   setupLights();
   placePaintings();
+  enableShadows();
   setupInput();
 
   // Design tool: build the panel, then load any saved/shared scheme and apply it.
   buildDesignPanel();
   loadScheme();
   applyScheme();
+  enableShadows();   // again: applyScheme can swap floor materials
   refreshPanel();
 
   window.addEventListener('resize', () => {
@@ -620,6 +650,14 @@ function init() {
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  });
+
+  // Read-only state hook, companion to the ?pos= viewpoint hook — lets
+  // automated screenshots/tests see where the player ended up.
+  window.__state = () => ({
+    x: playerPos.x, z: playerPos.z, camY: camera.position.y,
+    yaw, pitch, tod: scheme.tod, todFading: !!todAnim,
+    room: currentRoom && currentRoom.id,
   });
 
   // Prevent default touch behaviors on the canvas only — leave overlays
@@ -1107,7 +1145,7 @@ function addWallPanel(x, z, ry, w = 1.0, h = 2.4) {
   scene.add(group);
 }
 
-/* Axis-aligned obstacle that blocks the player. Reuses wallCollide() via
+/* Axis-aligned obstacle that blocks the player. Reuses resolveCollision() via
  * the shared `obstacles` list. */
 function addBoxObstacle(cx, cz, w, d) {
   obstacles.push({ cx, cz, hw: w / 2, hd: d / 2 });
@@ -2088,7 +2126,40 @@ function setupLights() {
   // Sun key from above — daylit balconies
   sunLight = new THREE.DirectionalLight(0xfff4d8, 0.55);
   sunLight.position.set(6, 18, -8);
+  if (!isMobile) {
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.set(2048, 2048);
+    const sc = sunLight.shadow.camera;   // ortho frustum covering the envelope
+    sc.left = -13; sc.right = 13; sc.top = 13; sc.bottom = -13;
+    sc.near = 1; sc.far = 60;
+    sunLight.shadow.bias = -0.0004;
+    sunLight.shadow.normalBias = 0.03;   // thin (0.10 m) interior walls: fights acne
+    // Fixed target at the envelope centre so the per-mood sunPos re-aims the
+    // shadow camera automatically.
+    sunLight.target.position.set(4.6, 0, 8.2);
+    scene.add(sunLight.target);
+  }
   scene.add(sunLight);
+}
+
+/* Flag every lit mesh for the sun's shadow pass. Skipped on mobile (perf) and
+ * for MeshBasicMaterial (sky cyclorama, light discs, bulbs, walk marker).
+ * Glass stays receive-only so sunlight streams in through the schuifpuien. */
+function enableShadows() {
+  if (isMobile) return;
+  scene.traverse(o => {
+    if (!o.isMesh) return;
+    const m = o.material;
+    if (!m || m.isMeshBasicMaterial) return;
+    o.receiveShadow = true;
+    o.castShadow = !m.transparent;
+    if (o.geometry && (o.geometry.type === 'PlaneGeometry' || o.geometry.type === 'ShapeGeometry')) {
+      // Floors/ceilings are single-sided planes; without this the shadow pass
+      // culls them and the sun leaks through the roof.
+      m.shadowSide = THREE.DoubleSide;
+    }
+  });
+  for (const f of FLOOR_FINISHES) if (f.mat) f.mat.shadowSide = THREE.DoubleSide;
 }
 
 /* ===== MONDRIAAN GENERATOR =====
@@ -2446,31 +2517,49 @@ function placePaintings() {
   });
 }
 
-/* ===== WALL COLLISION ===== */
-function wallCollide(nx, nz) {
-  for (const w of wallSegs) {
-    const dx = w.x2 - w.x1, dz = w.z2 - w.z1;
-    const L = w.len;
-    const dirX = dx / L, dirZ = dz / L;
-    const normX = -dirZ, normZ = dirX;
-
-    const px = nx - w.x1, pz = nz - w.z1;
-    const along = px * dirX + pz * dirZ;
-    const dist = px * normX + pz * normZ;
-    const threshold = (w.t || WALL_THICK) / 2 + PLAYER_R;
-
-    if (along >= -PLAYER_R && along <= L + PLAYER_R && Math.abs(dist) < threshold) {
-      return true;
+/* ===== WALL COLLISION =====
+ * Depenetration resolver: take a proposed position and push the player circle
+ * out of every wall capsule (centreline segment + half thickness) and obstacle
+ * AABB it overlaps. Unlike a boolean veto, this slides smoothly along diagonal
+ * walls and recovers a player who somehow ended up inside a wall band. */
+function resolveCollision(px, pz) {
+  for (let iter = 0; iter < 3; iter++) {
+    let pushed = false;
+    for (const w of wallSegs) {
+      const dx = w.x2 - w.x1, dz = w.z2 - w.z1, L = w.len;
+      // Closest point on the wall centreline segment
+      let t = ((px - w.x1) * dx + (pz - w.z1) * dz) / (L * L);
+      t = Math.max(0, Math.min(1, t));
+      const cx = w.x1 + t * dx, cz = w.z1 + t * dz;
+      let ox = px - cx, oz = pz - cz;
+      const dist = Math.hypot(ox, oz);
+      const minDist = (w.t || WALL_THICK) / 2 + PLAYER_R;
+      if (dist < minDist) {
+        if (dist > 1e-6) { ox /= dist; oz /= dist; }
+        else { ox = -dz / L; oz = dx / L; }   // dead centre: push along the wall normal
+        px = cx + ox * minDist;
+        pz = cz + oz * minDist;
+        pushed = true;
+      }
     }
-  }
-  // Axis-aligned obstacles (benches etc.). AABB inflated by PLAYER_R.
-  for (const o of obstacles) {
-    if (Math.abs(nx - o.cx) < o.hw + PLAYER_R &&
-        Math.abs(nz - o.cz) < o.hd + PLAYER_R) {
-      return true;
+    // Axis-aligned obstacles (benches etc.). AABB inflated by PLAYER_R;
+    // push out along the axis of least penetration.
+    for (const o of obstacles) {
+      const overX = o.hw + PLAYER_R - Math.abs(px - o.cx);
+      const overZ = o.hd + PLAYER_R - Math.abs(pz - o.cz);
+      if (overX > 0 && overZ > 0) {
+        if (overX < overZ) px += Math.sign(px - o.cx || 1) * overX;
+        else               pz += Math.sign(pz - o.cz || 1) * overZ;
+        pushed = true;
+      }
     }
+    // Bounds — apartment + balconies (matches railings at ENV extents). Inside
+    // the loop so a clamp that re-penetrates a wall is fixed next iteration.
+    px = Math.max(ENV.xMin + PLAYER_R, Math.min(ENV.xMax - PLAYER_R, px));
+    pz = Math.max(ENV.zMin + PLAYER_R, Math.min(ENV.zMax - PLAYER_R, pz));
+    if (!pushed) break;
   }
-  return false;
+  return { x: px, z: pz };
 }
 
 /* ===== INPUT ===== */
@@ -2480,6 +2569,7 @@ function setupInput() {
     keys[e.code] = true;
     if (!gameStarted) return;
     if (e.code === 'KeyI') { e.preventDefault(); toggleDesignPanel(); }
+    if (e.code === 'KeyM') { e.preventDefault(); toggleMinimap(); }
     if (e.code === 'Escape' && designPanelOpen()) toggleDesignPanel(false);
   });
   addEventListener('keyup', e => { keys[e.code] = false; });
@@ -2596,6 +2686,9 @@ function setupInput() {
   joystickEl.addEventListener('touchend', endJoystick, { passive: false });
   joystickEl.addEventListener('touchcancel', endJoystick, { passive: false });
 
+  // Minimap toggle (mobile button; desktop uses the M key)
+  document.getElementById('mapToggle').addEventListener('click', toggleMinimap);
+
   // Start button — begin the walkthrough
   document.getElementById('startBtn').addEventListener('click', () => {
     gameStarted = true;
@@ -2623,8 +2716,12 @@ function updateJoystick(tx, ty) {
   const max = 45, d = Math.sqrt(dx * dx + dy * dy);
   if (d > max) { dx = dx / d * max; dy = dy / d * max; }
   knobEl.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-  moveF = -dy / max;
-  moveR = dx / max;
+  // Deadzone against finger jitter/creep; rescale the live range to 0..1.
+  const m = Math.min(d, max), dead = max * JOY_DEADZONE;
+  if (m < dead) { moveF = 0; moveR = 0; return; }
+  const scaled = (m - dead) / (max - dead);
+  moveF = (-dy / m) * scaled;
+  moveR = ( dx / m) * scaled;
 }
 
 /* ===== TAP-TO-WALK =====
@@ -2682,6 +2779,93 @@ function setWalkTarget(cx, cy) {
 function cancelWalkTarget() {
   walkTarget = null;
   if (walkMarker) walkMarker.visible = false;
+}
+
+/* ===== MINIMAP =====
+ * Small plattegrond overlay (M key / Kaart button). The apartment outline is
+ * drawn once from ROOMS + wallSegs onto an offscreen canvas; per frame we only
+ * blit it and draw the player marker on top. */
+let minimapOn = false, mapStatic = null;
+let mapScale = 1, mapPad = 8, mapDpr = 1;
+const minimapEl = document.getElementById('minimap');
+
+function mapXY(x, z) {
+  // World x -> right, world z (south) -> down: same orientation as the PDF plan.
+  return [mapPad + (x - ENV.xMin) * mapScale, mapPad + (z - ENV.zMin) * mapScale];
+}
+
+function buildMapStatic() {
+  const cssW = minimapEl.clientWidth, cssH = minimapEl.clientHeight;
+  mapDpr = Math.min(devicePixelRatio, 2);
+  minimapEl.width = cssW * mapDpr;
+  minimapEl.height = cssH * mapDpr;
+  mapScale = Math.min((cssW - 2 * mapPad) / (ENV.xMax - ENV.xMin),
+                      (cssH - 2 * mapPad) / (ENV.zMax - ENV.zMin));
+
+  mapStatic = document.createElement('canvas');
+  mapStatic.width = minimapEl.width;
+  mapStatic.height = minimapEl.height;
+  const ctx = mapStatic.getContext('2d');
+  ctx.scale(mapDpr, mapDpr);
+
+  for (const room of ROOMS) {
+    ctx.fillStyle = room.id.startsWith('balkon')
+      ? 'rgba(160,200,255,0.12)' : 'rgba(255,255,255,0.14)';
+    for (const r of room.rects) {
+      const [x1, y1] = mapXY(Math.min(r.x1, r.x2), Math.min(r.z1, r.z2));
+      const [x2, y2] = mapXY(Math.max(r.x1, r.x2), Math.max(r.z1, r.z2));
+      ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+    }
+    for (const p of room.polys) {
+      ctx.beginPath();
+      p.forEach(([x, z], i) => {
+        const [mx, my] = mapXY(x, z);
+        i ? ctx.lineTo(mx, my) : ctx.moveTo(mx, my);
+      });
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  ctx.lineCap = 'round';
+  for (const w of wallSegs) {
+    const railing = (w.t || WALL_THICK) <= 0.06;
+    ctx.strokeStyle = railing ? 'rgba(232,228,218,0.45)' : '#e8e4da';
+    ctx.lineWidth = railing ? 1 : Math.max(1.5, (w.t || WALL_THICK) * mapScale);
+    const [x1, y1] = mapXY(w.x1, w.z1), [x2, y2] = mapXY(w.x2, w.z2);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  }
+}
+
+function drawMinimap() {
+  if (!mapStatic) return;
+  const ctx = minimapEl.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, minimapEl.width, minimapEl.height);
+  ctx.drawImage(mapStatic, 0, 0);
+  ctx.scale(mapDpr, mapDpr);
+
+  const [mx, my] = mapXY(playerPos.x, playerPos.z);
+  // Camera forward is (-sin yaw, -cos yaw) in world (x,z) = map (right,down).
+  const ang = Math.atan2(-Math.cos(yaw), -Math.sin(yaw));
+  ctx.save();
+  ctx.translate(mx, my);
+  ctx.rotate(ang);
+  ctx.fillStyle = 'rgba(255,210,74,0.18)';   // view cone
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, 14, -0.5, 0.5); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ffd24a';                 // facing triangle
+  ctx.beginPath();
+  ctx.moveTo(6, 0); ctx.lineTo(-3.5, 3.2); ctx.lineTo(-3.5, -3.2);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function toggleMinimap() {
+  minimapOn = !minimapOn;
+  minimapEl.classList.toggle('show', minimapOn);
+  // Build lazily on first open: the element needs layout for clientWidth, and
+  // wallSegs/ROOMS are fully populated well before any toggle.
+  if (minimapOn && !mapStatic) buildMapStatic();
 }
 
 /* =====================================================================
@@ -2816,24 +3000,86 @@ const TOD = {
            bg: 0x141821, fog: 0x10131b, fogNear: 12, fogFar: 46,
            exposure: 1.22, pointMul: 1.8, sky: 0x2a3552 },
 };
-function setTimeOfDay(mode) {
-  const t = TOD[mode] || TOD.dag;
+let todAnim = null;       // { from, to, t } while fading between moods
+let curPointMul = 1.0;    // live point-light multiplier (snapshot source)
+const TOD_FADE = 1.0;     // seconds
+
+// Preset hexes/arrays -> lerpable Colors/Vector3.
+function todTargets(t) {
+  return {
+    hemiSky: new THREE.Color(t.hemiSky), hemiGround: new THREE.Color(t.hemiGround),
+    hemiI: t.hemiI,
+    sun: new THREE.Color(t.sun), sunI: t.sunI, sunPos: new THREE.Vector3(...t.sunPos),
+    bg: new THREE.Color(t.bg), fog: new THREE.Color(t.fog),
+    fogNear: t.fogNear, fogFar: t.fogFar,
+    exposure: t.exposure, pointMul: t.pointMul,
+    sky: new THREE.Color(t.sky),
+  };
+}
+
+// Snapshot the LIVE values so a re-click mid-fade retargets gracefully.
+function todSnapshot() {
+  return {
+    hemiSky: hemiLight.color.clone(), hemiGround: hemiLight.groundColor.clone(),
+    hemiI: hemiLight.intensity,
+    sun: sunLight.color.clone(), sunI: sunLight.intensity, sunPos: sunLight.position.clone(),
+    bg: scene.background.clone(), fog: scene.fog.color.clone(),
+    fogNear: scene.fog.near, fogFar: scene.fog.far,
+    exposure: renderer.toneMappingExposure, pointMul: curPointMul,
+    sky: skyMat ? skyMat.color.clone() : new THREE.Color(0xffffff),
+  };
+}
+
+function applyTodState(s) {
   if (hemiLight) {
-    hemiLight.color.setHex(t.hemiSky);
-    hemiLight.groundColor.setHex(t.hemiGround);
-    hemiLight.intensity = t.hemiI;
+    hemiLight.color.copy(s.hemiSky);
+    hemiLight.groundColor.copy(s.hemiGround);
+    hemiLight.intensity = s.hemiI;
   }
   if (sunLight) {
-    sunLight.color.setHex(t.sun);
-    sunLight.intensity = t.sunI;
-    sunLight.position.set(...t.sunPos);
+    sunLight.color.copy(s.sun);
+    sunLight.intensity = s.sunI;
+    sunLight.position.copy(s.sunPos);
   }
-  for (const p of pointLightInfo) p.light.intensity = p.baseI * t.pointMul;
-  if (scene.background) scene.background.setHex(t.bg);
-  if (scene.fog) { scene.fog.color.setHex(t.fog); scene.fog.near = t.fogNear; scene.fog.far = t.fogFar; }
-  if (renderer) renderer.toneMappingExposure = t.exposure;
-  if (skyMat) skyMat.color.setHex(t.sky);
+  curPointMul = s.pointMul;
+  for (const p of pointLightInfo) p.light.intensity = p.baseI * curPointMul;
+  if (scene.background) scene.background.copy(s.bg);
+  if (scene.fog) { scene.fog.color.copy(s.fog); scene.fog.near = s.fogNear; scene.fog.far = s.fogFar; }
+  if (renderer) renderer.toneMappingExposure = s.exposure;
+  if (skyMat) skyMat.color.copy(s.sky);
+}
+
+const todMix = (a, b, e) => a + (b - a) * e;
+function applyTodLerp(anim) {
+  const e = anim.t * anim.t * (3 - 2 * anim.t);  // smoothstep
+  const f = anim.from, g = anim.to;
+  applyTodState({
+    hemiSky: f.hemiSky.clone().lerp(g.hemiSky, e),
+    hemiGround: f.hemiGround.clone().lerp(g.hemiGround, e),
+    hemiI: todMix(f.hemiI, g.hemiI, e),
+    sun: f.sun.clone().lerp(g.sun, e),
+    sunI: todMix(f.sunI, g.sunI, e),
+    sunPos: f.sunPos.clone().lerp(g.sunPos, e),
+    bg: f.bg.clone().lerp(g.bg, e),
+    fog: f.fog.clone().lerp(g.fog, e),
+    fogNear: todMix(f.fogNear, g.fogNear, e),
+    fogFar: todMix(f.fogFar, g.fogFar, e),
+    exposure: todMix(f.exposure, g.exposure, e),
+    pointMul: todMix(f.pointMul, g.pointMul, e),
+    sky: f.sky.clone().lerp(g.sky, e),
+  });
+}
+
+function setTimeOfDay(mode, instant = false) {
+  const t = TOD[mode] || TOD.dag;
   scheme.tod = mode;
+  const to = todTargets(t);
+  if (instant || !hemiLight || !sunLight) {
+    todAnim = null;
+    applyTodState(to);
+    return;
+  }
+  todAnim = { from: todSnapshot(), to, t: 0 };  // animate() drives the fade
 }
 
 /* --- floor-finish materials (built from setupTextures) --------------- */
@@ -2938,7 +3184,7 @@ function applyScheme() {
     setRoomFloor(room, rs.f);
   }
   reapplyAccents();
-  setTimeOfDay(scheme.tod);
+  setTimeOfDay(scheme.tod, true);  // page load / reset: show the mood at once
 }
 function encodeScheme() {
   try { return btoa(JSON.stringify(scheme)); } catch (e) { return ''; }
@@ -3096,9 +3342,17 @@ function refreshPanel() {
 /* ===== GAME LOOP ===== */
 function animate() {
   requestAnimationFrame(animate);
-  if (!gameStarted) { renderer.render(scene, camera); return; }
-
   const dt = Math.min(clock.getDelta(), 0.05);
+
+  // Time-of-day fade — also runs on the intro screen so a shared scheme's
+  // mood settles before the tour starts.
+  if (todAnim) {
+    todAnim.t = Math.min(1, todAnim.t + dt / TOD_FADE);
+    applyTodLerp(todAnim);
+    if (todAnim.t >= 1) todAnim = null;
+  }
+
+  if (!gameStarted) { renderer.render(scene, camera); return; }
 
   // Input
   let kf = 0, kr = 0;
@@ -3108,7 +3362,7 @@ function animate() {
   if (keys['KeyD'] || keys['ArrowRight']) kr += 1;
 
   let fwd = joystickActive ? moveF : kf;
-  const rgt = joystickActive ? moveR : kr;
+  let rgt = joystickActive ? moveR : kr;
 
   // Manual input always wins; it cancels any pending tap-to-walk target.
   if (walkTarget && (joystickActive || kf || kr)) cancelWalkTarget();
@@ -3133,22 +3387,35 @@ function animate() {
     }
   }
 
+  // Normalise so W+D diagonals aren't sqrt(2) x faster than straight ahead.
+  const mag = Math.hypot(fwd, rgt);
+  if (mag > 1) { fwd /= mag; rgt /= mag; }
+
   const sy = Math.sin(yaw), cy = Math.cos(yaw);
   // Camera right vector at yaw is (cos yaw, 0, -sin yaw); camera forward is
   // (-sin yaw, 0, -cos yaw). Strafe was sign-flipped, so D / joystick-right
   // moved the player to their left. Apply +rgt along camera-right.
-  const dx = (sy * fwd - cy * rgt) * MOVE_SPEED * dt;
-  const dz = (cy * fwd + sy * rgt) * MOVE_SPEED * dt;
+  const tvx = -(sy * fwd - cy * rgt) * MOVE_SPEED;
+  const tvz = -(cy * fwd + sy * rgt) * MOVE_SPEED;
 
-  const nx = playerPos.x - dx;
-  const nz = playerPos.z - dz;
+  // Ease the velocity toward the target so starts/stops aren't instant.
+  const rate = (tvx || tvz) ? ACCEL : DECEL;
+  const k = 1 - Math.exp(-rate * dt);    // framerate-independent smoothing
+  velX += (tvx - velX) * k;
+  velZ += (tvz - velZ) * k;
+  if (!tvx && !tvz && Math.hypot(velX, velZ) < 0.02) { velX = 0; velZ = 0; }
 
-  if (!wallCollide(nx, playerPos.z)) playerPos.x = nx;
-  if (!wallCollide(playerPos.x, nz)) playerPos.z = nz;
-
-  // Bounds — apartment + balconies (matches railings at ENV extents).
-  playerPos.x = Math.max(ENV.xMin + PLAYER_R, Math.min(ENV.xMax - PLAYER_R, playerPos.x));
-  playerPos.z = Math.max(ENV.zMin + PLAYER_R, Math.min(ENV.zMax - PLAYER_R, playerPos.z));
+  const resolved = resolveCollision(playerPos.x + velX * dt, playerPos.z + velZ * dt);
+  // Re-derive the velocity from the resolved step: the wall-normal component
+  // dies, the tangential component survives — smooth sliding along diagonals.
+  if (dt > 0) {
+    velX = (resolved.x - playerPos.x) / dt;
+    velZ = (resolved.z - playerPos.z) / dt;
+    const s = Math.hypot(velX, velZ);
+    if (s > MOVE_SPEED) { velX *= MOVE_SPEED / s; velZ *= MOVE_SPEED / s; }
+  }
+  playerPos.x = resolved.x;
+  playerPos.z = resolved.z;
 
   // Give up on a walk target when a wall keeps blocking the way.
   if (walkTarget && autoWalking) {
@@ -3159,6 +3426,11 @@ function animate() {
   }
 
   camera.position.copy(playerPos);
+  // Head-bob — a subtle vertical sway scaled by walking speed; fades out
+  // naturally as the smoothed velocity decays, settling at PLAYER_H.
+  const speedFrac = Math.min(1, Math.hypot(velX, velZ) / MOVE_SPEED);
+  bobPhase += dt * BOB_FREQ * speedFrac;
+  camera.position.y = PLAYER_H + Math.sin(bobPhase) * BOB_AMP * speedFrac;
   camera.rotation.order = 'YXZ';
   camera.rotation.x = pitch;
   camera.rotation.y = yaw;
@@ -3172,6 +3444,8 @@ function animate() {
     document.getElementById('roomLabel').textContent = label;
     if (designPanelOpen()) refreshPanel();
   }
+
+  if (minimapOn) drawMinimap();
 
   renderer.render(scene, camera);
 }
