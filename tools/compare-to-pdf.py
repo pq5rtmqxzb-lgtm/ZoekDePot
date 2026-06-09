@@ -41,12 +41,14 @@ def load_model():
     return segs
 
 
-def pdf_segments(min_len=0.85):
-    """Return axis-aligned PDF line segments (world meters), inside the apartment
-    region, as ('V', x, zlo, zhi, len) and ('H', z, xlo, xhi, len)."""
+def pdf_segments(min_len=0.22):
+    """Return PDF line segments (world meters) inside the apartment region:
+    axis-aligned as ('V', x, zlo, zhi, len) / ('H', z, xlo, xhi, len), plus
+    diagonals as (x1, z1, x2, z2, len). min_len only filters out symbol/hatch
+    clutter; short wall stubs (piers, jogs) are kept."""
     doc = fitz.open(PDF)
     p = doc[0]
-    V, H = [], []
+    V, H, D = [], [], []
     for d in p.get_drawings():
         for it in d["items"]:
             if it[0] != "l":
@@ -60,10 +62,36 @@ def pdf_segments(min_len=0.85):
                 V.append(("V", round((X1 + X2) / 2, 3), round(min(Z1, Z2), 2), round(max(Z1, Z2), 2), round(L, 2)))
             elif abs(Z1 - Z2) < 0.06:  # horizontal
                 H.append(("H", round((Z1 + Z2) / 2, 3), round(min(X1, X2), 2), round(max(X1, X2), 2), round(L, 2)))
+            else:
+                D.append((X1, Z1, X2, Z2, L))
     reg = lambda a, b: (-3 < a < 12) and (-3 < b < 19)
     V = [s for s in V if reg(s[1], s[2]) and reg(s[1], s[3])]
     H = [s for s in H if reg(s[2], s[1]) and reg(s[3], s[1])]
-    return V, H
+    D = [s for s in D if reg(s[0], s[1]) and reg(s[2], s[3])]
+    return V, H, D
+
+
+def nearest_diag(seg, D):
+    """Best PDF diagonal for a model diagonal: similar angle, midpoint close to
+    the PDF line (perpendicular), and midpoint projecting inside its span."""
+    import math
+    x1, z1, x2, z2 = seg
+    mx, mz = (x1 + x2) / 2, (z1 + z2) / 2
+    a_model = math.atan2(z2 - z1, x2 - x1) % math.pi
+    best = None
+    for X1, Z1, X2, Z2, L in D:
+        a = math.atan2(Z2 - Z1, X2 - X1) % math.pi
+        da = min(abs(a - a_model), math.pi - abs(a - a_model))
+        if da > 0.20:
+            continue
+        dx, dz = X2 - X1, Z2 - Z1
+        t = ((mx - X1) * dx + (mz - Z1) * dz) / (L * L)
+        px, py = X1 + t * dx, Z1 + t * dz
+        dist = ((mx - px) ** 2 + (mz - py) ** 2) ** 0.5
+        score = dist + (0 if -0.15 <= t <= 1.15 else 5)
+        if best is None or score < best[0]:
+            best = (score, dist, (X1, Z1, X2, Z2))
+    return best
 
 
 def dim_labels():
@@ -96,7 +124,7 @@ def nearest(model_pos, candidates):
 
 def main():
     model = load_model()
-    V, H = pdf_segments()
+    V, H, D = pdf_segments()
     # group PDF candidates by orientation
     Vc = [(s[1], s[2], s[3], s[4]) for s in V]
     Hc = [(s[1], s[2], s[3], s[4]) for s in H]
@@ -118,8 +146,14 @@ def main():
             b = nearest(pos, Hc)
             kind = "H"
         else:
-            rows.append((9.99, kind if False else "D",
-                         f"diagonal x{x1}->{x2} z{z1}->{z2}  (no axis match attempted)"))
+            b = nearest_diag((x1, z1, x2, z2), D)
+            if b is None:
+                rows.append((9.99, "D", f"diagonal ({x1},{z1})->({x2},{z2}): NO PDF DIAGONAL"))
+            else:
+                _, dist, (X1, Z1, X2, Z2) = b
+                rows.append((dist, "D",
+                             "model %s diag (%.2f,%.2f)->(%.2f,%.2f) -> PDF (%.2f,%.2f)->(%.2f,%.2f)  off=%.2f" % (
+                                 k, x1, z1, x2, z2, X1, Z1, X2, Z2, dist)))
             continue
         if b is None:
             rows.append((9.99, kind, f"{k} {kind} @ {pos[0]} span {pos[1]:.1f}: NO PDF LINE"))
