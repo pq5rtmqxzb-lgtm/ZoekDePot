@@ -102,117 +102,123 @@ def grid():
 
 
 def envelope():
-    """Apartment outer boundary, replacing the simple chamfer placeholder
-    with the multi-segment NW zigzag from the JSON."""
+    """Apartment outer boundary (interior faces), traced from the PDF's vector
+    wall lines. Clockwise from the north-facade east end: east facade (x=10.52
+    inner), woonkamer south (z=13.81), the kitchen-bay/balkon partition, the
+    deep south facade (z=15.41/15.68), the SW diagonal, the west facade
+    (x=0.19), chamfer-2 up to the voordeur, then the NW zigzag + long chamfer
+    back to the north facade."""
     zig = DATA["nw_zigzag"]["points_clockwise_from_top_facade"]
-    # The apartment is a ~10.7 m-wide rectangle (x 0..10.72, z 0..13.802) plus
-    # balconies and the NW alcove. The west outer wall runs straight at x=0 from
-    # the south facade up to the NW zigzag. (The old x=-2.30 west bulge was scan
-    # page-margin, not apartment.)
-    # South facade is STEPPED: woonkamer at z=13.802, kitchen deeper at z=15.60,
-    # slaapkamer 2 at z=14.765. West wall up to the NW zigzag.
-    pts = [[0.0, 0.0], [10.72, 0.0], [10.72, 13.802],
-           [6.46, 13.802], [6.46, 15.60], [4.31, 15.60], [4.31, 14.765],
-           [0.0, 14.765], [0.0, 4.10]]
-    pts.extend(reversed(zig))   # zigzag back up to (0, 0)
+    pts = [[10.52, 0.01], [10.52, 13.81],            # east facade (inner)
+           [6.72, 13.81], [6.72, 15.68],             # kitchen-bay partition
+           [4.67, 15.68], [4.67, 15.41],             # kitchen slider + jog
+           [3.45, 15.41], [3.45, 15.68],             # slaapk2 east pier
+           [1.68, 15.68], [1.68, 15.41],             # slaapk2 slider (recessed)
+           [1.15, 15.41], [0.19, 14.85],             # west pier + SW diagonal
+           [0.19, 9.54], [0.19, 7.96], [0.24, 6.74], # west facade (inner x=0.19)
+           [1.69, 4.23],                             # chamfer-2 up to the entry
+           [1.92, 3.95], [1.92, 4.87],               # voordeur wall (door z 3.95..4.87)
+           [1.92, 3.95]]                             # back to the chamfer end
+    pts.extend(reversed(zig))                        # NW zigzag back to (0.71, 0.21)
+    pts.extend([[1.58, 0.21], [1.58, 0.01]])         # facade jog at the tip window
     return pts
 
 
 def rooms():
-    """Best-effort room polygons from the JSON. Where the JSON only has
-    x_range_m / y_range_m, we build a rectangle. Otherwise we use polygon."""
+    """Room polygons (interior faces), traced from the PDF's vector lines and
+    confirmed by the PDF's own room labels + dimension callouts."""
     R = []
 
-    # slaapkamer 1 — built from the 4000 N-S, 3675 E-W main rect, plus the
-    # NW alcove (zigzag). We construct the polygon by walking around the room.
+    # slaapkamer 1 — main rect (1.92..5.59 x 0.21..4.21, dims 3675/4000) plus
+    # the entry alcove (to z=4.87; the room's door is in the z=4.87 plane) and
+    # the NW tip behind the zigzag facade.
     zig = DATA["nw_zigzag"]["points_clockwise_from_top_facade"]
-    s1 = [(0.20, 0.20),          # NE interior corner
-          (5.52, 0.20),          # NE → E along north wall to the woonkamer-interface
-          (5.52, 4.20),          # south along east wall (slaapk1/woonkamer)
-          (0.20, 4.20),          # west along south wall (3675 + step area)
-          ]
-    # …then up into the alcove via the zigzag (interior face mirrors the
-    # exterior zigzag with ~0.2 m wall thickness — we ignore wall thickness
-    # on the interior side and just trace the zigzag as-is for the polygon).
-    s1.extend(reversed(zig))
+    s1 = [(5.59, 0.21), (5.59, 4.21), (3.76, 4.21), (3.76, 4.87),
+          (1.92, 4.87)]
+    s1.extend(reversed(zig))    # (1.92,3.95) ... (0.71,0.21)
     R.append({"name": "slaapkamer 1", "label": "23,45 m²", "fill": "#fff4e6",
-              "polygon": s1, "centroid": (3.0, 2.2)})
+              "polygon": s1, "centroid": (3.4, 2.2)})
 
-    # woonkamer — L-shape. North strip at top sits east of slaapk1 (slaapk1
-    # east wall at x=5.52, woonkamer strip starts there). The strip widens
-    # east of the bathroom block (woonkamer interior west wall at x=6.948,
-    # i.e., 3.572 m strip per the 3572 callout). South extension wraps
-    # around slaapk2.
-    w = [(5.52, 0.20),          # NW: meets slaapk1 east wall at top facade
-         (10.52, 0.20),         # NE corner — top facade interior
-         (10.52, 13.602),       # SE corner — east facade interior
-         (6.46, 13.602),        # woonkamer south (shallow) west to the step
-         (6.46, 15.60),         # step down to the deep kitchen
-         (4.31, 15.60),        # kitchen south (deep) west to slaapk2 wall
-         (4.31, 9.50),         # up the slaapk2/kitchen wall to z=9
-         (6.948, 9.50),         # east along the gang boundary
-         (6.948, 4.20),         # up the woonkamer west wall
-         (5.52, 4.20),          # west back to slaapk1 east wall
+    # woonkamer — L-shape incl. the open kitchen bay (keukenopstelling).
+    w = [(5.68, 0.21),          # NW: slaapk1 east wall at the facade
+         (10.52, 0.01),         # NE corner (facade inner face steps at x=5.18)
+         (10.52, 13.81),        # SE corner — east facade interior
+         (6.72, 13.81),         # woonkamer south to the kitchen-bay partition
+         (6.72, 15.68),         # partition down to the deep facade
+         (4.40, 15.68),         # kitchen slider west to the slaapk2 wall
+         (4.40, 9.63),          # up the slaapk2/keuken wall
+         (7.04, 9.63),          # east along the gang wall
+         (7.04, 4.21),          # up the woonkamer west wall
+         (5.68, 4.21),          # west back to slaapk1 east wall
          ]
     R.append({"name": "woonkamer", "label": "67,11 m²", "fill": "#e8f4ff",
               "polygon": w, "centroid": (8.6, 5.5)})
 
-    # Gang — C-shape wrapping the central block (badkamer/berging/toilet at
-    # x 3.86..6.86, z 4.30..7.95): west arm + a south arm that reaches the
-    # living-room west wall (x=6.948), where the gang→living door is.
-    g = [(0.00, 4.20),    # NW: meets slaapk1 south wall at the west facade
-         (3.86, 4.20),    # east to the central block's west wall
-         (3.86, 8.07),    # south down the block's west wall
-         (6.948, 8.07),   # east along the block's south wall to the living-room wall
-         (6.948, 9.50),   # south to the slaapk2 dividing wall
-         (0.00, 9.50),    # west along the dividing wall to the facade
+    # Gang — entered from the voordeur via the corridor between the shaft +
+    # bergingen (west) and the badkamer (east), opening into the south part
+    # and the east arm to the woonkamer door.
+    g = [(2.56, 4.96),    # below the slaapk1 door
+         (3.76, 4.96), (3.76, 8.17),   # corridor along the badkamer/berging
+         (6.94, 8.17), (6.94, 9.54),   # east arm to the woonkamer door
+         (0.19, 9.54), (0.19, 7.96),   # south part to the west facade
+         (2.56, 7.96),                 # north past the closets (drawn inside gang)
         ]
     R.append({"name": "gang", "label": "13,77 m²", "fill": "#fcf6e3",
-              "polygon": g, "centroid": (1.80, 6.50)})
+              "polygon": g, "centroid": (2.0, 8.8)})
 
-    # Badkamer (large) — north room of the central block, x 3.86..6.86,
-    # z 4.30..6.85 (bathtub + shower). East wall is hard against the living
-    # room (x=6.948); there is no door on that side.
-    b1 = [(3.86, 4.30), (6.86, 4.30), (6.86, 6.85), (3.86, 6.85)]
+    # Technische berging — west room with WTW/boiler/wasmachine; the boiler
+    # closet + WM/CD niche (z 7.14..7.92) are drawn as part of this block.
+    b2 = [(0.84, 5.71), (2.46, 5.71), (2.46, 7.92), (0.19, 7.92),
+          (0.19, 6.78), (0.24, 6.74)]
+    R.append({"name": "berging", "label": "(techniek)", "fill": "#f0eee6",
+              "polygon": b2, "centroid": (1.55, 6.45)})
+
+    # Installatieschacht — X-hatched trapezoid between chamfer-2 and the gang.
+    sh = [(1.92, 4.87), (2.56, 4.87), (2.56, 5.71), (0.84, 5.71), (1.69, 4.23),
+          (1.92, 3.95)]
+    R.append({"name": "schacht", "label": "", "fill": "#e2e2e2",
+              "polygon": sh, "centroid": (1.95, 5.25)})
+
+    # Badkamer (groot) — x 3.86..6.94, z 4.30..7.04 (dims 3065 x 2730).
+    b1 = [(3.86, 4.30), (6.94, 4.30), (6.94, 7.04), (3.86, 7.04)]
     R.append({"name": "badkamer", "label": "8,06 m²", "fill": "#eaf6ec",
-              "polygon": b1, "centroid": (5.30, 5.40)})
+              "polygon": b1, "centroid": (5.40, 5.60)})
 
-    # Toilet — SEPARATE room SOUTH of the badkamer (SE), x 5.04..6.86,
-    # z 6.85..8.07, entered from the gang. East wall against the living room.
-    t = [(5.04, 6.85), (6.86, 6.85), (6.86, 8.07), (5.04, 8.07)]
+    # Toilet — x 4.84..6.63 (1785 mm), z 7.14..8.07 (930 mm), door on the south.
+    t = [(4.84, 7.14), (6.63, 7.14), (6.63, 8.07), (4.84, 8.07)]
     R.append({"name": "toilet", "label": "1,67 m²", "fill": "#eef0f4",
-              "polygon": t, "centroid": (5.95, 7.46)})
+              "polygon": t, "centroid": (5.74, 7.60)})
 
-    # Berging — storage closet south of the badkamer (SW), beside the toilet.
-    bg = [(3.86, 6.85), (5.04, 6.85), (5.04, 8.07), (3.86, 8.07)]
-    R.append({"name": "berging", "label": "1,67 m²", "fill": "#f0eee6",
-              "polygon": bg, "centroid": (4.45, 7.46)})
+    # Berging — storage between badkamer and gang, x 3.86..4.75 (880 mm).
+    bg = [(3.86, 7.14), (4.75, 7.14), (4.75, 8.07), (3.86, 8.07)]
+    R.append({"name": "berging", "label": "", "fill": "#f0eee6",
+              "polygon": bg, "centroid": (4.30, 7.60)})
 
-    # slaapkamer 2 — L-shape bedroom. En-suite bathroom is in the WEST (NW
-    # corner); the east strip (x 2.54..4.31, z 9.50..11.29) is the entry
-    # hallway from the gang door.
-    s2 = [(0.00, 11.29), (2.54, 11.29), (2.54, 9.50), (4.31, 9.50),
-          (4.31, 14.765), (0.00, 14.765)]
+    # slaapkamer 2 — entry nook (east strip, open to the room) + main room
+    # down to the z=15.41 facade with the SW diagonal.
+    s2 = [(2.64, 9.63), (4.31, 9.63), (4.31, 15.41), (1.15, 15.41),
+          (0.19, 14.85), (0.19, 11.51), (2.64, 11.51)]
     R.append({"name": "slaapkamer 2", "label": "18,90 m²", "fill": "#fff4e6",
-              "polygon": s2, "centroid": (1.30, 13.00)})
+              "polygon": s2, "centroid": (2.2, 13.3)})
 
-    # badkamer (klein) — slaapk2 en-suite on the WEST side (NW corner),
-    # x 0..2.54, z 9.50..11.29 (shower on the far west + sink).
-    bk = [(0.00, 9.50), (2.54, 9.50), (2.54, 11.29), (0.00, 11.29)]
+    # badkamer (klein) — WEST strip x 0.19..2.54 (2330), z 9.64..11.41 (1765),
+    # shower + basins, entered from the gang.
+    bk = [(0.19, 9.63), (2.54, 9.63), (2.54, 11.41), (0.19, 11.41)]
     R.append({"name": "badkamer (klein)", "label": "3,81 m²", "fill": "#eaf6ec",
-              "polygon": bk, "centroid": (1.27, 10.40)})
+              "polygon": bk, "centroid": (1.35, 10.55)})
 
-    # balkon (top) — spans FULL apartment top facade width (user-confirmed)
-    bt = [(0.00, -1.331), (10.72, -1.331), (10.72, 0.0), (0.00, 0.0)]
-    R.append({"name": "balkon", "label": "7,60 m² (labelled)", "fill": "#dde6dc",
-              "polygon": bt, "centroid": (5.0, -0.6)})
+    # balkon (noord) — railing z=-1.08 spans x 1.74..10.74, curved west end.
+    bt = [(0.02, -0.19), (10.74, -0.19), (10.74, -1.08), (1.74, -1.08),
+          (1.30, -1.03), (0.85, -0.88), (0.39, -0.59)]
+    R.append({"name": "balkon", "label": "7,60 m²", "fill": "#dde6dc",
+              "polygon": bt, "centroid": (5.3, -0.6)})
 
-    # balkon (bottom) — spans FULL south facade width (user-confirmed)
-    bb = [(0.00, 14.765), (4.31, 14.765), (4.31, 15.60), (6.46, 15.60),
-          (6.46, 13.802), (10.72, 13.802), (10.72, 17.402), (2.00, 17.402),
-          (0.00, 15.60)]
-    R.append({"name": "balkon", "label": "24,03 m² (labelled)", "fill": "#dde6dc",
-              "polygon": bb, "centroid": (5.30, 15.6)})
+    # balkon (zuid) — railing z=17.55 spans x 3.10..10.74, big curved SW corner.
+    bb = [(0.60, 15.97), (1.12, 15.80), (6.72, 15.80), (6.72, 13.99),
+          (10.74, 13.99), (10.74, 17.55), (3.10, 17.55), (2.62, 17.51),
+          (1.93, 17.29), (1.32, 16.90), (0.83, 16.37)]
+    R.append({"name": "balkon", "label": "24,03 m²", "fill": "#dde6dc",
+              "polygon": bb, "centroid": (8.0, 16.2)})
 
     return R
 

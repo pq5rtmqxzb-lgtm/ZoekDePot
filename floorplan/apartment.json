@@ -1,17 +1,25 @@
 {
-  "_doc": "Rebuild data for YP_bouwnummer_25.pdf (Type R3.sp). Phase 1 extracted dimensions from the PDF; Phase 2 renders this to floorplan/floorplan.svg (tools/render-floorplan.py); Phase 3 builds the 3D model (APARTMENT_GEOM in index.html) and verifies it against this plan with tools/plan-overlay.py. As of the latest fidelity pass every model wall/door endpoint lies on a plan edge within 0.05 m (see phase3_model_fidelity). Structural walls are locked; remaining `uncertain` items are interior fixture/door-position details that do not affect the shell.",
+  "_doc": "Rebuild data for YP_bouwnummer_25.pdf (Type R3.sp). Phase 1 extracted dimensions from the PDF; Phase 2 renders this to floorplan/floorplan.svg (tools/render-floorplan.py); Phase 3 builds the 3D model (APARTMENT_GEOM in index.html) and verifies it against the PDF's own vector lines with tools/compare-to-pdf.py. As of the latest fidelity pass every model wall lies on a PDF wall slab within 0.12 m (centreline vs slab face), including all diagonal chamfers; see phase3_model_fidelity.",
   "phase3_model_fidelity": {
-    "tool": "tools/plan-overlay.py (model<->plan) and tools/pdf-overlay.py (plan<->full PDF)",
-    "tolerance_m": 0.05,
-    "status": "PASS — all 50 model segments' endpoints lie on a plan edge within tolerance; model overlays the full PDF correctly.",
+    "tool": "tools/compare-to-pdf.py (model walls + diagonals vs the PDF's own vector lines)",
+    "tolerance_m": 0.15,
+    "status": "PASS - every axis-aligned wall matches a PDF line within 0.12 m (most within 0.04 m; model uses wall-slab centrelines, the PDF draws both faces). All five diagonal walls match PDF diagonals within 0.10 m.",
     "resolved": [
-      "MAJOR: the apartment's western strip (west facade at x=-2.30, gang west bulge, west balcony) was page margin in the old cropped scan, not apartment. Using the full-page PDF, the west outer wall is at x=0; the apartment is a ~10.7 m-wide rectangle (x 0..10.72) plus the NW alcove and balconies. Removed the phantom west geometry.",
-      "Slaapkamer 2 repositioned to x 0..4.115, z 9..13.602; en-suite badkamer klein moved to its NW corner (x 0..1.67, z 9..11.29); bottom balcony now x 0..10.72.",
-      "Added the missing woonkamer/gang divider wall (z=4.20, x 5.52..6.948).",
-      "NW zigzag step coordinates locked to nw_zigzag (x=-0.50 / -1.50)."
+      "NW corner rebuilt: the long chamfer runs (-1.33,2.12)->(1.92,3.95) (NOT to (0,4.10) as before); the tip is a stepped zigzag with a small interior pier, with a window (inner face z=0.21) at x 0.71..1.58.",
+      "Second chamfer added: (1.69,4.23)->(0.24,6.74) inner face - the entrance facade to the stair core. The VOORDEUR is the x=1.92 wall piece z 3.95..4.87, opening onto the core landing.",
+      "Slaapkamer 1 (23.45 m2) includes an entry alcove x 1.92..3.76, z 4.21..4.87; its door is in the z=4.87..4.96 plane at x 2.67..3.60. Its south wall z=4.21..4.30 only spans x 3.76..5.59.",
+      "Installatieschacht (X-hatched trapezoid) walled between chamfer-2, the entry and the technische berging: north z=4.86..4.96 (x 1.92..2.56), east x=2.46..2.56, south z=5.61..5.71.",
+      "Technische berging (WTW/boiler/WM/CD) added west of the gang: x 0.19..2.46, z 5.71..7.14, door on its east wall; boiler closet + WM/CD niche south of it (z 7.14..7.92).",
+      "Badkamer (8.06 m2) south wall is at z=7.04..7.14 (was 6.85). Berging/toilet band z 7.14..8.07: berging x 3.86..4.75 (880 mm), toilet x 4.84..6.63 (1785 mm), mini-shaft x 6.64..6.94.",
+      "Badkamer klein (3.81 m2) confirmed WEST (x 0.19..2.54, z 9.64..11.41, dims 2330x1765), entered from the GANG (door x 0.49..1.19 in the z=9.54 wall). East strip x 2.64..4.31 is slaapkamer 2's entry nook (open to the room, gang door x 2.74..3.77).",
+      "Slaapkamer 2 (18.90 m2) is 0.65 m deeper than before: facade inner face z=15.41 (3900 mm from the en-suite wall), window piers + recessed schuifpui x 1.68..3.45 at z=15.68..15.79, SW diagonal (0.19,14.85)->(1.15,15.41).",
+      "West facade slab -0.06..0.19 (inner face x=0.19, was modelled at x=0).",
+      "North facade: slaapk1 schuifpui x 1.58..5.18, woonkamer window band x 5.18..6.98 (inner face z=0.21), woonkamer schuifpui x 7.04..10.53.",
+      "Balconies: noord railing z=-1.08 spanning x 1.74..10.74 with a curved west end into the tip; zuid railing z=17.55..17.67 spanning x 3.10..10.74 with a large curved SW corner to the facade diagonal."
     ],
     "still_uncertain": [
-      "Exact position of the en-suite WITHIN slaapkamer 2 (placed on the west side per user; the low-res scan's fixtures/labels are ambiguous between west and east)."
+      "Exact swing direction of a few interior door leaves (geometry of openings is exact).",
+      "The NW tip facet (0.71,0.21)->(-0.12,0.02) and the entry filler wall are drawn as filled wall mass in the PDF (no stroked centreline); their positions come from the raster image."
     ]
   },
   "source_pdf": {
@@ -991,58 +999,58 @@
     "Slaapkamer 2 has its own separate door from the gang.",
     "Slaapkamer 1 has a stepped south wall ('weird shape'). 3675 + 1845 are PARALLEL dims of different sections (not additive).",
     "Top balkon: BOTH slaapkamer 1 AND woonkamer have sliding doors onto it.",
-    "South-west kitchen jog placement: user OK with pinning later."
+    "South-west kitchen jog placement: user OK with pinning later.",
+    "CORRECTED by PDF text extraction: the 'badkamer 3,81 m2' label sits in the EAST strip but its dims (2330x1765) and fixtures (shower + basins) are WEST; west placement confirmed. The east strip is slaapkamer 2's entry nook with a kast."
   ],
   "nw_zigzag": {
-    "_doc": "The NW corner of the apartment is a bay shaped by the building lift shaft. The PDF's vector facade here is two straight diagonal facets meeting at a west apex (a chevron), NOT a vertical-faced step. The 1397 mm callout is the horizontal projection of the apex west of the x=0 line, so apex≈(-1.40,2.10). Facets run from the top-facade NW corner (0,0) to the apex and back to the west-facade start (0,4.10), staying west of x=0 (exterior bay). Verified against tools/compare-to-pdf.py vector extraction.",
+    "_doc": "Inner-face outline of the NW corner, traced from the PDF's vector lines (w=0.7/1.0 wall faces). From the north-facade window (x 0.71..1.58, inner z=0.21) the boundary steps NW past z=0, down the small facets to the 1397 mm facet, then the long chamfer descends SE to (1.92,3.95) where the voordeur wall begins. A small triangular pier (edges z=0.71, x=0.19 and the (0.13,1.31)->(-0.61,0.88) diagonal) pokes into the room.",
     "points_clockwise_from_top_facade": [
       [
-        0.0,
-        0.0
+        0.71,
+        0.21
       ],
       [
-        -1.4,
-        2.1
+        -0.12,
+        0.02
       ],
       [
-        0.0,
-        4.1
+        -0.46,
+        0.62
+      ],
+      [
+        -0.61,
+        0.88
+      ],
+      [
+        -1.33,
+        2.12
+      ],
+      [
+        1.92,
+        3.95
       ]
     ],
-    "estimated_segments": [
-      {
-        "name": "upper facet",
-        "from": [
-          0.0,
-          0.0
-        ],
-        "to": [
-          -1.4,
-          2.1
-        ],
-        "length_m": 2.524,
-        "source": "PDF vector diagonals; apex x from 1397 callout"
-      },
-      {
-        "name": "lower facet",
-        "from": [
-          -1.4,
-          2.1
-        ],
-        "to": [
-          0.0,
-          4.1
-        ],
-        "length_m": 2.441,
-        "source": "PDF vector diagonals; apex x from 1397 callout"
-      }
-    ],
-    "verified_by_user": [
-      "Alcove is part of slaapkamer 1 (interior space).",
-      "Lift shaft causes the zigzag (cases the apartment in this corner).",
-      "Yes, the alcove is walkable inside slaapk1.",
-      "User OK with estimating the zigzag segments since only 1397 is labeled.",
-      "User approved rebuilding the NW bay as a chevron (apex jutting 1.40 m west) per the PDF vector facets, 2026-05-29."
+    "interior_pier": [
+      [
+        -0.31,
+        0.71
+      ],
+      [
+        0.19,
+        0.71
+      ],
+      [
+        0.19,
+        1.21
+      ],
+      [
+        0.13,
+        1.31
+      ],
+      [
+        -0.61,
+        0.88
+      ]
     ]
   }
 }

@@ -44,6 +44,7 @@ KIND_STYLE = {
     "wall":    {"color": "#1f5fd0", "lw": 3.0, "label": "wall"},
     "door":    {"color": "#e8820c", "lw": 3.0, "label": "door opening"},
     "sliding": {"color": "#1c9c4b", "lw": 3.0, "label": "sliding door"},
+    "window":  {"color": "#00b8c4", "lw": 3.0, "label": "window"},
     "railing": {"color": "#8b3fc0", "lw": 2.0, "label": "balcony railing"},
 }
 
