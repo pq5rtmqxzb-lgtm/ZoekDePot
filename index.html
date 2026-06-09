@@ -509,7 +509,12 @@ const knobEl = document.getElementById('joystickKnob');
 /* ===== SHARED MATERIALS / OBJECTS ===== */
 const WALL_MAT = new THREE.MeshStandardMaterial({ color: 0xf0ece4, roughness: 0.92, metalness: 0 });
 const FLOOR_MAT = new THREE.MeshStandardMaterial({ color: 0xd9be99, roughness: 0.55, metalness: 0.04 });
-const CEIL_MAT = new THREE.MeshStandardMaterial({ color: 0xfafaf7, roughness: 0.95 });
+// Ceilings face down, so they only catch the hemisphere light's ground tint
+// and read nearly black. A soft emissive keeps them white painted plaster.
+const CEIL_MAT = new THREE.MeshStandardMaterial({
+  color: 0xfafaf7, roughness: 0.95,
+  emissive: 0xfff8ee, emissiveIntensity: 0.34,
+});
 const BASEBOARD_MAT = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.7 });
 const TRIM_MAT = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.55, metalness: 0.15 });
 const CROWN_MAT = new THREE.MeshStandardMaterial({ color: 0xe0dcd4, roughness: 0.8 });
@@ -705,6 +710,7 @@ function setupTextures() {
   }, 512, 512, 3, 3);
   ceilingTex.anisotropy = aniso;
   CEIL_MAT.map = ceilingTex;
+  CEIL_MAT.emissiveMap = ceilingTex;
   CEIL_MAT.needsUpdate = true;
 
   // Walnut wall panel — used in the new addWallPanel() helper
@@ -1874,14 +1880,79 @@ function buildApartment() {
   // Centered roughly on the apartment middle
   cyclorama.position.set(4.2, 5, 6.9);
   scene.add(cyclorama);
-  // Outdoor ground plane so balconies don't float over the void
+  // Outdoor ground plane — the apartment is on the 2e verdieping, so the
+  // forest floor lies ~6 m below the apartment floor.
   const outdoor = new THREE.Mesh(
     new THREE.PlaneGeometry(80, 80),
-    new THREE.MeshStandardMaterial({ color: 0x6e7d4e, roughness: 1.0 })
+    new THREE.MeshStandardMaterial({ color: 0x5d6b42, roughness: 1.0 })
   );
   outdoor.rotation.x = -Math.PI / 2;
-  outdoor.position.set(4.2, -2.0, 6.9);
+  outdoor.position.set(4.2, GROUND_Y, 6.9);
   scene.add(outdoor);
+
+  // Old forest on the master-bedroom (north) side: tall trunks rising from
+  // the forest floor with broad layered canopies at apartment height, so the
+  // bedroom and the noord balkon sit "in the greens".
+  const FOREST = [
+    // [x, z, scale] — a near row with gaps, a mid row, a far row, and two
+    // trees off the NW tip, so the canopy reads deep without walling off
+    // the light.
+    [-4.0, -5.8, 1.10], [1.0, -6.2, 1.30], [5.5, -5.6, 1.00],
+    [9.5, -6.4, 1.25],  [13.5, -5.8, 1.10],
+    [-7.0, -9.5, 1.50], [-1.5, -10.5, 1.55], [3.5, -11.0, 1.45],
+    [8.0, -10.0, 1.50], [12.5, -11.5, 1.60],
+    [-5.0, -14.5, 1.70], [0.0, -15.0, 1.70], [6.0, -15.5, 1.65],
+    [-8.0, -2.0, 1.35], [-9.5, -7.0, 1.50],
+  ];
+  for (const [tx, tz, ts] of FOREST) addForestTree(tx, tz, ts);
+}
+
+// One old-growth tree: tapered bark trunk from the forest floor, a few thick
+// limbs, and a cluster of overlapping leaf masses centred near apartment
+// height (the canopy of a mature tree at 2e-verdieping level).
+const GROUND_Y = -6.2;
+const BARK_MAT = new THREE.MeshStandardMaterial({ color: 0x584736, roughness: 0.95 });
+// Leaves get a soft self-glow: real foliage is translucent, but the
+// hemisphere light leaves downward-facing normals nearly black.
+const LEAF_MATS = [0x4a6b38, 0x557a42, 0x3f5d33, 0x618a4d].map(
+  c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95, flatShading: true,
+                                        emissive: c, emissiveIntensity: 0.42 }));
+function addForestTree(x, z, s = 1.0) {
+  const trunkH = 8.0 * s;
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22 * s, 0.38 * s, trunkH, 9), BARK_MAT);
+  trunk.position.set(x, GROUND_Y + trunkH / 2, z);
+  trunk.rotation.y = (x * 7 + z * 13) % 1;
+  scene.add(trunk);
+
+  const canopyY = GROUND_Y + trunkH;          // canopy centre ≈ apartment level
+  // A couple of visible limbs reaching into the canopy
+  for (let b = 0; b < 3; b++) {
+    const a = b * 2.3 + x + z;
+    const limb = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.07 * s, 0.13 * s, 1.7 * s, 6), BARK_MAT);
+    limb.position.set(x + Math.cos(a) * 0.55 * s, canopyY - 0.25 * s, z + Math.sin(a) * 0.55 * s);
+    limb.rotation.z = Math.cos(a) * 0.7;
+    limb.rotation.x = Math.sin(a) * 0.7;
+    scene.add(limb);
+  }
+  // Leaf masses — low-poly spheres, deterministic offsets per tree
+  let seed = Math.abs(Math.sin(x * 12.9898 + z * 78.233)) * 43758.5453;
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const blobs = 5 + Math.floor(rnd() * 3);
+  for (let i = 0; i < blobs; i++) {
+    const r = (0.9 + rnd() * 0.9) * s;
+    const blob = new THREE.Mesh(
+      new THREE.SphereGeometry(r, 8, 6),
+      LEAF_MATS[Math.floor(rnd() * LEAF_MATS.length)]);
+    const bx = x + (rnd() - 0.5) * 2.6 * s;
+    let bz = z + (rnd() - 0.5) * 2.6 * s;
+    // Foliage may overhang the balcony, but must not poke through the facade.
+    if (bx > -2.5 && bx < 11.5 && bz + r > -1.25) bz = -1.25 - r;
+    blob.position.set(bx, canopyY + (rnd() - 0.35) * 2.6 * s, bz);
+    blob.scale.y = 0.75 + rnd() * 0.25;
+    scene.add(blob);
+  }
 }
 
 function placeFurniture() {
