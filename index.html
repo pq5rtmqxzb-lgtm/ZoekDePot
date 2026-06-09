@@ -245,13 +245,16 @@ const ENV = { xMin: -1.55, xMax: 10.74, zMin: -1.08, zMax: 17.55 };
 const CEILING_FROM_JSON = 2.80;
 
 // Apartment geometry (walls, doors, sliding doors, windows, railings).
-// Coordinates are wall CENTRELINES (matches addWall's WALL_THICK extrusion),
-// placed at the centre of the PDF's wall slabs so both faces land within
-// ~5 cm of the source drawing (verified with tools/compare-to-pdf.py).
+// Coordinates are wall CENTRELINES placed at the centre of the PDF's wall
+// slabs, so both faces land within ~5 cm of the source drawing (verified with
+// tools/compare-to-pdf.py). Segments marked `t: T_INT` are interior partitions
+// (the PDF draws them ~0.10 m thick); unmarked segments are facade/structural
+// walls at the default WALL_THICK (0.20 m).
 // `kind` chooses the builder: wall = solid wall (adds collision segment),
 // door = decorative door frame (no collision in span), sliding = sliding-door
 // visual (no collision in span), window = fixed glazing with sill (collision),
 // railing = balcony rail (with collision).
+const T_INT = 0.10;
 const APARTMENT_GEOM = [
   // === NORTH FACADE (slab z -0.18..0.01, centreline -0.085; the stretch
   //     x 5.18..6.98 has its inner face recessed to z=0.21 -> centreline 0.115).
@@ -282,66 +285,66 @@ const APARTMENT_GEOM = [
   { kind: 'door',    x1:  1.92, z1:  3.95,  x2:  1.92, z2:  4.87 },  // VOORDEUR
   { kind: 'wall',    x1:  1.60, z1:  4.18,  x2:  1.92, z2:  3.98 },  // filler chamfer-2 -> door jamb
   { kind: 'wall',    x1:  1.60, z1:  4.18,  x2:  0.15, z2:  6.69 },  // chamfer-2 (facade to the core)
-  { kind: 'wall',    x1:  1.30, z1:  4.91,  x2:  2.67, z2:  4.91 },  // shaft north wall (z 4.86..4.96)
-  { kind: 'door',    x1:  2.67, z1:  4.91,  x2:  3.60, z2:  4.91 },  // slaapk1 door (from the gang)
-  { kind: 'wall',    x1:  3.60, z1:  4.91,  x2:  3.81, z2:  4.91 },  // stub door -> pier
-  { kind: 'wall',    x1:  3.81, z1:  4.26,  x2:  3.81, z2:  4.91 },  // pier alcove/corridor (x 3.76..3.86)
-  { kind: 'wall',    x1:  2.51, z1:  4.91,  x2:  2.51, z2:  5.66 },  // shaft east wall (x 2.46..2.56)
-  { kind: 'wall',    x1:  0.86, z1:  5.66,  x2:  2.51, z2:  5.66 },  // shaft south = berging north (z 5.61..5.71)
+  { kind: 'wall',    x1:  1.30, z1:  4.91,  x2:  2.67, z2:  4.91 , t: T_INT },  // shaft north wall (z 4.86..4.96)
+  { kind: 'door',    x1:  2.67, z1:  4.91,  x2:  3.60, z2:  4.91 , t: T_INT },  // slaapk1 door (from the gang)
+  { kind: 'wall',    x1:  3.60, z1:  4.91,  x2:  3.81, z2:  4.91 , t: T_INT },  // stub door -> pier
+  { kind: 'wall',    x1:  3.81, z1:  4.26,  x2:  3.81, z2:  4.91 , t: T_INT },  // pier alcove/corridor (x 3.76..3.86)
+  { kind: 'wall',    x1:  2.51, z1:  4.91,  x2:  2.51, z2:  5.66 , t: T_INT },  // shaft east wall (x 2.46..2.56)
+  { kind: 'wall',    x1:  0.86, z1:  5.66,  x2:  2.51, z2:  5.66 , t: T_INT },  // shaft south = berging north (z 5.61..5.71)
 
   // === SLAAPKAMER 1 (x 1.92..5.59, z 0.21..4.21 + entry alcove to z=4.87).
-  { kind: 'wall',    x1:  5.64, z1:  0.115, x2:  5.64, z2:  4.26 },  // east wall (slab 5.59..5.68)
-  { kind: 'wall',    x1:  3.81, z1:  4.26,  x2:  6.99, z2:  4.26 },  // south wall (x 3.76..5.59) + badkamer north
+  { kind: 'wall',    x1:  5.64, z1:  0.115, x2:  5.64, z2:  4.26 , t: T_INT },  // east wall (slab 5.59..5.68)
+  { kind: 'wall',    x1:  3.81, z1:  4.26,  x2:  6.99, z2:  4.26 , t: T_INT },  // south wall (x 3.76..5.59) + badkamer north
 
   // === BADKAMER (groot) — x 3.86..6.94, z 4.30..7.04, door on the west wall.
-  { kind: 'wall',    x1:  3.81, z1:  4.26,  x2:  3.81, z2:  5.38 },  // west (N of door)
-  { kind: 'door',    x1:  3.81, z1:  5.38,  x2:  3.81, z2:  6.40 },  // badkamer door (from gang)
-  { kind: 'wall',    x1:  3.81, z1:  6.40,  x2:  3.81, z2:  7.09 },  // west (S of door)
-  { kind: 'wall',    x1:  3.81, z1:  7.09,  x2:  6.99, z2:  7.09 },  // badkamer south (z 7.04..7.14)
-  { kind: 'wall',    x1:  6.99, z1:  4.26,  x2:  6.99, z2:  8.16 },  // woonkamer west wall (x 6.94..7.04)
+  { kind: 'wall',    x1:  3.81, z1:  4.26,  x2:  3.81, z2:  5.38 , t: T_INT },  // west (N of door)
+  { kind: 'door',    x1:  3.81, z1:  5.38,  x2:  3.81, z2:  6.40 , t: T_INT },  // badkamer door (from gang)
+  { kind: 'wall',    x1:  3.81, z1:  6.40,  x2:  3.81, z2:  7.09 , t: T_INT },  // west (S of door)
+  { kind: 'wall',    x1:  3.81, z1:  7.09,  x2:  6.99, z2:  7.09 , t: T_INT },  // badkamer south (z 7.04..7.14)
+  { kind: 'wall',    x1:  6.99, z1:  4.26,  x2:  6.99, z2:  8.16 , t: T_INT },  // woonkamer west wall (x 6.94..7.04)
 
   // === BERGING + TOILET band (z 7.14..8.07): berging x 3.86..4.75 (880 mm),
   //     toilet x 4.84..6.63 (1785 mm), mini-shaft x 6.64..6.94 east of toilet.
-  { kind: 'wall',    x1:  3.81, z1:  7.09,  x2:  3.81, z2:  8.12 },  // berging west
-  { kind: 'wall',    x1:  4.80, z1:  7.09,  x2:  4.80, z2:  8.12 },  // berging/toilet divider (x 4.75..4.84)
-  { kind: 'wall',    x1:  6.69, z1:  7.09,  x2:  6.69, z2:  8.12 },  // toilet east / mini-shaft west
-  { kind: 'door',    x1:  3.81, z1:  8.12,  x2:  4.80, z2:  8.12 },  // berging door (full-width, from gang)
-  { kind: 'wall',    x1:  4.80, z1:  8.12,  x2:  5.32, z2:  8.12 },
-  { kind: 'door',    x1:  5.32, z1:  8.12,  x2:  6.22, z2:  8.12 },  // toilet door (from gang)
-  { kind: 'wall',    x1:  6.22, z1:  8.12,  x2:  6.99, z2:  8.12 },
+  { kind: 'wall',    x1:  3.81, z1:  7.09,  x2:  3.81, z2:  8.12 , t: T_INT },  // berging west
+  { kind: 'wall',    x1:  4.80, z1:  7.09,  x2:  4.80, z2:  8.12 , t: T_INT },  // berging/toilet divider (x 4.75..4.84)
+  { kind: 'wall',    x1:  6.69, z1:  7.09,  x2:  6.69, z2:  8.12 , t: T_INT },  // toilet east / mini-shaft west
+  { kind: 'door',    x1:  3.81, z1:  8.12,  x2:  4.80, z2:  8.12 , t: T_INT },  // berging door (full-width, from gang)
+  { kind: 'wall',    x1:  4.80, z1:  8.12,  x2:  5.32, z2:  8.12 , t: T_INT },
+  { kind: 'door',    x1:  5.32, z1:  8.12,  x2:  6.22, z2:  8.12 , t: T_INT },  // toilet door (from gang)
+  { kind: 'wall',    x1:  6.22, z1:  8.12,  x2:  6.99, z2:  8.12 , t: T_INT },
 
   // === TECHNISCHE BERGING (west room, x 0.19..2.46, z 5.71..7.14; WTW unit)
   //     plus the boiler closet + wasmachine/droger niche south of it (z 7.14..7.92).
-  { kind: 'wall',    x1:  2.51, z1:  5.66,  x2:  2.51, z2:  5.78 },
-  { kind: 'door',    x1:  2.51, z1:  5.78,  x2:  2.51, z2:  6.38 },  // berging door (east wall, from gang)
-  { kind: 'wall',    x1:  2.51, z1:  6.38,  x2:  2.51, z2:  7.92 },  // east wall continues past the niche
-  { kind: 'wall',    x1:  0.17, z1:  7.17,  x2:  2.51, z2:  7.17 },  // berging south / closet north
-  { kind: 'wall',    x1:  1.05, z1:  7.17,  x2:  1.05, z2:  7.92 },  // boiler closet | WM/CD divider
-  { kind: 'wall',    x1:  0.17, z1:  7.92,  x2:  0.32, z2:  7.92 },
-  { kind: 'door',    x1:  0.32, z1:  7.92,  x2:  1.00, z2:  7.92 },  // boiler closet door
-  { kind: 'door',    x1:  1.10, z1:  7.92,  x2:  2.40, z2:  7.92 },  // WM/CD niche doors
-  { kind: 'wall',    x1:  2.40, z1:  7.92,  x2:  2.51, z2:  7.92 },
+  { kind: 'wall',    x1:  2.51, z1:  5.66,  x2:  2.51, z2:  5.78 , t: T_INT },
+  { kind: 'door',    x1:  2.51, z1:  5.78,  x2:  2.51, z2:  6.38 , t: T_INT },  // berging door (east wall, from gang)
+  { kind: 'wall',    x1:  2.51, z1:  6.38,  x2:  2.51, z2:  7.92 , t: T_INT },  // east wall continues past the niche
+  { kind: 'wall',    x1:  0.17, z1:  7.17,  x2:  2.51, z2:  7.17 , t: T_INT },  // berging south / closet north
+  { kind: 'wall',    x1:  1.05, z1:  7.17,  x2:  1.05, z2:  7.92 , t: T_INT },  // boiler closet | WM/CD divider
+  { kind: 'wall',    x1:  0.17, z1:  7.92,  x2:  0.32, z2:  7.92 , t: T_INT },
+  { kind: 'door',    x1:  0.32, z1:  7.92,  x2:  1.00, z2:  7.92 , t: T_INT },  // boiler closet door
+  { kind: 'door',    x1:  1.10, z1:  7.92,  x2:  2.40, z2:  7.92 , t: T_INT },  // WM/CD niche doors
+  { kind: 'wall',    x1:  2.40, z1:  7.92,  x2:  2.51, z2:  7.92 , t: T_INT },
 
   // === GANG -> WOONKAMER door (in the woonkamer west wall, south of the toilet).
-  { kind: 'door',    x1:  6.99, z1:  8.16,  x2:  6.99, z2:  9.09 },  // gang -> woonkamer
-  { kind: 'wall',    x1:  6.99, z1:  9.09,  x2:  6.99, z2:  9.59 },
+  { kind: 'door',    x1:  6.99, z1:  8.16,  x2:  6.99, z2:  9.09 , t: T_INT },  // gang -> woonkamer
+  { kind: 'wall',    x1:  6.99, z1:  9.09,  x2:  6.99, z2:  9.59 , t: T_INT },
 
   // === DIVIDING WALL gang | slaapk2-zone | keuken (slab z 9.54..9.63).
   //     Doors: badkamer-klein (x 0.49..1.19) and the slaapk2 entry nook
   //     (x 2.74..3.77). Behind the solid east part runs the keukenopstelling.
-  { kind: 'wall',    x1:  0.07, z1:  9.59,  x2:  0.49, z2:  9.59 },
-  { kind: 'door',    x1:  0.49, z1:  9.59,  x2:  1.19, z2:  9.59 },  // badkamer klein door (from gang)
-  { kind: 'wall',    x1:  1.19, z1:  9.59,  x2:  2.74, z2:  9.59 },
-  { kind: 'door',    x1:  2.74, z1:  9.59,  x2:  3.77, z2:  9.59 },  // slaapk2 nook door (from gang)
-  { kind: 'wall',    x1:  3.77, z1:  9.59,  x2:  6.99, z2:  9.59 },  // solid behind the kitchen counter
+  { kind: 'wall',    x1:  0.07, z1:  9.59,  x2:  0.49, z2:  9.59 , t: T_INT },
+  { kind: 'door',    x1:  0.49, z1:  9.59,  x2:  1.19, z2:  9.59 , t: T_INT },  // badkamer klein door (from gang)
+  { kind: 'wall',    x1:  1.19, z1:  9.59,  x2:  2.74, z2:  9.59 , t: T_INT },
+  { kind: 'door',    x1:  2.74, z1:  9.59,  x2:  3.77, z2:  9.59 , t: T_INT },  // slaapk2 nook door (from gang)
+  { kind: 'wall',    x1:  3.77, z1:  9.59,  x2:  6.99, z2:  9.59 , t: T_INT },  // solid behind the kitchen counter
 
   // === BADKAMER KLEIN (west, x 0.19..2.54, z 9.64..11.41 — shower + basins)
   //     and the slaapk2 entry nook east of it (x 2.64..4.31, open to slaapk2).
-  { kind: 'wall',    x1:  2.59, z1:  9.59,  x2:  2.59, z2: 11.46 },  // badkklein east / nook west (x 2.54..2.64)
-  { kind: 'wall',    x1:  0.07, z1: 11.46,  x2:  2.59, z2: 11.46 },  // badkklein south (z 11.41..11.51)
+  { kind: 'wall',    x1:  2.59, z1:  9.59,  x2:  2.59, z2: 11.46 , t: T_INT },  // badkklein east / nook west (x 2.54..2.64)
+  { kind: 'wall',    x1:  0.07, z1: 11.46,  x2:  2.59, z2: 11.46 , t: T_INT },  // badkklein south (z 11.41..11.51)
 
   // === SLAAPKAMER 2 + KEUKEN divider (slab x 4.31..4.40, z 9.64..15.41+).
-  { kind: 'wall',    x1:  4.36, z1:  9.59,  x2:  4.36, z2: 15.60 },
+  { kind: 'wall',    x1:  4.36, z1:  9.59,  x2:  4.36, z2: 15.60 , t: T_INT },
 
   // === WEST FACADE (slab -0.06..0.19, centreline ~0.07) + SW diagonal corner.
   { kind: 'wall',    x1:  0.07, z1:  6.69,  x2:  0.07, z2: 14.90 },
@@ -511,6 +514,8 @@ const BASEBOARD_MAT = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughnes
 const TRIM_MAT = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.55, metalness: 0.15 });
 const CROWN_MAT = new THREE.MeshStandardMaterial({ color: 0xe0dcd4, roughness: 0.8 });
 const FRAME_MAT = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.5, metalness: 0.1 });
+// Door casings: light painted wood (NL standard "blank gelakt" white-ish trim)
+const DOORFRAME_MAT = new THREE.MeshStandardMaterial({ color: 0xefece4, roughness: 0.55, metalness: 0.02 });
 const ARCH_MAT = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.5, metalness: 0.15 });
 const KEYSTONE_MAT = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.4, metalness: 0.2 });
 const FRAME_GOLD_MAT = new THREE.MeshStandardMaterial({ color: 0xc8a84e, roughness: 0.32, metalness: 0.7 });
@@ -533,6 +538,9 @@ const TABLE_MAT      = new THREE.MeshStandardMaterial({ color: 0x5a432a, roughne
 const CHAIR_MAT      = new THREE.MeshStandardMaterial({ color: 0x2e2418, roughness: 0.7 });
 const COUNTER_MAT    = new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.35, metalness: 0.25 });
 const CABINET_MAT    = new THREE.MeshStandardMaterial({ color: 0xeae3d3, roughness: 0.55 });
+// Stone monolith kitchen island (per the developer's marketing render): warm
+// grey marble-ish block. Texture is generated in setupTextures.
+const MARBLE_MAT     = new THREE.MeshStandardMaterial({ color: 0xd8d2c8, roughness: 0.30, metalness: 0.05 });
 const CERAMIC_MAT    = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.3, metalness: 0.05 });
 const GLASS_MAT      = new THREE.MeshStandardMaterial({ color: 0xb8ddee, transparent: true, opacity: 0.32, roughness: 0.05, metalness: 0.0 });
 const METAL_MAT      = new THREE.MeshStandardMaterial({ color: 0x8e8e8e, roughness: 0.3, metalness: 0.85 });
@@ -640,56 +648,39 @@ function setupTextures() {
   WALL_MAT.map = plasterTex;
   WALL_MAT.needsUpdate = true;
 
-  // Light wood plank floor (oak/blond) — used as a prototype; each room clones
-  // with its own repeat so plank scale stays consistent across room sizes.
-  const plankTex = makeTexture((ctx, w, h) => {
-    const blondes = ['#e2c9a4', '#d6b88e', '#e7d2ad', '#cdb287', '#dcc09a'];
-    const planks = 4;
-    const plankH = h / planks;
-    for (let py = 0; py < planks; py++) {
-      const baseY = py * plankH;
-      const segs = 3;
-      const offset = (py % 2) * 0.5;
-      for (let s = 0; s < segs; s++) {
-        const x0 = ((s + offset) % segs) * (w / segs);
-        const segW = w / segs;
-        ctx.fillStyle = blondes[(py * 7 + s * 13) % blondes.length];
-        ctx.fillRect(x0, baseY, segW, plankH);
-        // Vertical grain — lighter, low-contrast warm-brown streaks
-        for (let g = 0; g < 14; g++) {
-          ctx.strokeStyle = `rgba(120, 85, 50, ${0.06 + Math.random() * 0.10})`;
-          ctx.lineWidth = 0.6 + Math.random() * 0.9;
-          const gx = x0 + Math.random() * segW;
-          ctx.beginPath();
-          ctx.moveTo(gx, baseY);
-          ctx.bezierCurveTo(
-            gx + (Math.random() - 0.5) * 14, baseY + plankH * 0.4,
-            gx + (Math.random() - 0.5) * 14, baseY + plankH * 0.7,
-            gx + (Math.random() - 0.5) * 14, baseY + plankH
-          );
-          ctx.stroke();
-        }
-        // Knots — smaller and softer to keep the floor reading light
-        if (Math.random() < 0.30) {
-          const kx = x0 + Math.random() * segW;
-          const ky = baseY + plankH * (0.3 + Math.random() * 0.4);
-          ctx.fillStyle = 'rgba(110, 75, 40, 0.35)';
-          ctx.beginPath();
-          ctx.ellipse(kx, ky, 3 + Math.random() * 4, 1.5 + Math.random() * 2.5, 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-      // Plank seam
-      ctx.fillStyle = 'rgba(80, 55, 30, 0.55)';
-      ctx.fillRect(0, baseY + plankH - 1, w, 2);
-    }
-    // Vertical seams every w/segs
-    ctx.fillStyle = 'rgba(80, 55, 30, 0.40)';
-    for (let s = 1; s < 3; s++) ctx.fillRect((w / 3) * s - 1, 0, 2, h);
-  }, 1024, 512);
+  // Oak "lamel" strip floor — narrow staggered strips (~0.18 m wide, ~1 m
+  // long at the room's tile cadence). Drawn by drawLamelStrips, which paints
+  // FULL rows: the old stagger logic left half-cells of alternating rows
+  // unpainted, which rendered as black squares on every wooden floor.
+  const plankTex = makeTexture((ctx, w, h) =>
+    drawLamelStrips(ctx, w, h,
+      ['#d3b285', '#c9a87a', '#dcbc90', '#c19e6e', '#d0ae80'],
+      '120, 85, 50', 'rgba(95, 70, 42, 0.45)'), 1024, 1024);
   plankTex.anisotropy = aniso;
   FLOOR_MAT.map = plankTex;
   FLOOR_MAT.needsUpdate = true;
+
+  // Marble veining for the kitchen island monolith
+  const marbleTex = makeTexture((ctx, w, h) => {
+    ctx.fillStyle = '#ddd8cf';
+    ctx.fillRect(0, 0, w, h);
+    for (let v = 0; v < 26; v++) {
+      ctx.strokeStyle = `rgba(120, 112, 100, ${0.10 + Math.random() * 0.18})`;
+      ctx.lineWidth = 0.6 + Math.random() * 1.6;
+      let vx = Math.random() * w, vy = Math.random() * h;
+      ctx.beginPath();
+      ctx.moveTo(vx, vy);
+      for (let s = 0; s < 5; s++) {
+        vx += (Math.random() - 0.35) * w * 0.18;
+        vy += (Math.random() - 0.5) * h * 0.22;
+        ctx.lineTo(vx, vy);
+      }
+      ctx.stroke();
+    }
+  }, 512, 512);
+  marbleTex.anisotropy = aniso;
+  MARBLE_MAT.map = marbleTex;
+  MARBLE_MAT.needsUpdate = true;
 
   // White paint ceiling — near-white base with a faint stipple so it
   // catches light unevenly like a rolled ceiling rather than flat color.
@@ -944,14 +935,14 @@ function setupTextures() {
 }
 
 /* ===== MUSEUM GEOMETRY ===== */
-function addWall(x1, z1, x2, z2) {
+function addWall(x1, z1, x2, z2, thick = WALL_THICK) {
   const dx = x2 - x1, dz = z2 - z1;
   const len = Math.sqrt(dx * dx + dz * dz);
   if (len < 0.01) return;
   const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
   const angle = Math.atan2(dx, dz);
 
-  const geo = new THREE.BoxGeometry(WALL_THICK, WALL_HEIGHT, len);
+  const geo = new THREE.BoxGeometry(thick, WALL_HEIGHT, len);
   // Each wall gets its own material clone (sharing the plaster map) so the
   // design panel can repaint individual rooms / accent walls independently.
   const wall = new THREE.Mesh(geo, WALL_MAT.clone());
@@ -961,7 +952,7 @@ function addWall(x1, z1, x2, z2) {
 
   // Baseboard (taller) + secondary trim strip just above it
   const bb = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_THICK + 0.06, 0.18, len + 0.02),
+    new THREE.BoxGeometry(thick + 0.06, 0.18, len + 0.02),
     BASEBOARD_MAT
   );
   bb.position.set(cx, 0.09, cz);
@@ -969,7 +960,7 @@ function addWall(x1, z1, x2, z2) {
   scene.add(bb);
 
   const bbTrim = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_THICK + 0.08, 0.03, len + 0.02),
+    new THREE.BoxGeometry(thick + 0.08, 0.03, len + 0.02),
     TRIM_MAT
   );
   bbTrim.position.set(cx, 0.18 + 0.015, cz);
@@ -978,7 +969,7 @@ function addWall(x1, z1, x2, z2) {
 
   // Crown molding (taller) + secondary trim strip just below it
   const cm = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_THICK + 0.05, 0.14, len + 0.02),
+    new THREE.BoxGeometry(thick + 0.05, 0.14, len + 0.02),
     CROWN_MAT
   );
   cm.position.set(cx, WALL_HEIGHT - 0.07, cz);
@@ -986,80 +977,55 @@ function addWall(x1, z1, x2, z2) {
   scene.add(cm);
 
   const cmTrim = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_THICK + 0.08, 0.03, len + 0.02),
+    new THREE.BoxGeometry(thick + 0.08, 0.03, len + 0.02),
     TRIM_MAT
   );
   cmTrim.position.set(cx, WALL_HEIGHT - 0.14 - 0.015, cz);
   cmTrim.rotation.y = angle;
   scene.add(cmTrim);
 
-  wallSegs.push({ x1, z1, x2, z2, len, angle });
+  wallSegs.push({ x1, z1, x2, z2, len, angle, t: thick });
   return wall;
 }
 
-function addDoorFrame(x1, z1, x2, z2) {
+/* Slim modern door casing. The jambs sit OUTSIDE the opening (centred just
+ * past the endpoints) so the full plan width of the doorway stays clear —
+ * the old chunky pillars inside the span made every door read ~20 cm
+ * narrower than the floor plan. Opening height is the NL standard 2.32 m. */
+function addDoorFrame(x1, z1, x2, z2, thick = WALL_THICK) {
   const dx = x2 - x1, dz = z2 - z1;
   const len = Math.sqrt(dx * dx + dz * dz);
   const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
   const angle = Math.atan2(dx, dz);
-
-  // Left pillar
-  const pillarH = WALL_HEIGHT * 0.85;
-  const pillarW = 0.18;
-  const pillarD = WALL_THICK + 0.1;
-  const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(pillarD, pillarH, pillarW), FRAME_MAT);
-  leftPillar.position.set(x1, pillarH / 2, z1);
-  leftPillar.rotation.y = angle;
-  scene.add(leftPillar);
-
-  // Right pillar
-  const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(pillarD, pillarH, pillarW), FRAME_MAT);
-  rightPillar.position.set(x2, pillarH / 2, z2);
-  rightPillar.rotation.y = angle;
-  scene.add(rightPillar);
-
-  // Top beam (lintel)
-  const lintelH = 0.25;
-  const lintel = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_THICK + 0.12, lintelH, len + pillarW),
-    ARCH_MAT
-  );
-  lintel.position.set(cx, pillarH + lintelH / 2, cz);
-  lintel.rotation.y = angle;
-  scene.add(lintel);
-
-  // Decorative keystone at center top + flanking volutes
-  const keystone = new THREE.Mesh(
-    new THREE.BoxGeometry(WALL_THICK + 0.08, 0.12, 0.25),
-    KEYSTONE_MAT
-  );
-  keystone.position.set(cx, pillarH + lintelH + 0.06, cz);
-  keystone.rotation.y = angle;
-  scene.add(keystone);
-
-  // Tiny volute scrolls flanking the keystone — placed in the wall's local
-  // 'along' direction (which is the BoxGeometry's z axis after rotation).
-  const voluteGeo = new THREE.BoxGeometry(WALL_THICK + 0.06, 0.08, 0.12);
   const dirX = dx / len, dirZ = dz / len;
-  for (const sgn of [-1, 1]) {
-    const vol = new THREE.Mesh(voluteGeo, KEYSTONE_MAT);
-    vol.position.set(
-      cx + dirX * sgn * 0.22,
-      pillarH + lintelH + 0.04,
-      cz + dirZ * sgn * 0.22
-    );
-    vol.rotation.y = angle;
-    scene.add(vol);
+
+  const openH = 2.32;
+  const jambW = 0.08;
+  const jambD = thick + 0.06;
+
+  for (const [px, pz, sgn] of [[x1, z1, -1], [x2, z2, 1]]) {
+    const jamb = new THREE.Mesh(
+      new THREE.BoxGeometry(jambD, openH + 0.04, jambW), DOORFRAME_MAT);
+    jamb.position.set(px + dirX * sgn * (jambW / 2),
+                      (openH + 0.04) / 2,
+                      pz + dirZ * sgn * (jambW / 2));
+    jamb.rotation.y = angle;
+    scene.add(jamb);
   }
 
-  // Wall above door (fill gap between lintel and ceiling)
-  const aboveH = WALL_HEIGHT - pillarH - lintelH;
-  if (aboveH > 0.05) {
+  // Head casing — a slim board across the top of the opening
+  const head = new THREE.Mesh(
+    new THREE.BoxGeometry(jambD, jambW, len + jambW * 2), DOORFRAME_MAT);
+  head.position.set(cx, openH + jambW / 2, cz);
+  head.rotation.y = angle;
+  scene.add(head);
+
+  // Wall fill between the head casing and the ceiling
+  const aboveH = WALL_HEIGHT - openH - jambW;
+  if (aboveH > 0.04) {
     const above = new THREE.Mesh(
-      new THREE.BoxGeometry(WALL_THICK, aboveH, len + pillarW),
-      WALL_MAT
-    );
-    above.position.set(cx, pillarH + lintelH + aboveH / 2, cz);
+      new THREE.BoxGeometry(thick, aboveH, len + jambW * 2), WALL_MAT);
+    above.position.set(cx, openH + jambW + aboveH / 2, cz);
     above.rotation.y = angle;
     scene.add(above);
   }
@@ -1265,7 +1231,7 @@ function addWindow(x1, z1, x2, z2) {
   group.position.set(cx, 0, cz);
   group.rotation.y = angle;
   scene.add(group);
-  wallSegs.push({ x1, z1, x2, z2, len, angle });
+  wallSegs.push({ x1, z1, x2, z2, len, angle, t: WALL_THICK });
 }
 
 /* Railing along a line — for balconies. Top rail + bottom rail + vertical
@@ -1325,7 +1291,7 @@ function addRailing(x1, z1, x2, z2) {
   }
 
   // Treat the railing as a wall for collision (player can't fall off)
-  wallSegs.push({ x1, z1, x2, z2, len, angle });
+  wallSegs.push({ x1, z1, x2, z2, len, angle, t: 0.05 });
 }
 
 /* Per-room floor + ceiling. mat = floor material clone. */
@@ -1547,8 +1513,7 @@ function addCoffeeTable(x, z) {
   addBoxObstacle(x, z, 1.1, 0.6);
 }
 
-function addDiningTable(x, z) {
-  const w = 1.40, d = 0.85;
+function addDiningTable(x, z, w = 1.40, d = 0.85) {
   const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.04, d), TABLE_MAT);
   top.position.set(x, 0.75, z);
   scene.add(top);
@@ -1557,15 +1522,24 @@ function addDiningTable(x, z) {
     leg.position.set(x + ox, 0.365, z + oz);
     scene.add(leg);
   }
-  // 4 chairs
-  for (const [cx, cz, cry] of [
-    [x, z - d / 2 - 0.42, 0],
-    [x, z + d / 2 + 0.42, Math.PI],
-    [x - w / 2 - 0.42, z, Math.PI / 2],
-    [x + w / 2 + 0.42, z, -Math.PI / 2],
-  ]) {
-    addChair(cx, cz, cry);
+  // Chairs: pairs along each LONG side, one at each short end.
+  const chairs = [];
+  if (d > w) {                       // long axis north-south
+    for (const oz of [-d / 4, d / 4]) {
+      chairs.push([x - w / 2 - 0.42, z + oz, Math.PI / 2]);
+      chairs.push([x + w / 2 + 0.42, z + oz, -Math.PI / 2]);
+    }
+    chairs.push([x, z - d / 2 - 0.42, 0]);
+    chairs.push([x, z + d / 2 + 0.42, Math.PI]);
+  } else {                           // long axis east-west
+    for (const ox of [-w / 4, w / 4]) {
+      chairs.push([x + ox, z - d / 2 - 0.42, 0]);
+      chairs.push([x + ox, z + d / 2 + 0.42, Math.PI]);
+    }
+    chairs.push([x - w / 2 - 0.42, z, Math.PI / 2]);
+    chairs.push([x + w / 2 + 0.42, z, -Math.PI / 2]);
   }
+  for (const [cx, cz, cry] of chairs) addChair(cx, cz, cry);
   addBoxObstacle(x, z, w, d);
 }
 
@@ -1598,7 +1572,26 @@ function addChair(x, z, ry) {
   addBoxObstacle(x, z, 0.45, 0.45);
 }
 
-function addKitchenIsland(x, z, ry, w = 2.115, d = 0.70) {
+function addKitchenIsland(x, z, ry, w = 2.115, d = 0.70, style = 'cabinet') {
+  if (style === 'stone') {
+    // Marble monolith (waterfall edges) like the developer's render
+    const block = new THREE.Mesh(new THREE.BoxGeometry(w, 0.90, d), MARBLE_MAT);
+    block.position.set(x, 0.45, z);
+    block.rotation.y = ry;
+    scene.add(block);
+    const faucet = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.32, 8), METAL_MAT);
+    const fox = w * 0.28, foz = 0;
+    faucet.position.set(x + Math.cos(ry) * fox + Math.sin(ry) * foz, 1.04,
+                        z - Math.sin(ry) * fox + Math.cos(ry) * foz);
+    scene.add(faucet);
+    const sink = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.05, 0.34), METAL_MAT);
+    const sox = w * 0.28;
+    sink.position.set(x + Math.cos(ry) * sox, 0.885, z - Math.sin(ry) * sox);
+    sink.rotation.y = ry;
+    scene.add(sink);
+    addRotatedBoxObstacle(x, z, w, d, ry);
+    return;
+  }
   // Base cabinets
   const base = new THREE.Mesh(new THREE.BoxGeometry(w, 0.85, d), CABINET_MAT);
   base.position.set(x, 0.425, z);
@@ -1768,6 +1761,45 @@ function addShowerStall(x, z, ry, w = 0.9, d = 0.9) {
   addBoxObstacle(x, z, w, d);
 }
 
+/* Bar stool: round seat on a slim centre column with a disc base. */
+function addBarStool(x, z) {
+  const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.05, 18), BEDFRAME_MAT);
+  seat.position.set(x, 0.66, z);
+  scene.add(seat);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.60, 10), METAL_MAT);
+  pole.position.set(x, 0.33, z);
+  scene.add(pole);
+  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.02, 18), METAL_MAT);
+  foot.position.set(x, 0.01, z);
+  scene.add(foot);
+  addBoxObstacle(x, z, 0.34, 0.34);
+}
+
+/* Pendant lamp: cord + warm glass shade + a small point light. */
+function addPendant(x, z, y = 2.05) {
+  const cord = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.006, 0.006, WALL_HEIGHT - y, 6), METAL_MAT);
+  cord.position.set(x, y + (WALL_HEIGHT - y) / 2, z);
+  scene.add(cord);
+  const shade = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.09, 0.11, 0.16, 16, 1, true),
+    new THREE.MeshStandardMaterial({
+      color: 0xd9cdb4, transparent: true, opacity: 0.55, side: THREE.DoubleSide,
+      emissive: 0xffe2b0, emissiveIntensity: 0.5, roughness: 0.2,
+    }));
+  shade.position.set(x, y, z);
+  scene.add(shade);
+  const bulb = new THREE.Mesh(
+    new THREE.SphereGeometry(0.030, 10, 8),
+    new THREE.MeshBasicMaterial({ color: 0xfff1d6 }));
+  bulb.position.set(x, y - 0.02, z);
+  scene.add(bulb);
+  const pl = new THREE.PointLight(0xffe2b0, 0.40, 3.5);
+  pl.position.set(x, y - 0.10, z);
+  scene.add(pl);
+  pointLightInfo.push({ light: pl, baseI: 0.40, disc: bulb });
+}
+
 /* ===== APARTMENT GEOMETRY (Type R3.sp, bouwnummer 25) ===== */
 function buildApartment() {
   // Geometry is driven by apartment.json (Phase 3 of the rebuild).
@@ -1812,7 +1844,7 @@ function buildApartment() {
     railing: addRailing,
   };
   APARTMENT_GEOM.forEach((g, i) => {
-    const mesh = geomDispatch[g.kind](g.x1, g.z1, g.x2, g.z2);
+    const mesh = geomDispatch[g.kind](g.x1, g.z1, g.x2, g.z2, g.t || WALL_THICK);
     if (g.kind === 'wall' && mesh) {
       mesh.userData.geomIndex = i;
       wallMeshes.push({ mesh, seg: g, index: i });
@@ -1862,9 +1894,13 @@ function placeFurniture() {
   // Wardrobe along the south wall, west of the entry alcove opening
   addWardrobe(4.45, 4.00, Math.PI, 2.00, 0.55);
 
-  // === Badkamer (groot) — x 3.86..6.94, z 4.30..7.04. Bath north, sink east.
-  addBathtub(4.85, 4.85, 0, 1.65, 0.75);
-  addSink(6.60, 5.60, -Math.PI / 2, 0.55);
+  // === Badkamer (groot) — x 3.86..6.94, z 4.30..7.04 (PDF: bathtub along the
+  // north wall, walk-in shower in the NE corner, double washbasin on the south
+  // wall — the 1180/1285 mm callouts).
+  addBathtub(4.72, 4.72, 0, 1.70, 0.75);
+  addShowerStall(6.46, 4.79, -Math.PI / 2, 0.95, 0.92);  // glass on west + south
+  addSink(4.50, 6.80, 0, 0.90);
+  addSink(5.45, 6.80, 0, 0.90);
 
   // === Toilet — separate room (x 4.84..6.63, z 7.14..8.07)
   addToiletBowl(5.74, 7.62, Math.PI);
@@ -1903,13 +1939,24 @@ function placeFurniture() {
   addSofa(9.80, 2.20, -Math.PI / 2);
   addCoffeeTable(8.40, 2.20);
 
-  // Dining table in the east strip near the gang door
-  addDiningTable(8.50, 7.00);
+  // Dining table: rectangular, long axis along the length of the living room,
+  // beside the kitchen island (walking space on both sides).
+  addDiningTable(8.35, 12.00, 1.00, 2.20);
 
   // Keukenopstelling (PDF): counter against the gang wall (x 4.41..6.94,
-  // z 9.64..10.28) + island x 5.41..6.41, z 11.23..13.80.
+  // z 9.64..10.28, with the hobs) + the island x 5.41..6.41, z 11.23..13.80 —
+  // a stone monolith with bar stools on the dining side, per the developer's
+  // render.
   addKitchenIsland(5.68, 9.97, 0, 2.50, 0.62);
-  addKitchenIsland(5.91, 12.52, Math.PI / 2, 2.55, 0.95);
+  addKitchenIsland(5.91, 12.52, Math.PI / 2, 2.55, 0.95, 'stone');
+  addBarStool(6.65, 11.95);
+  addBarStool(6.65, 12.52);
+  addBarStool(6.65, 13.09);
+  // Pendant lamps over the island and the dining table
+  addPendant(5.91, 12.10);
+  addPendant(5.91, 12.95);
+  addPendant(8.35, 11.45);
+  addPendant(8.35, 12.55);
 
   // Side console under the woonkamer NE window (x 5.18..6.98)
   const console_ = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.78, 0.4), CABINET_MAT);
@@ -1934,7 +1981,7 @@ function setupLights() {
     [ 3.60,  2.20, 0xfff0d0, 0.85, 6],  // slaapkamer 1
     [ 0.20,  1.80, 0xeef4ff, 0.55, 3],  // slaapkamer 1 NW tip
     [ 2.85,  4.55, 0xfff0d0, 0.55, 3],  // slaapkamer 1 entry alcove
-    [ 5.40,  5.65, 0xeef4ff, 0.75, 4],  // badkamer (groot) cooler
+    [ 5.40,  5.65, 0xf4f8ff, 1.10, 6],  // badkamer (groot) — bright
     [ 5.74,  7.60, 0xeef4ff, 0.50, 3],  // toilet
     [ 1.30,  6.40, 0xeef4ff, 0.55, 4],  // technische berging
     [ 3.18,  6.30, 0xfff0d0, 0.70, 5],  // gang (corridor)
@@ -2334,7 +2381,7 @@ function wallCollide(nx, nz) {
     const px = nx - w.x1, pz = nz - w.z1;
     const along = px * dirX + pz * dirZ;
     const dist = px * normX + pz * normZ;
-    const threshold = WALL_THICK / 2 + PLAYER_R;
+    const threshold = (w.t || WALL_THICK) / 2 + PLAYER_R;
 
     if (along >= -PLAYER_R && along <= L + PLAYER_R && Math.abs(dist) < threshold) {
       return true;
@@ -2650,36 +2697,44 @@ function setTimeOfDay(mode) {
 }
 
 /* --- floor-finish materials (built from setupTextures) --------------- */
-function makePlankMat(palette, grainRGB, seamRGBA, rough = 0.55) {
-  const tex = makeTexture((ctx, w, h) => {
-    const planks = 4, plankH = h / planks;
-    for (let py = 0; py < planks; py++) {
-      const baseY = py * plankH, segs = 3, offset = (py % 2) * 0.5;
-      for (let s = 0; s < segs; s++) {
-        const x0 = ((s + offset) % segs) * (w / segs), segW = w / segs;
-        ctx.fillStyle = palette[(py * 7 + s * 13) % palette.length];
-        ctx.fillRect(x0, baseY, segW, plankH);
-        for (let g = 0; g < 14; g++) {
-          ctx.strokeStyle = `rgba(${grainRGB}, ${0.06 + Math.random() * 0.10})`;
-          ctx.lineWidth = 0.6 + Math.random() * 0.9;
-          const gx = x0 + Math.random() * segW;
-          ctx.beginPath(); ctx.moveTo(gx, baseY);
-          ctx.bezierCurveTo(gx + (Math.random() - 0.5) * 14, baseY + plankH * 0.4,
-                            gx + (Math.random() - 0.5) * 14, baseY + plankH * 0.7,
-                            gx + (Math.random() - 0.5) * 14, baseY + plankH);
-          ctx.stroke();
-        }
-        if (Math.random() < 0.30) {
-          const kx = x0 + Math.random() * segW, ky = baseY + plankH * (0.3 + Math.random() * 0.4);
-          ctx.fillStyle = `rgba(${grainRGB}, 0.35)`;
-          ctx.beginPath(); ctx.ellipse(kx, ky, 3 + Math.random() * 4, 1.5 + Math.random() * 2.5, 0, 0, Math.PI * 2); ctx.fill();
-        }
+/* Paint staggered oak-lamel strips covering the WHOLE canvas (rows are filled
+ * from a negative offset so the stagger never leaves unpainted black cells).
+ * Strips run along x; at the hout tile cadence of 2.0 x 2.5 m one strip is
+ * about 1.0 m long and 0.18 m wide. */
+function drawLamelStrips(ctx, w, h, palette, grainRGB, seamRGBA) {
+  const rows = 14, rowH = h / rows, segLen = w / 2;
+  for (let r = 0; r < rows; r++) {
+    const y = r * rowH;
+    const stagger = ((r * 0.37 + 0.13) % 1) * segLen;
+    let i = 0;
+    for (let x0 = stagger - segLen; x0 < w; x0 += segLen, i++) {
+      ctx.fillStyle = palette[(r * 7 + i * 13) % palette.length];
+      ctx.fillRect(x0, y, segLen + 1, rowH);
+      // Lengthwise grain — low-contrast streaks along the strip
+      for (let g = 0; g < 5; g++) {
+        ctx.strokeStyle = `rgba(${grainRGB}, ${0.05 + Math.random() * 0.08})`;
+        ctx.lineWidth = 0.5 + Math.random() * 0.8;
+        const gy = y + (0.15 + 0.7 * Math.random()) * rowH;
+        ctx.beginPath();
+        ctx.moveTo(x0, gy);
+        ctx.bezierCurveTo(x0 + segLen * 0.33, gy + (Math.random() - 0.5) * 3,
+                          x0 + segLen * 0.66, gy + (Math.random() - 0.5) * 3,
+                          x0 + segLen, gy + (Math.random() - 0.5) * 2);
+        ctx.stroke();
       }
-      ctx.fillStyle = seamRGBA; ctx.fillRect(0, baseY + plankH - 1, w, 2);
+      // Butt-joint seam at the strip end
+      ctx.fillStyle = seamRGBA;
+      ctx.fillRect(Math.round(x0) - 0.5, y, 1, rowH);
     }
+    // Long seam between rows
     ctx.fillStyle = seamRGBA;
-    for (let s = 1; s < 3; s++) ctx.fillRect((w / 3) * s - 1, 0, 2, h);
-  }, 1024, 512);
+    ctx.fillRect(0, Math.round(y + rowH) - 0.5, w, 1);
+  }
+}
+
+function makePlankMat(palette, grainRGB, seamRGBA, rough = 0.55) {
+  const tex = makeTexture((ctx, w, h) =>
+    drawLamelStrips(ctx, w, h, palette, grainRGB, seamRGBA), 1024, 1024);
   tex.anisotropy = texAniso;
   return new THREE.MeshStandardMaterial({ map: tex, roughness: rough, metalness: 0.04 });
 }
@@ -2714,7 +2769,7 @@ function buildFloorFinishes(aniso) {
   diagMat.map.rotation = Math.PI / 4;
   diagMat.map.needsUpdate = true;
   FLOOR_FINISHES = [
-    { id: 'naturel_eiken', name: 'Naturel eiken',     mat: FLOOR_MAT },
+    { id: 'naturel_eiken', name: 'Eiken lamel',       mat: FLOOR_MAT },
     { id: 'licht_eiken',   name: 'Licht eiken',       mat: makePlankMat(
         ['#efe0c6', '#e8d6b8', '#f1e4cd', '#e3d3b0', '#ece0c2'], '150, 120, 80', 'rgba(120,95,60,0.4)') },
     { id: 'walnoot',       name: 'Walnoot',           mat: makePlankMat(
