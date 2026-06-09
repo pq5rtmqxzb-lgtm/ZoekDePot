@@ -159,7 +159,7 @@ canvas { display: block; width: 100%; height: 100%; }
   <h1>Ons Nieuwe Huis</h1>
   <p>Wandel alvast door het appartement (Type R3.sp, Ypsilon Park) en krijg een gevoel voor het huis dat nog gebouwd moet worden.</p>
   <p>Probeer verschillende muurkleuren, vloeren en sferen via de knop <b>Inrichten</b> rechtsboven.</p>
-  <p style="font-size:14px; opacity:0.7;" class="mobile-controls">Joystick links = lopen, veeg rechts = rondkijken</p>
+  <p style="font-size:14px; opacity:0.7;" class="mobile-controls"><b>Tik op de vloer</b> en je loopt er vanzelf naartoe. Vegen = rondkijken.</p>
   <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis = rondkijken, I = inrichten</p>
   <button id="startBtn">Begin de rondleiding</button>
 </div>
@@ -501,6 +501,11 @@ let lookTouchId = null, lookLastX = 0, lookLastY = 0;
 let joystickTouchId = null, joystickActive = false;
 let jsCenterX = 0, jsCenterY = 0;
 const touchStarts = {};
+
+/* Tap-to-walk state ("tik waar je heen wilt lopen") */
+let walkTarget = null;          // { x, z } world-space goal on the floor
+let walkMarker = null;          // pulsing floor ring shown while auto-walking
+let walkPrevDist = 0, walkStuckT = 0;
 
 const isMobile = 'ontouchstart' in window;
 const joystickEl = document.getElementById('joystickArea');
@@ -2500,16 +2505,17 @@ function setupInput() {
     }
   });
 
-  // Touch: right side = look + tap
+  // Touch: every canvas touch is tracked so a short, still tap can be
+  // recognised anywhere on screen; dragging on the right side looks around.
   renderer.domElement.addEventListener('touchstart', e => {
     if (!gameStarted) return;
     e.preventDefault();
     for (const t of e.changedTouches) {
+      touchStarts[t.identifier] = { t: Date.now(), lx: t.clientX, ly: t.clientY, dist: 0 };
       if (t.clientX > innerWidth * 0.35 && lookTouchId === null) {
         lookTouchId = t.identifier;
         lookLastX = t.clientX;
         lookLastY = t.clientY;
-        touchStarts[t.identifier] = { t: Date.now(), x: t.clientX, y: t.clientY, dist: 0 };
       }
     }
   }, { passive: false });
@@ -2518,9 +2524,12 @@ function setupInput() {
     if (!gameStarted) return;
     e.preventDefault();
     for (const t of e.changedTouches) {
+      const s = touchStarts[t.identifier];
+      if (s) {
+        s.dist += Math.hypot(t.clientX - s.lx, t.clientY - s.ly);
+        s.lx = t.clientX; s.ly = t.clientY;
+      }
       if (t.identifier === lookTouchId) {
-        const s = touchStarts[t.identifier];
-        if (s) s.dist += Math.hypot(t.clientX - lookLastX, t.clientY - lookLastY);
         yaw -= (t.clientX - lookLastX) * LOOK_SPEED * 1.3;
         pitch = Math.max(-1, Math.min(1, pitch - (t.clientY - lookLastY) * LOOK_SPEED * 1.3));
         lookLastX = t.clientX;
@@ -2533,22 +2542,24 @@ function setupInput() {
     if (!gameStarted) return;
     e.preventDefault();
     for (const t of e.changedTouches) {
-      if (t.identifier === lookTouchId) {
-        const s = touchStarts[t.identifier];
-        // A short, still tap while the accent-wall picker is armed selects the
-        // wall under the finger; otherwise taps do nothing (design tool, no game).
-        if (s && Date.now() - s.t < 300 && s.dist < 15 && accentArm) {
-          pickAccentWall(t.clientX, t.clientY);
-        }
-        delete touchStarts[t.identifier];
-        lookTouchId = null;
+      const s = touchStarts[t.identifier];
+      // A short, still tap: with the accent-wall picker armed it selects the
+      // wall under the finger; otherwise it sets a walk target — tap a spot
+      // and the camera turns and walks there by itself (one-finger movement
+      // for people who find the joystick fiddly).
+      if (s && Date.now() - s.t < 300 && s.dist < 15) {
+        if (accentArm) pickAccentWall(t.clientX, t.clientY);
+        else setWalkTarget(t.clientX, t.clientY);
       }
+      delete touchStarts[t.identifier];
+      if (t.identifier === lookTouchId) lookTouchId = null;
     }
   }, { passive: false });
 
   renderer.domElement.addEventListener('touchcancel', e => {
     for (const t of e.changedTouches) {
-      if (t.identifier === lookTouchId) { lookTouchId = null; delete touchStarts[t.identifier]; }
+      delete touchStarts[t.identifier];
+      if (t.identifier === lookTouchId) lookTouchId = null;
     }
   }, { passive: false });
 
@@ -2589,6 +2600,7 @@ function setupInput() {
   document.getElementById('startBtn').addEventListener('click', () => {
     gameStarted = true;
     document.getElementById('introOverlay').style.display = 'none';
+    if (isMobile) showToast('Tik op de vloer om er naartoe te lopen');
   });
 
   // Viewpoint hook: ?pos=x,z,yaw[,pitch] places the camera (handy for sharing
@@ -2613,6 +2625,63 @@ function updateJoystick(tx, ty) {
   knobEl.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   moveF = -dy / max;
   moveR = dx / max;
+}
+
+/* ===== TAP-TO-WALK =====
+ * Tap a spot and the camera turns and walks there by itself. Tapping a wall
+ * walks up to that wall and stops just short of it. */
+const WALK_TURN_SPEED = 3.0;   // rad/s auto-turn toward the target
+const WALK_ARRIVE = 0.25;      // m — close enough, stop
+
+function setWalkTarget(cx, cy) {
+  const ndc = new THREE.Vector2((cx / innerWidth) * 2 - 1, -(cy / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const ray = raycaster.ray;
+  // Distance along the ray to the floor plane (y=0); Infinity when the tap
+  // points at or above the horizon.
+  const floorT = ray.direction.y < -0.02 ? -ray.origin.y / ray.direction.y : Infinity;
+  raycaster.far = Math.min(floorT, 30);
+  const wallHit = raycaster.intersectObjects(wallMeshes.map(w => w.mesh))[0];
+
+  let tx, tz;
+  if (wallHit) {
+    const dpx = wallHit.point.x - playerPos.x, dpz = wallHit.point.z - playerPos.z;
+    const dl = Math.hypot(dpx, dpz);
+    if (dl < 1e-3) return;
+    const stop = Math.max(0, dl - (PLAYER_R + 0.30));
+    tx = playerPos.x + dpx / dl * stop;
+    tz = playerPos.z + dpz / dl * stop;
+  } else if (isFinite(floorT)) {
+    tx = ray.origin.x + ray.direction.x * floorT;
+    tz = ray.origin.z + ray.direction.z * floorT;
+  } else {
+    return;  // tapped the ceiling/sky with nothing in the way
+  }
+
+  tx = Math.max(ENV.xMin + PLAYER_R, Math.min(ENV.xMax - PLAYER_R, tx));
+  tz = Math.max(ENV.zMin + PLAYER_R, Math.min(ENV.zMax - PLAYER_R, tz));
+  const dist = Math.hypot(tx - playerPos.x, tz - playerPos.z);
+  if (dist < WALK_ARRIVE) return;
+
+  walkTarget = { x: tx, z: tz };
+  walkPrevDist = dist;
+  walkStuckT = 0;
+  if (!walkMarker) {
+    walkMarker = new THREE.Mesh(
+      new THREE.RingGeometry(0.15, 0.24, 40),
+      new THREE.MeshBasicMaterial({ color: 0x55c878, transparent: true, opacity: 0.85,
+                                    side: THREE.DoubleSide, depthWrite: false }));
+    walkMarker.rotation.x = -Math.PI / 2;
+    walkMarker.renderOrder = 5;
+    scene.add(walkMarker);
+  }
+  walkMarker.position.set(tx, 0.02, tz);
+  walkMarker.visible = true;
+}
+
+function cancelWalkTarget() {
+  walkTarget = null;
+  if (walkMarker) walkMarker.visible = false;
 }
 
 /* =====================================================================
@@ -3038,8 +3107,31 @@ function animate() {
   if (keys['KeyA'] || keys['ArrowLeft']) kr -= 1;
   if (keys['KeyD'] || keys['ArrowRight']) kr += 1;
 
-  const fwd = joystickActive ? moveF : kf;
+  let fwd = joystickActive ? moveF : kf;
   const rgt = joystickActive ? moveR : kr;
+
+  // Manual input always wins; it cancels any pending tap-to-walk target.
+  if (walkTarget && (joystickActive || kf || kr)) cancelWalkTarget();
+
+  // Tap-to-walk: turn toward the target, then walk up to it.
+  let autoWalking = false;
+  if (walkTarget) {
+    const ddx = walkTarget.x - playerPos.x, ddz = walkTarget.z - playerPos.z;
+    const dist = Math.hypot(ddx, ddz);
+    if (dist < WALK_ARRIVE) cancelWalkTarget();
+    else {
+      const targetYaw = Math.atan2(-ddx, -ddz);   // camera forward is (-sin yaw, -cos yaw)
+      let diff = targetYaw - yaw;
+      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+      yaw += Math.sign(diff) * Math.min(Math.abs(diff), WALK_TURN_SPEED * dt);
+      pitch += (0 - pitch) * Math.min(1, dt * 2);  // ease back to eye level
+      if (Math.abs(diff) < 0.6) {
+        fwd = Math.max(0.25, Math.min(1, dist / 0.6));  // slow into the target
+        autoWalking = true;
+      }
+      walkMarker.scale.setScalar(1 + 0.15 * Math.sin(performance.now() * 0.006));
+    }
+  }
 
   const sy = Math.sin(yaw), cy = Math.cos(yaw);
   // Camera right vector at yaw is (cos yaw, 0, -sin yaw); camera forward is
@@ -3057,6 +3149,14 @@ function animate() {
   // Bounds — apartment + balconies (matches railings at ENV extents).
   playerPos.x = Math.max(ENV.xMin + PLAYER_R, Math.min(ENV.xMax - PLAYER_R, playerPos.x));
   playerPos.z = Math.max(ENV.zMin + PLAYER_R, Math.min(ENV.zMax - PLAYER_R, playerPos.z));
+
+  // Give up on a walk target when a wall keeps blocking the way.
+  if (walkTarget && autoWalking) {
+    const nd = Math.hypot(walkTarget.x - playerPos.x, walkTarget.z - playerPos.z);
+    walkStuckT = (walkPrevDist - nd < MOVE_SPEED * dt * 0.15) ? walkStuckT + dt : 0;
+    walkPrevDist = nd;
+    if (walkStuckT > 0.8) cancelWalkTarget();
+  }
 
   camera.position.copy(playerPos);
   camera.rotation.order = 'YXZ';
