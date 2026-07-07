@@ -9,7 +9,7 @@ import { loadModel } from './data.js';
 import { setupTextures } from './textures.js';
 import { buildApartment } from './apartment.js';
 import { placeFurniture } from './furniture.js';
-import { setupLights, enableShadows } from './lights.js';
+import { setupLights, enableShadows, updateLightCulling } from './lights.js';
 import { setupInput, joystickActive } from './input.js';
 import { buildDesignPanel, refreshPanel, designPanelOpen } from './panel.js';
 import { loadScheme, applyScheme } from './scheme.js';
@@ -82,6 +82,8 @@ function init() {
     room: S.currentRoom && S.currentRoom.id,
     doorOpen: S.doors.filter(d => Math.abs(d.angle) > 1).length,
     exposure: S.renderer.toneMappingExposure,
+    activeLights: S.pointLightInfo.filter(p => p.light.visible).length,
+    drawCalls: S.renderer.info.render.calls,
     measureDist: S.measure.points.length === 2 ? S.measure.dist : null,
     measurePts: S.measure.points.map(p => [p.x, p.y, p.z]),
     furCount: S.customFurn.length,
@@ -194,6 +196,7 @@ function animate() {
   S.camera.rotation.y = S.yaw;
 
   updateDoors(dt);
+  updateLightCulling(dt);
 
   // Track which room we're standing in for the HUD + design-panel target.
   const r = roomAt(S.playerPos.x, S.playerPos.z);

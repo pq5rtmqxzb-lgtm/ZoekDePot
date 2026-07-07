@@ -61,6 +61,57 @@ export function setupLights() {
   S.scene.add(S.sunLight);
 }
 
+/* ===== POINT-LIGHT INTENSITY + OCCLUSION CULLING =====
+ * updatePointLights() is the single owner of point-light intensity:
+ * baseI × time-of-day multiplier × cull factor. A light is culled only when
+ * the player is beyond its falloff range (so they are not inside its pool)
+ * AND a solid wall blocks the straight line between them — pools you can
+ * actually see (open woonkamer/keuken sightlines, through doorway gaps) stay
+ * lit, while lights in closed-off rooms drop out of the shader's light loop.
+ * The cull factor eases over a few ticks so doorway crossings fade instead
+ * of popping, and the flush discs stay visible either way. */
+export function updatePointLights() {
+  for (const p of S.pointLightInfo) {
+    p.light.intensity = p.baseI * S.curPointMul * (p.cull ?? 1);
+    p.light.visible = p.light.intensity > 0.005;
+  }
+}
+
+const CULL_INTERVAL = 0.15;   // s between visibility passes
+const CULL_EASE = 0.45;       // per-pass approach factor (~3 passes to settle)
+let cullTimer = 0;
+
+// Does the 2D segment player->light cross a solid wall? Railings (t <= 0.06,
+// glass) don't count. ~85 segs × 20 lights every 0.15 s — negligible.
+function sightBlocked(px, pz, lx, lz) {
+  const ori = (ax, az, bx, bz, cx, cz) =>
+    Math.sign((bx - ax) * (cz - az) - (bz - az) * (cx - ax));
+  for (const w of S.wallSegs) {
+    if ((w.t || 1) <= 0.06) continue;
+    if (ori(px, pz, lx, lz, w.x1, w.z1) !== ori(px, pz, lx, lz, w.x2, w.z2) &&
+        ori(w.x1, w.z1, w.x2, w.z2, px, pz) !== ori(w.x1, w.z1, w.x2, w.z2, lx, lz)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function updateLightCulling(dt) {
+  cullTimer -= dt;
+  if (cullTimer > 0) return;
+  cullTimer = CULL_INTERVAL;
+  const px = S.playerPos.x, pz = S.playerPos.z;
+  for (const p of S.pointLightInfo) {
+    const lx = p.light.position.x, lz = p.light.position.z;
+    const d = Math.hypot(lx - px, lz - pz);
+    const R = p.light.distance || 6;
+    const target = (d <= R + 1 || !sightBlocked(px, pz, lx, lz)) ? 1 : 0;
+    p.cull = (p.cull ?? 1) + (target - (p.cull ?? 1)) * CULL_EASE;
+    if (Math.abs(p.cull - target) < 0.02) p.cull = target;
+  }
+  updatePointLights();
+}
+
 /* Flag every lit mesh for the sun's shadow pass. Skipped on mobile (perf) and
  * for MeshBasicMaterial (sky cyclorama, light discs, bulbs, walk marker).
  * Glass stays receive-only so sunlight streams in through the schuifpuien. */

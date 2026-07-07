@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { S } from './state.js';
+import { updatePointLights } from './lights.js';
 
 /* --- time-of-day ----------------------------------------------------- */
 export const TOD = {
@@ -55,7 +56,7 @@ export function applyTodState(s) {
     S.sunLight.position.copy(s.sunPos);
   }
   S.curPointMul = s.pointMul;
-  for (const p of S.pointLightInfo) p.light.intensity = p.baseI * S.curPointMul;
+  updatePointLights();   // single owner of intensity (mood × distance cull)
   if (S.scene.background) S.scene.background.copy(s.bg);
   if (S.scene.fog) { S.scene.fog.color.copy(s.fog); S.scene.fog.near = s.fogNear; S.scene.fog.far = s.fogFar; }
   if (S.renderer) S.renderer.toneMappingExposure = s.exposure;

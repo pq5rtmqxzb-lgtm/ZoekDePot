@@ -81,6 +81,15 @@ check('minimap click teleports to woonkamer', s1.room === 'woonkamer',
 const label1 = await page.textContent('#roomLabel');
 check('HUD updates after teleport', /Woonkamer · \d+,\d m²/.test(label1), `label="${label1}"`);
 
+// Occlusion culling: lights in walled-off rooms drop out of the shader once
+// the eased cull converges (several 0.15 s passes — generous timeout for
+// slow headless frames).
+await page.waitForFunction(
+  () => { const s = window.__state(); return s.activeLights > 0 && s.activeLights < 16; },
+  null, { timeout: 60000 });
+check('occlusion culling trims active lights',
+      true, `active=${(await page.evaluate(() => window.__state())).activeLights}/20`);
+
 // Click the minimap padding corner (outside the plan) → must not move
 const beforeNoop = await page.evaluate(() => window.__state());
 await page.mouse.click(mapBox.x + 4, mapBox.y + 4);
