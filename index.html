@@ -136,6 +136,7 @@ canvas { display: block; width: 100%; height: 100%; }
 .finishBtn:active, .modeBtn:active, .actionBtn:active { background: rgba(255,255,255,0.18); }
 .modeRow { display: flex; gap: 8px; }
 .modeRow .modeBtn { flex: 1; text-align: center; }
+#dpTodSlider { width: 100%; margin-top: 10px; accent-color: #ffd24a; cursor: pointer; }
 #accentBtn.armed { background: rgba(210,140,60,0.4); border-color: #e2a05a; }
 .actionRow { display: flex; gap: 8px; }
 .actionRow .actionBtn { flex: 1; text-align: center; }
@@ -225,6 +226,8 @@ canvas { display: block; width: 100%; height: 100%; }
   <section>
     <h3>Sfeer</h3>
     <div class="modeRow" id="dpTod"></div>
+    <input type="range" id="dpTodSlider" min="0" max="1" step="0.01" value="0"
+           aria-label="Tijdstip (dag tot nacht)">
   </section>
   <section>
     <h3>Schema</h3>

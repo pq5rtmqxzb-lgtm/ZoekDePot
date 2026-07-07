@@ -111,12 +111,27 @@ check('wall swatch paints (selected + toast)',
 // clamp), so at headless ~2 fps it needs ~10 s wall time — hence 30 s.
 await page.click('#dpTod .modeBtn[data-tod="avond"]');
 await page.waitForFunction(
-  () => { const s = window.__state(); return s.tod === 'avond' && !s.todFading; },
+  () => { const s = window.__state(); return s.tod === 0.5 && !s.todFading; },
   null, { timeout: 30000 });
-check('time-of-day fades to avond', true);
+check('time-of-day fades to avond (tod 0.5)', true);
+
+// Continuous slider: setting 0.75 applies instantly (no fade) and lands
+// between the avond and nacht exposures.
+const expAvond = await page.evaluate(() => window.__state().exposure);
+await page.fill('#dpTodSlider', '0.75');
+await page.dispatchEvent('#dpTodSlider', 'input');
+await page.waitForTimeout(200);
+const s75 = await page.evaluate(() => window.__state());
+check('TOD slider applies instantly', s75.tod === 0.75 && !s75.todFading,
+      `tod=${s75.tod} fading=${s75.todFading}`);
+check('slider mood sits between presets',
+      s75.exposure > Math.min(1.06, 1.22) - 1e-6 && s75.exposure < Math.max(1.06, 1.22) + 1e-6 &&
+      Math.abs(s75.exposure - expAvond) > 0.001,
+      `exposure=${s75.exposure} (avond was ${expAvond})`);
+
 await page.click('#dpTod .modeBtn[data-tod="dag"]');
 await page.waitForFunction(
-  () => { const s = window.__state(); return s.tod === 'dag' && !s.todFading; },
+  () => { const s = window.__state(); return s.tod === 0 && !s.todFading; },
   null, { timeout: 30000 });
 await page.keyboard.press('Escape');   // close panel
 
@@ -201,6 +216,19 @@ check('third click restarts, Escape clears',
       await mepage.evaluate(() => !document.getElementById('measureToggle').classList.contains('armed')));
 check('no page errors (measure)', meerrors.length === 0, meerrors.join(' | '));
 await mepage.close();
+
+/* ---------- Legacy v1 scheme URL still loads ---------- */
+const v1enc = Buffer.from(JSON.stringify(
+  { v: 1, tod: 'nacht', rooms: {}, acc: {} })).toString('base64');
+const vpage = await browser.newPage();
+const verrors = [];
+vpage.on('pageerror', e => verrors.push(String(e)));
+await vpage.goto(BASE + '/index.html#scheme=' + v1enc);
+await vpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await vpage.waitForFunction(() => window.__state().tod === 1, null, { timeout: 15000 });
+check('v1 scheme URL maps nacht to tod 1', true);
+check('no page errors (v1 scheme)', verrors.length === 0, verrors.join(' | '));
+await vpage.close();
 
 /* ---------- Mobile emulation ---------- */
 const mob = await browser.newContext({

@@ -2,7 +2,7 @@ import { S } from './state.js';
 import { PAINT_PALETTE } from './constants.js';
 import { editTarget } from './rooms.js';
 import { paintRoomWalls, reapplyAccents, setRoomFloor } from './paint.js';
-import { setTimeOfDay } from './tod.js';
+import { setTimeOfDayT, TOD_PRESETS } from './tod.js';
 import { resetSchemeToDefaults, applyScheme, saveAndShare } from './scheme.js';
 import { toggleMeasure } from './measure.js';
 import { showToast } from './toast.js';
@@ -87,11 +87,19 @@ export function buildDesignPanel() {
   });
 
   const todRow = document.getElementById('dpTod');
-  [['dag', 'Dag'], ['avond', 'Avond'], ['nacht', 'Nacht']].forEach(([id, label]) => {
+  TOD_PRESETS.forEach(([id, label, t]) => {
     const b = document.createElement('button');
-    b.className = 'modeBtn'; b.dataset.tod = id; b.textContent = label;
-    b.addEventListener('click', () => { setTimeOfDay(id); refreshPanel(); });
+    b.className = 'modeBtn'; b.dataset.tod = id; b.dataset.t = t; b.textContent = label;
+    b.addEventListener('click', () => { setTimeOfDayT(t); refreshPanel(); });
     todRow.appendChild(b);
+  });
+  // Continuous slider between the presets — dragging IS the animation, so it
+  // cancels any running fade and applies each position instantly.
+  const todSlider = document.getElementById('dpTodSlider');
+  todSlider.addEventListener('input', () => {
+    S.todAnim = null;
+    setTimeOfDayT(+todSlider.value, true);
+    refreshPanel();
   });
 
   document.getElementById('dpShare').addEventListener('click', saveAndShare);
@@ -113,5 +121,7 @@ export function refreshPanel() {
   document.querySelectorAll('#dpFloors .finishBtn').forEach(el =>
     el.classList.toggle('sel', el.dataset.fid === rs.f));
   document.querySelectorAll('#dpTod .modeBtn').forEach(el =>
-    el.classList.toggle('sel', el.dataset.tod === S.scheme.tod));
+    el.classList.toggle('sel', Math.abs(+el.dataset.t - S.scheme.tod) < 0.03));
+  const slider = document.getElementById('dpTodSlider');
+  if (slider) slider.value = S.scheme.tod;
 }

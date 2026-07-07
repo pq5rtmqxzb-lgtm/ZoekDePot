@@ -63,10 +63,11 @@ export function applyTodState(s) {
 }
 
 export const todMix = (a, b, e) => a + (b - a) * e;
-export function applyTodLerp(anim) {
-  const e = anim.t * anim.t * (3 - 2 * anim.t);  // smoothstep
-  const f = anim.from, g = anim.to;
-  applyTodState({
+export const smoothstep = t => t * t * (3 - 2 * t);
+
+// Field-wise blend of two lerpable states (from todTargets/todSnapshot).
+export function lerpTodStates(f, g, e) {
+  return {
     hemiSky: f.hemiSky.clone().lerp(g.hemiSky, e),
     hemiGround: f.hemiGround.clone().lerp(g.hemiGround, e),
     hemiI: todMix(f.hemiI, g.hemiI, e),
@@ -80,17 +81,38 @@ export function applyTodLerp(anim) {
     exposure: todMix(f.exposure, g.exposure, e),
     pointMul: todMix(f.pointMul, g.pointMul, e),
     sky: f.sky.clone().lerp(g.sky, e),
-  });
+  };
 }
 
-export function setTimeOfDay(mode, instant = false) {
-  const t = TOD[mode] || TOD.dag;
-  S.scheme.tod = mode;
-  const to = todTargets(t);
+export function applyTodLerp(anim) {
+  applyTodState(lerpTodStates(anim.from, anim.to, smoothstep(anim.t)));
+}
+
+/* Continuous time of day: t ∈ [0..1] runs dag (0) → avond (0.5) → nacht (1)
+ * as piecewise keyframes, eased inside each half so the presets land exact. */
+export const TOD_PRESETS = [['dag', 'Dag', 0], ['avond', 'Avond', 0.5], ['nacht', 'Nacht', 1]];
+
+export function todTargetsAt(t) {
+  t = Math.max(0, Math.min(1, t));
+  return t <= 0.5
+    ? lerpTodStates(todTargets(TOD.dag), todTargets(TOD.avond), smoothstep(t / 0.5))
+    : lerpTodStates(todTargets(TOD.avond), todTargets(TOD.nacht), smoothstep((t - 0.5) / 0.5));
+}
+
+export function setTimeOfDayT(t, instant = false) {
+  t = Math.max(0, Math.min(1, +t || 0));
+  S.scheme.tod = t;
+  const to = todTargetsAt(t);
   if (instant || !S.hemiLight || !S.sunLight) {
     S.todAnim = null;
     applyTodState(to);
     return;
   }
   S.todAnim = { from: todSnapshot(), to, t: 0 };  // animate() drives the fade
+}
+
+// Named-mood wrapper (kept for the preset buttons and old call sites).
+export function setTimeOfDay(mode, instant = false) {
+  const preset = TOD_PRESETS.find(([id]) => id === mode);
+  setTimeOfDayT(preset ? preset[2] : 0, instant);
 }

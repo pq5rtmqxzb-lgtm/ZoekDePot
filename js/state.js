@@ -29,8 +29,8 @@ export const S = {
   skyMat: null,         // sky cyclorama material (tinted by time-of-day)
   hemiLight: null, sunLight: null,
   pointLightInfo: [],   // { light, baseI, disc, baseColor }
-  // Per-room design choices, serialised for save/share.
-  scheme: { v: 1, tod: 'dag', rooms: {}, acc: {} },
+  // Per-room design choices, serialised for save/share (v2: numeric tod 0..1).
+  scheme: { v: 2, tod: 0, rooms: {}, acc: {}, fur: [] },
   todAnim: null,        // { from, to, t } while fading between moods
   curPointMul: 1.0,     // live point-light multiplier (snapshot source)
   texAniso: 1,

@@ -81,6 +81,7 @@ function init() {
     yaw: S.yaw, pitch: S.pitch, tod: S.scheme.tod, todFading: !!S.todAnim,
     room: S.currentRoom && S.currentRoom.id,
     doorOpen: S.doors.filter(d => Math.abs(d.angle) > 1).length,
+    exposure: S.renderer.toneMappingExposure,
     measureDist: S.measure.points.length === 2 ? S.measure.dist : null,
     measurePts: S.measure.points.map(p => [p.x, p.y, p.z]),
   });
