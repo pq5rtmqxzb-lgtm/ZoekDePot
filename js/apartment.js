@@ -111,49 +111,86 @@ export function buildApartment() {
     [-5.0, -14.5, 1.70], [0.0, -15.0, 1.70], [6.0, -15.5, 1.65],
     [-8.0, -2.0, 1.35], [-9.5, -7.0, 1.50],
   ];
-  for (const [tx, tz, ts] of FOREST) addForestTree(tx, tz, ts);
+  buildForest(FOREST);
 }
 
-// One old-growth tree: tapered bark trunk from the forest floor, a few thick
-// limbs, and a cluster of overlapping leaf masses centred near apartment
-// height (the canopy of a mature tree at 2e-verdieping level).
-export function addForestTree(x, z, s = 1.0) {
+/* One old-growth tree: tapered bark trunk from the forest floor, a few thick
+ * limbs, and a cluster of overlapping leaf masses centred near apartment
+ * height (the canopy of a mature tree at 2e-verdieping level).
+ *
+ * computeTreeParts returns transform lists instead of meshes so buildForest
+ * can pack the whole forest into 6 InstancedMeshes (1 trunk + 1 limb + one
+ * per leaf material) — ~150 draw calls collapse into 6. The per-(x,z)
+ * deterministic PRNG (and its exact call order) is unchanged, so the layout
+ * is pixel-identical to the per-mesh version. */
+function computeTreeParts(x, z, s = 1.0) {
   const trunkH = 8.0 * s;
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.22 * s, 0.38 * s, trunkH, 9), BARK_MAT);
-  trunk.position.set(x, GROUND_Y + trunkH / 2, z);
-  trunk.rotation.y = (x * 7 + z * 13) % 1;
-  trunk.userData.noMeasure = true;
-  S.scene.add(trunk);
+  const parts = { trunks: [], limbs: [], blobs: [] };
+  const q = new THREE.Quaternion(), e = new THREE.Euler();
+
+  parts.trunks.push(new THREE.Matrix4().compose(
+    new THREE.Vector3(x, GROUND_Y + trunkH / 2, z),
+    q.setFromEuler(e.set(0, (x * 7 + z * 13) % 1, 0)).clone(),
+    new THREE.Vector3(s, s, s)));
 
   const canopyY = GROUND_Y + trunkH;          // canopy centre ≈ apartment level
-  // A couple of visible limbs reaching into the canopy
   for (let b = 0; b < 3; b++) {
     const a = b * 2.3 + x + z;
-    const limb = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.07 * s, 0.13 * s, 1.7 * s, 6), BARK_MAT);
-    limb.position.set(x + Math.cos(a) * 0.55 * s, canopyY - 0.25 * s, z + Math.sin(a) * 0.55 * s);
-    limb.rotation.z = Math.cos(a) * 0.7;
-    limb.rotation.x = Math.sin(a) * 0.7;
-    limb.userData.noMeasure = true;
-    S.scene.add(limb);
+    parts.limbs.push(new THREE.Matrix4().compose(
+      new THREE.Vector3(x + Math.cos(a) * 0.55 * s, canopyY - 0.25 * s, z + Math.sin(a) * 0.55 * s),
+      q.setFromEuler(e.set(Math.sin(a) * 0.7, 0, Math.cos(a) * 0.7, 'XYZ')).clone(),
+      new THREE.Vector3(s, s, s)));
   }
-  // Leaf masses — low-poly spheres, deterministic offsets per tree
+
+  // Leaf masses — deterministic offsets per tree (same sequence as always)
   let seed = Math.abs(Math.sin(x * 12.9898 + z * 78.233)) * 43758.5453;
   const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
   const blobs = 5 + Math.floor(rnd() * 3);
   for (let i = 0; i < blobs; i++) {
     const r = (0.9 + rnd() * 0.9) * s;
-    const blob = new THREE.Mesh(
-      new THREE.SphereGeometry(r, 8, 6),
-      LEAF_MATS[Math.floor(rnd() * LEAF_MATS.length)]);
+    const matIndex = Math.floor(rnd() * LEAF_MATS.length);
     const bx = x + (rnd() - 0.5) * 2.6 * s;
     let bz = z + (rnd() - 0.5) * 2.6 * s;
-    // Foliage may overhang the balcony, but must not poke through the facade.
-    if (bx > -2.5 && bx < 11.5 && bz + r > -1.25) bz = -1.25 - r;
-    blob.position.set(bx, canopyY + (rnd() - 0.35) * 2.6 * s, bz);
-    blob.scale.y = 0.75 + rnd() * 0.25;
-    blob.userData.noMeasure = true;
-    S.scene.add(blob);
+    // Foliage may overhang the north balcony, but must not poke through the
+    // facade (only relevant for the north rows; southern/western trees stand
+    // clear of the building).
+    if (z < 0 && bx > -2.5 && bx < 11.5 && bz + r > -1.25) bz = -1.25 - r;
+    const by = canopyY + (rnd() - 0.35) * 2.6 * s;
+    const sy = 0.75 + rnd() * 0.25;
+    parts.blobs.push({
+      matIndex,
+      matrix: new THREE.Matrix4().compose(
+        new THREE.Vector3(bx, by, bz), q.identity().clone(),
+        new THREE.Vector3(r, r * sy, r)),
+    });
   }
+  return parts;
+}
+
+export function buildForest(spots) {
+  const all = { trunks: [], limbs: [], blobs: [] };
+  for (const [tx, tz, ts] of spots) {
+    const p = computeTreeParts(tx, tz, ts);
+    all.trunks.push(...p.trunks);
+    all.limbs.push(...p.limbs);
+    all.blobs.push(...p.blobs);
+  }
+
+  const addInstanced = (geo, mat, matrices) => {
+    if (!matrices.length) return;
+    const im = new THREE.InstancedMesh(geo, mat, matrices.length);
+    matrices.forEach((m, i) => im.setMatrixAt(i, m));
+    im.instanceMatrix.needsUpdate = true;
+    // Instanced bounding spheres don't auto-fit the instances; 6 always-on
+    // draw calls are cheaper than getting culling wrong.
+    im.frustumCulled = false;
+    im.userData.noMeasure = true;
+    S.scene.add(im);
+  };
+
+  addInstanced(new THREE.CylinderGeometry(0.22, 0.38, 8.0, 9), BARK_MAT, all.trunks);
+  addInstanced(new THREE.CylinderGeometry(0.07, 0.13, 1.7, 6), BARK_MAT, all.limbs);
+  LEAF_MATS.forEach((mat, mi) => addInstanced(
+    new THREE.SphereGeometry(1, 8, 6), mat,
+    all.blobs.filter(b => b.matIndex === mi).map(b => b.matrix)));
 }
