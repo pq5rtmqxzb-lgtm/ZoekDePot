@@ -152,6 +152,7 @@ canvas { display: block; width: 100%; height: 100%; }
   width: 150px; height: 224px;   /* ENV aspect ~12.3 x 18.6 m */
   background: rgba(10,12,16,0.55); border: 1px solid rgba(255,255,255,0.3);
   border-radius: 8px; display: none;
+  pointer-events: auto; cursor: pointer;   /* tap = teleport */
 }
 #minimap.show { display: block; }
 #mapToggle {
@@ -254,9 +255,6 @@ const JOY_DEADZONE = 0.18;  // fraction of the joystick radius that does nothing
 const BOB_AMP = 0.018;      // m — head-bob amplitude at full walking speed
 const BOB_FREQ = 9.0;       // rad/s — head-bob frequency at full walking speed
 const LOOK_SPEED = 0.003;
-const NUM_PAINTINGS = 8;
-const PW = 1.1;   // painting width  (residential scale)
-const PH = 0.85;  // painting height
 
 // Apartment envelope (outermost walkable extent, balconies included).
 // Matches the railings at index.html addRailing(...) calls below.
@@ -412,7 +410,7 @@ const APARTMENT_GEOM = [
 ];
 
 /* ===== ROOMS =====
- * Each room groups the floor rectangles + polygons (from buildMuseum) it owns,
+ * Each room groups the floor rectangles + polygons (from buildApartment) it owns,
  * plus a default floor kind. walls[] and floorMeshes[] are filled at build time
  * so the design panel can recolour/refloor a single room. Shapes match the PDF
  * inner faces (verified by tools/compare-to-pdf.py). `polys` carry the areas
@@ -459,7 +457,12 @@ const ROOMS = [
        [10.74, 17.55], [3.10, 17.55], [2.62, 17.51], [1.93, 17.29], [1.32, 16.90],
        [0.83, 16.37]] ] },
 ];
-ROOMS.forEach(r => { r.walls = []; r.floorMeshes = []; r.polys = r.polys || []; });
+ROOMS.forEach(r => {
+  r.walls = []; r.floorMeshes = []; r.polys = r.polys || [];
+  // Floor area for the HUD — rects and polys of one room never overlap.
+  r.area = r.rects.reduce((a, rc) => a + rectArea(rc), 0)
+         + r.polys.reduce((a, p) => a + polyArea(p), 0);
+});
 
 // Per-room tile cadence + the base material each floor kind starts from.
 const FLOOR_TILE = { hout: [2.0, 2.5], tegel: [1.2, 1.2], steen: [1.5, 1.5] };
@@ -484,17 +487,6 @@ const DEFAULT_WALL_HEX = 0xf0ece4;
 // Default floor finish id per kind (set once FLOOR_FINISHES is built).
 const KIND_DEFAULT_FINISH = { hout: 'naturel_eiken', tegel: 'tegel', steen: 'natuursteen' };
 
-// Painting placement (decorative Mondriaan art on the walls).
-const PAINTING_CENTER_Y   = 1.55;        // painting centre height
-const PAINTING_WALL_GAP   = 0.06;        // distance from wall face to painting back
-const PLINTH_SIZE         = { w: 0.6, h: 0.5, d: 0.4 };
-const PLINTH_CAP_SIZE     = { w: 0.66, h: 0.04, d: 0.46 };
-const PLINTH_FORWARD      = 0.18;        // plinth centre offset from painting (room-side)
-// Spotlight fixture: PAINTING_CENTER_Y + 1.10 + 0.05 (housing top) = 2.70 m,
-// leaving 0.10 m clearance below the 2.80 m ceiling.
-const SPOTLIGHT_OFFSET    = { y: 1.10, z: 0.7 };
-const PAINTING_HIT_PAD    = 0.035;       // UV padding around pot bbox for click hit-test
-
 /* ===== STATE ===== */
 let camera, scene, renderer, clock;
 // Spawn inside the gang (south part, well clear of every wall).
@@ -503,7 +495,6 @@ let yaw = 0, pitch = 0;
 let moveF = 0, moveR = 0;
 let velX = 0, velZ = 0;     // smoothed world-space walking velocity
 let bobPhase = 0;           // head-bob oscillator phase
-const paintings = [];
 let gameStarted = false;
 const wallSegs = [];
 const wallMeshes = [];      // { mesh, seg, index } for every solid wall
@@ -547,18 +538,9 @@ const CEIL_MAT = new THREE.MeshStandardMaterial({
 const BASEBOARD_MAT = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.7 });
 const TRIM_MAT = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.55, metalness: 0.15 });
 const CROWN_MAT = new THREE.MeshStandardMaterial({ color: 0xe0dcd4, roughness: 0.8 });
-const FRAME_MAT = new THREE.MeshStandardMaterial({ color: 0x5c4a3a, roughness: 0.5, metalness: 0.1 });
 // Door casings: light painted wood (NL standard "blank gelakt" white-ish trim)
 const DOORFRAME_MAT = new THREE.MeshStandardMaterial({ color: 0xefece4, roughness: 0.55, metalness: 0.02 });
-const ARCH_MAT = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.5, metalness: 0.15 });
-const KEYSTONE_MAT = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.4, metalness: 0.2 });
-const FRAME_GOLD_MAT = new THREE.MeshStandardMaterial({ color: 0xc8a84e, roughness: 0.32, metalness: 0.7 });
-const FRAME_DARK_MAT = new THREE.MeshStandardMaterial({ color: 0x3a3020, roughness: 0.8 });
-const PANEL_MAT = new THREE.MeshStandardMaterial({ color: 0x6a4a30, roughness: 0.55, metalness: 0.05 });
-const PLINTH_MAT = new THREE.MeshStandardMaterial({ color: 0xcdbfa3, roughness: 0.6, metalness: 0.05 });
-const FIXTURE_MAT = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
 const WINDOW_FRAME_MAT = new THREE.MeshStandardMaterial({ color: 0x4a3826, roughness: 0.7 });
-const BULB_MAT = new THREE.MeshBasicMaterial({ color: 0xffd9a3 });
 
 // Residential additions
 const TILE_MAT       = new THREE.MeshStandardMaterial({ color: 0xe8e6e0, roughness: 0.45, metalness: 0.05 });
@@ -582,7 +564,6 @@ const RAILING_MAT    = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughne
 const WARDROBE_MAT   = new THREE.MeshStandardMaterial({ color: 0x8c6f4f, roughness: 0.55 });
 const SKY_MAT_PLACEHOLDER = null; // assigned after texture build
 
-let forestTex = null;
 let skyTex = null;
 const raycaster = new THREE.Raycaster();
 const obstacles = [];
@@ -631,9 +612,9 @@ function init() {
   document.body.insertBefore(renderer.domElement, document.getElementById('ui'));
 
   setupTextures();
-  buildMuseum();
+  buildApartment();
+  placeFurniture();
   setupLights();
-  placePaintings();
   enableShadows();
   setupInput();
 
@@ -756,149 +737,6 @@ function setupTextures() {
   CEIL_MAT.emissiveMap = ceilingTex;
   CEIL_MAT.needsUpdate = true;
 
-  // Walnut wall panel — used in the new addWallPanel() helper
-  const walnutTex = makeTexture((ctx, w, h) => {
-    ctx.fillStyle = '#6a4a30';
-    ctx.fillRect(0, 0, w, h);
-    for (let i = 0; i < 90; i++) {
-      ctx.strokeStyle = `rgba(${30 + Math.random() * 25}, ${20 + Math.random() * 18}, 12, ${0.18 + Math.random() * 0.22})`;
-      ctx.lineWidth = 0.5 + Math.random() * 1.4;
-      const x = Math.random() * w;
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.bezierCurveTo(
-        x + (Math.random() - 0.5) * 10, h * 0.33,
-        x + (Math.random() - 0.5) * 10, h * 0.66,
-        x + (Math.random() - 0.5) * 10, h
-      );
-      ctx.stroke();
-    }
-    // Subtle highlight streaks
-    for (let i = 0; i < 18; i++) {
-      ctx.strokeStyle = `rgba(170, 130, 90, ${0.05 + Math.random() * 0.08})`;
-      ctx.lineWidth = 0.6;
-      const x = Math.random() * w;
-      ctx.beginPath();
-      ctx.moveTo(x, 0); ctx.lineTo(x + (Math.random() - 0.5) * 6, h);
-      ctx.stroke();
-    }
-  }, 256, 256, 1, 1);
-  walnutTex.anisotropy = aniso;
-  PANEL_MAT.map = walnutTex;
-  PANEL_MAT.needsUpdate = true;
-
-  // Forest scene viewed through a window — daylit, painted top-to-bottom
-  // (sky → distant haze → mid trees → foreground trunks). Used as both the
-  // diffuse and emissive map so windows glow against the dim gallery.
-  forestTex = makeTexture((ctx, w, h) => {
-    // Sky band — top ~38% — gradient from soft blue to warm horizon.
-    const skyH = h * 0.38;
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, skyH);
-    skyGrad.addColorStop(0, '#a8c8e8');
-    skyGrad.addColorStop(0.7, '#cfd9d4');
-    skyGrad.addColorStop(1, '#e8d8b8');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, w, skyH);
-
-    // Wispy clouds — low-alpha horizontal ellipses
-    for (let i = 0; i < 6; i++) {
-      const cx = Math.random() * w;
-      const cy = skyH * (0.15 + Math.random() * 0.55);
-      const rx = 30 + Math.random() * 90;
-      const ry = 4 + Math.random() * 8;
-      ctx.fillStyle = `rgba(255,255,255,${0.15 + Math.random() * 0.18})`;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Distant tree line — middle ~22% — atmospheric haze blobs.
-    const distTop = skyH;
-    const distH = h * 0.22;
-    for (let i = 0; i < 60; i++) {
-      const cx = Math.random() * w;
-      const cy = distTop + Math.random() * distH * 0.9;
-      const r = 12 + Math.random() * 28;
-      ctx.fillStyle = `rgba(90, 120, 96, ${0.18 + Math.random() * 0.22})`;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Mid-ground trees — ~25% — conifers (triangles) and deciduous (round).
-    const midTop = distTop + distH;
-    const midH = h * 0.25;
-    const midGreens = ['#3d5a3d', '#4a6b3a', '#355032', '#42613f'];
-    for (let i = 0; i < 22; i++) {
-      const baseX = Math.random() * w;
-      const baseY = midTop + midH * (0.3 + Math.random() * 0.7);
-      const treeH = 40 + Math.random() * 80;
-      const treeW = 24 + Math.random() * 36;
-      ctx.fillStyle = midGreens[i % midGreens.length];
-      if (i % 2 === 0) {
-        // conifer triangle
-        ctx.beginPath();
-        ctx.moveTo(baseX, baseY - treeH);
-        ctx.lineTo(baseX - treeW / 2, baseY);
-        ctx.lineTo(baseX + treeW / 2, baseY);
-        ctx.closePath();
-        ctx.fill();
-      } else {
-        // deciduous rounded
-        ctx.beginPath();
-        ctx.ellipse(baseX, baseY - treeH * 0.5, treeW * 0.55, treeH * 0.55, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    // Foreground trunks + forest floor — bottom ~15%.
-    const fgTop = midTop + midH;
-    const fgH = h - fgTop;
-    // Forest floor band
-    const floorGrad = ctx.createLinearGradient(0, fgTop, 0, h);
-    floorGrad.addColorStop(0, '#3a4a2a');
-    floorGrad.addColorStop(1, '#2a1d10');
-    ctx.fillStyle = floorGrad;
-    ctx.fillRect(0, fgTop, w, fgH);
-    // Dappled sunlight flecks
-    for (let i = 0; i < 60; i++) {
-      ctx.fillStyle = `rgba(220, 200, 110, ${0.08 + Math.random() * 0.12})`;
-      const fx = Math.random() * w;
-      const fy = fgTop + Math.random() * fgH;
-      ctx.beginPath();
-      ctx.arc(fx, fy, 2 + Math.random() * 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // Foreground trunks running off the bottom
-    const trunkCount = 4;
-    for (let i = 0; i < trunkCount; i++) {
-      const tx = (i + 0.3 + Math.random() * 0.4) * (w / trunkCount);
-      const tw = 14 + Math.random() * 18;
-      const top = midTop + midH * (0.3 + Math.random() * 0.4);
-      ctx.fillStyle = '#2a1d10';
-      ctx.fillRect(tx - tw / 2, top, tw, h - top);
-      // Bark highlight
-      ctx.fillStyle = 'rgba(120, 90, 60, 0.25)';
-      ctx.fillRect(tx - tw / 2 + 2, top, 3, h - top);
-    }
-
-    // Sun rays — diagonal low-alpha streaks in the upper canopy.
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 5; i++) {
-      const sx = Math.random() * w;
-      ctx.strokeStyle = `rgba(255, 240, 200, ${0.08 + Math.random() * 0.07})`;
-      ctx.lineWidth = 6 + Math.random() * 14;
-      ctx.beginPath();
-      ctx.moveTo(sx, 0);
-      ctx.lineTo(sx + 60 + Math.random() * 80, midTop + midH * 0.5);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }, 512, 768, 1, 1);
-  forestTex.wrapS = forestTex.wrapT = THREE.ClampToEdgeWrapping;
-  forestTex.anisotropy = aniso;
-
   // Bathroom/toilet tile — small light grey squares with grout
   const tileTex = makeTexture((ctx, w, h) => {
     ctx.fillStyle = '#7a7a76';
@@ -983,7 +821,7 @@ function setupTextures() {
   buildFloorFinishes(aniso);
 }
 
-/* ===== MUSEUM GEOMETRY ===== */
+/* ===== APARTMENT GEOMETRY ===== */
 function addWall(x1, z1, x2, z2, thick = WALL_THICK) {
   const dx = x2 - x1, dz = z2 - z1;
   const len = Math.sqrt(dx * dx + dz * dz);
@@ -1078,71 +916,6 @@ function addDoorFrame(x1, z1, x2, z2, thick = WALL_THICK) {
     above.rotation.y = angle;
     scene.add(above);
   }
-}
-
-/* Window looking out onto a daylit forest. Replaces the old wainscot panel:
- * an emissive forest texture behind a 2x3 mullion grid, framed by a wooden
- * casing and sill. Placed on otherwise-blank stretches of wall. */
-function addWallPanel(x, z, ry, w = 1.0, h = 2.4) {
-  const group = new THREE.Group();
-
-  // Glass plane with the forest as both diffuse + emissive map so it appears
-  // self-lit against the dim gallery.
-  const glassMat = new THREE.MeshStandardMaterial({
-    map: forestTex,
-    emissive: 0xffffff,
-    emissiveMap: forestTex,
-    emissiveIntensity: 0.85,
-    roughness: 0.4,
-    metalness: 0.0,
-  });
-  // PlaneGeometry (single-sided) at a clear forward offset prevents the
-  // glass back-face from co-planing with the wall surface (z-fighting).
-  const glass = new THREE.Mesh(new THREE.PlaneGeometry(w, h), glassMat);
-  glass.position.z = 0.018;
-  group.add(glass);
-
-  // Mullions — 1 vertical + 2 horizontal, dividing the window into a 2x3 grid.
-  const mullionZ = 0.030;
-  const mD = 0.025;
-  const mT = 0.04;
-  const vM = new THREE.Mesh(new THREE.BoxGeometry(mT, h, mD), WINDOW_FRAME_MAT);
-  vM.position.set(0, 0, mullionZ);
-  group.add(vM);
-  for (const sy of [-h / 6, h / 6]) {
-    const hM = new THREE.Mesh(new THREE.BoxGeometry(w, mT, mD), WINDOW_FRAME_MAT);
-    hM.position.set(0, sy, mullionZ);
-    group.add(hM);
-  }
-
-  // Window casing — chunky wooden frame around the perimeter.
-  const cT = 0.08;
-  const cD = 0.05;
-  const casingZ = 0.040;
-  const casingTop = new THREE.Mesh(new THREE.BoxGeometry(w + cT * 2, cT, cD), WINDOW_FRAME_MAT);
-  casingTop.position.set(0, h / 2 + cT / 2, casingZ);
-  group.add(casingTop);
-  const casingBot = new THREE.Mesh(new THREE.BoxGeometry(w + cT * 2, cT, cD), WINDOW_FRAME_MAT);
-  casingBot.position.set(0, -h / 2 - cT / 2, casingZ);
-  group.add(casingBot);
-  const casingL = new THREE.Mesh(new THREE.BoxGeometry(cT, h, cD), WINDOW_FRAME_MAT);
-  casingL.position.set(-w / 2 - cT / 2, 0, casingZ);
-  group.add(casingL);
-  const casingR = new THREE.Mesh(new THREE.BoxGeometry(cT, h, cD), WINDOW_FRAME_MAT);
-  casingR.position.set(w / 2 + cT / 2, 0, casingZ);
-  group.add(casingR);
-
-  // Sill — protrudes a bit further than the casing.
-  const sill = new THREE.Mesh(
-    new THREE.BoxGeometry(w + cT * 2 + 0.04, 0.05, 0.09),
-    WINDOW_FRAME_MAT
-  );
-  sill.position.set(0, -h / 2 - cT - 0.025, 0.045);
-  group.add(sill);
-
-  group.position.set(x, 1.45, z);
-  group.rotation.y = ry;
-  scene.add(group);
 }
 
 /* Axis-aligned obstacle that blocks the player. Reuses resolveCollision() via
@@ -2079,11 +1852,6 @@ function placeFurniture() {
   addBoxObstacle(6.10, 0.55, 1.4, 0.4);
 }
 
-function buildMuseum() {
-  buildApartment();
-  placeFurniture();
-}
-
 /* ===== LIGHTING ===== */
 function setupLights() {
   // Hemisphere fill — slightly cooler sky for a daytime-residential feel
@@ -2160,361 +1928,6 @@ function enableShadows() {
     }
   });
   for (const f of FLOOR_FINISHES) if (f.mat) f.mat.shadowSide = THREE.DoubleSide;
-}
-
-/* ===== MONDRIAAN GENERATOR =====
- * If hasPot is true, the painting's grid is constrained so that a region of
- * its rectangles forms a pot silhouette in Mondriaan style: a wide rim slab,
- * a narrower body slab below it, and a still-narrower base slab. Surrounding
- * cells inside a halo are forced cream so the pot pops. If hasPot is false,
- * we generate a plain Mondriaan with no pot. potInfo's UV bbox is set only
- * when hasPot is true. */
-function generateMondriaan(cw, ch, potInfo, hasPot) {
-  const c = document.createElement('canvas');
-  c.width = cw; c.height = ch;
-  const ctx = c.getContext('2d');
-
-  ctx.fillStyle = '#FAFAF5';
-  ctx.fillRect(0, 0, cw, ch);
-
-  const M = 8; // margin
-  const LW = 3 + Math.random() * 5; // line width
-
-  // Compute pot silhouette geometry (pixel coords) when this painting is
-  // marked as a pot painting. These split positions get injected into the
-  // grid below, guaranteeing the pot is composed of grid-aligned rectangles.
-  let pot = null;
-  if (hasPot) {
-    const rimSpanFrac = 0.36 + Math.random() * 0.10;     // 36–46% of width
-    const rimSpan = Math.round(rimSpanFrac * cw);
-    const cxFrac = 0.42 + Math.random() * 0.16;          // mostly centered
-    const cx = Math.round(cxFrac * cw);
-    const xOuterL = cx - Math.round(rimSpan / 2);
-    const xOuterR = cx + Math.round(rimSpan / 2);
-    const innerHalf = Math.round(rimSpan * 0.62 / 2);
-    const xInnerL = cx - innerHalf;
-    const xInnerR = cx + innerHalf;
-
-    const yRimTop = Math.round((0.20 + Math.random() * 0.08) * ch);
-    const rimH = Math.round(0.07 * ch);
-    const yRimBot = yRimTop + rimH;
-    const bodyH = Math.round((0.34 + Math.random() * 0.10) * ch);
-    const yBodyBot = yRimBot + bodyH;
-    const baseH = Math.round(0.05 * ch);
-    const yBaseBot = Math.min(ch - M - 12, yBodyBot + baseH);
-
-    pot = { xOuterL, xOuterR, xInnerL, xInnerR, yRimTop, yRimBot, yBodyBot, yBaseBot };
-  }
-
-  // Generate horizontal split points
-  const hSplits = [M];
-  const nh = 3 + Math.floor(Math.random() * 3);
-  for (let i = 0; i < nh; i++) {
-    const minGap = 40;
-    let y = M + minGap + Math.random() * (ch - 2 * M - 2 * minGap);
-    hSplits.push(Math.round(y));
-  }
-  hSplits.push(ch - M);
-  hSplits.sort((a, b) => a - b);
-
-  // Remove too-close splits
-  for (let i = hSplits.length - 2; i >= 1; i--) {
-    if (hSplits[i] - hSplits[i - 1] < 25) hSplits.splice(i, 1);
-  }
-
-  // Generate vertical split points
-  const vSplits = [M];
-  const nv = 3 + Math.floor(Math.random() * 3);
-  for (let i = 0; i < nv; i++) {
-    const minGap = 40;
-    let x = M + minGap + Math.random() * (cw - 2 * M - 2 * minGap);
-    vSplits.push(Math.round(x));
-  }
-  vSplits.push(cw - M);
-  vSplits.sort((a, b) => a - b);
-  for (let i = vSplits.length - 2; i >= 1; i--) {
-    if (vSplits[i] - vSplits[i - 1] < 25) vSplits.splice(i, 1);
-  }
-
-  // Inject pot's required split lines and protect them from pruning.
-  if (pot) {
-    const protH = [pot.yRimTop, pot.yRimBot, pot.yBodyBot, pot.yBaseBot];
-    const protV = [pot.xOuterL, pot.xOuterR, pot.xInnerL, pot.xInnerR];
-    for (let i = hSplits.length - 2; i >= 1; i--) {
-      if (protH.some(p => Math.abs(hSplits[i] - p) < 18)) hSplits.splice(i, 1);
-    }
-    hSplits.push(...protH);
-    hSplits.sort((a, b) => a - b);
-    for (let i = hSplits.length - 1; i >= 1; i--) {
-      if (hSplits[i] === hSplits[i - 1]) hSplits.splice(i, 1);
-    }
-    for (let i = vSplits.length - 2; i >= 1; i--) {
-      if (protV.some(p => Math.abs(vSplits[i] - p) < 18)) vSplits.splice(i, 1);
-    }
-    vSplits.push(...protV);
-    vSplits.sort((a, b) => a - b);
-    for (let i = vSplits.length - 1; i >= 1; i--) {
-      if (vSplits[i] === vSplits[i - 1]) vSplits.splice(i, 1);
-    }
-  }
-
-  // Mondriaan palette with weights (used for non-pot, non-halo cells)
-  const palette = [
-    { color: '#FAFAF5', weight: 50 },
-    { color: '#D42828', weight: 12 },
-    { color: '#1A3F8F', weight: 12 },
-    { color: '#F2C41A', weight: 10 },
-    { color: '#F0EDE2', weight: 16 },
-  ];
-  function pickColor() {
-    const total = palette.reduce((s, p) => s + p.weight, 0);
-    let r = Math.random() * total;
-    for (const p of palette) {
-      r -= p.weight;
-      if (r <= 0) return p.color;
-    }
-    return '#FAFAF5';
-  }
-
-  // Pot color scheme — rim and body get distinct bold Mondriaan colors so
-  // they read as a single figure; base is always black for visual weight.
-  let potRimColor = null, potBodyColor = null;
-  let haloX0 = 0, haloX1 = 0, haloY0 = 0, haloY1 = 0;
-  if (pot) {
-    const bolds = ['#D42828', '#1A3F8F', '#F2C41A'];
-    const r0 = Math.floor(Math.random() * bolds.length);
-    let r1 = Math.floor(Math.random() * (bolds.length - 1));
-    if (r1 >= r0) r1++;
-    potRimColor = bolds[r0];
-    potBodyColor = bolds[r1];
-    haloX0 = pot.xOuterL - 30; haloX1 = pot.xOuterR + 30;
-    haloY0 = pot.yRimTop - 30; haloY1 = pot.yBaseBot + 30;
-  }
-
-  function classifyCell(x, y, w, h) {
-    if (!pot) return 'background';
-    const cxm = x + w / 2, cym = y + h / 2;
-    if (cym >= pot.yRimTop && cym <= pot.yRimBot &&
-        cxm >= pot.xOuterL && cxm <= pot.xOuterR) return 'rim';
-    if (cym >= pot.yRimBot && cym <= pot.yBodyBot &&
-        cxm >= pot.xInnerL && cxm <= pot.xInnerR) return 'body';
-    if (cym >= pot.yBodyBot && cym <= pot.yBaseBot &&
-        cxm >= pot.xInnerL && cxm <= pot.xInnerR) return 'base';
-    if (cxm >= haloX0 && cxm <= haloX1 &&
-        cym >= haloY0 && cym <= haloY1) return 'halo';
-    return 'background';
-  }
-
-  // Fill cells
-  const cells = [];
-  for (let i = 0; i < hSplits.length - 1; i++) {
-    for (let j = 0; j < vSplits.length - 1; j++) {
-      const x = vSplits[j], y = hSplits[i];
-      const w = vSplits[j + 1] - x, h = hSplits[i + 1] - y;
-      const kind = classifyCell(x, y, w, h);
-      let col;
-      if (kind === 'rim') col = potRimColor;
-      else if (kind === 'body') col = potBodyColor;
-      else if (kind === 'base') col = '#0A0A0A';
-      else if (kind === 'halo') col = '#FAFAF5';
-      else col = pickColor();
-      ctx.fillStyle = col;
-      ctx.fillRect(x, y, w, h);
-      cells.push({ x, y, w, h, color: col });
-    }
-  }
-
-  // Draw black grid lines
-  ctx.strokeStyle = '#0A0A0A';
-  ctx.lineWidth = LW;
-  ctx.lineCap = 'butt';
-
-  // Horizontal lines
-  hSplits.forEach((y, idx) => {
-    const isEdge = idx === 0 || idx === hSplits.length - 1;
-    let sx = vSplits[0], ex = vSplits[vSplits.length - 1];
-    if (!isEdge && Math.random() < 0.15) sx = vSplits[1] || sx;
-    if (!isEdge && Math.random() < 0.15) ex = vSplits[vSplits.length - 2] || ex;
-    ctx.beginPath();
-    ctx.moveTo(sx, y); ctx.lineTo(ex, y);
-    ctx.stroke();
-  });
-
-  // Vertical lines
-  vSplits.forEach((x, idx) => {
-    const isEdge = idx === 0 || idx === vSplits.length - 1;
-    let sy = hSplits[0], ey = hSplits[hSplits.length - 1];
-    if (!isEdge && Math.random() < 0.15) sy = hSplits[1] || sy;
-    if (!isEdge && Math.random() < 0.15) ey = hSplits[hSplits.length - 2] || ey;
-    ctx.beginPath();
-    ctx.moveTo(x, sy); ctx.lineTo(x, ey);
-    ctx.stroke();
-  });
-
-  // Record pot UV bbox for click detection.
-  if (pot) {
-    potInfo.u0 = pot.xOuterL / cw;
-    potInfo.v0 = pot.yRimTop / ch;
-    potInfo.u1 = pot.xOuterR / cw;
-    potInfo.v1 = pot.yBaseBot / ch;
-  }
-
-  return c;
-}
-
-/* ===== PLACE PAINTINGS ===== */
-/* Build a layered painting frame in `group`'s local space:
- *   - 4 main gold bars
- *   - 4 outer gold bead bars (slightly forward, perimeter beyond main)
- *   - 4 dark inner cove bars (recessed, just outside the painting edge) */
-function buildFrame(group) {
-  const fd = 0.09, fz = 0.02;
-  const mkBar = (w, h, d) => new THREE.BoxGeometry(w, h, d);
-
-  // Main gold bars
-  const mainSpecs = [
-    [PW + 0.16, 0.08, 0, PH / 2 + 0.04],
-    [PW + 0.16, 0.08, 0, -PH / 2 - 0.04],
-    [0.08, PH + 0.16, -PW / 2 - 0.04, 0],
-    [0.08, PH + 0.16, PW / 2 + 0.04, 0],
-  ];
-  for (const [w, h, x, y] of mainSpecs) {
-    const m = new THREE.Mesh(mkBar(w, h, fd), FRAME_GOLD_MAT);
-    m.position.set(x, y, fz);
-    group.add(m);
-  }
-
-  // Outer bead — thin gold profile around the very perimeter, set forward
-  const beadFront = fz + fd / 2 + 0.005;
-  const beadD = 0.02;
-  const beadSpecs = [
-    [PW + 0.20, 0.025, 0, PH / 2 + 0.0925],
-    [PW + 0.20, 0.025, 0, -PH / 2 - 0.0925],
-    [0.025, PH + 0.20, -PW / 2 - 0.0925, 0],
-    [0.025, PH + 0.20, PW / 2 + 0.0925, 0],
-  ];
-  for (const [w, h, x, y] of beadSpecs) {
-    const m = new THREE.Mesh(mkBar(w, h, beadD), FRAME_GOLD_MAT);
-    m.position.set(x, y, beadFront - beadD / 2);
-    group.add(m);
-  }
-
-  // Inner dark cove on all 4 sides — recessed, just outside the painting
-  const coveD = fd * 0.55;
-  const coveZ = fz + 0.003;
-  const coveSpecs = [
-    [PW + 0.02, 0.022, 0, PH / 2 + 0.011],
-    [PW + 0.02, 0.022, 0, -PH / 2 - 0.011],
-    [0.022, PH + 0.02, -PW / 2 - 0.011, 0],
-    [0.022, PH + 0.02, PW / 2 + 0.011, 0],
-  ];
-  for (const [w, h, x, y] of coveSpecs) {
-    const m = new THREE.Mesh(mkBar(w, h, coveD), FRAME_DARK_MAT);
-    m.position.set(x, y, coveZ);
-    group.add(m);
-  }
-}
-
-function placePaintings() {
-  // (wx, wz) = point ON the wall face; painting hangs PAINTING_WALL_GAP forward
-  // along its local +Z, which after ry rotation gives the room-side normal.
-  // ry: 0 → faces +Z (south); π → -Z (north); π/2 → +X (east); -π/2 → -X (west).
-  // Paintings removed at the owner's request — no wall art, plinths or spotlights.
-  const spots = [];
-
-  // Purely decorative abstract art — no hidden pots, no game.
-  spots.forEach((s, idx) => {
-    const potInfo = { u0: 0, v0: 0, u1: 0, v1: 0 };
-    const hasPot = false;
-    const paintCanvas = generateMondriaan(512, 400, potInfo, hasPot);
-
-    const tex = new THREE.CanvasTexture(paintCanvas);
-    tex.minFilter = THREE.LinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.colorSpace = THREE.SRGBColorSpace;
-
-    // Painting mesh
-    const pGeo = new THREE.PlaneGeometry(PW, PH);
-    const pMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.25, metalness: 0 });
-    const pMesh = new THREE.Mesh(pGeo, pMat);
-    // Position painting slightly forward so it's visible (not embedded in wall)
-    pMesh.position.z = 0.02;
-
-    // Frame group
-    const group = new THREE.Group();
-    buildFrame(group);
-    group.add(pMesh);
-
-    // Translate the wall-anchor (wx, wz) forward by PAINTING_WALL_GAP along
-    // the painting's local +Z so the back of the canvas sits just off the wall.
-    const yAxis = new THREE.Vector3(0, 1, 0);
-    const wallForward = new THREE.Vector3(0, 0, PAINTING_WALL_GAP).applyAxisAngle(yAxis, s.ry);
-    const groupX = s.wx + wallForward.x;
-    const groupZ = s.wz + wallForward.z;
-    group.position.set(groupX, PAINTING_CENTER_Y, groupZ);
-    group.rotation.y = s.ry;
-    scene.add(group);
-
-    // Stone plinth on the floor below each painting + a contrasting top cap.
-    // The plinth protrudes into the room, so register it as an obstacle so
-    // the player can't phase through it when hugging the wall.
-    const plinth = new THREE.Mesh(
-      new THREE.BoxGeometry(PLINTH_SIZE.w, PLINTH_SIZE.h, PLINTH_SIZE.d),
-      PLINTH_MAT
-    );
-    const plinthOff = new THREE.Vector3(0, 0, PLINTH_FORWARD).applyAxisAngle(yAxis, s.ry);
-    const plinthX = groupX + plinthOff.x;
-    const plinthZ = groupZ + plinthOff.z;
-    plinth.position.set(plinthX, PLINTH_SIZE.h / 2, plinthZ);
-    plinth.rotation.y = s.ry;
-    scene.add(plinth);
-    const plinthCap = new THREE.Mesh(
-      new THREE.BoxGeometry(PLINTH_CAP_SIZE.w, PLINTH_CAP_SIZE.h, PLINTH_CAP_SIZE.d),
-      TRIM_MAT
-    );
-    plinthCap.position.set(plinthX, PLINTH_SIZE.h + PLINTH_CAP_SIZE.h / 2, plinthZ);
-    plinthCap.rotation.y = s.ry;
-    scene.add(plinthCap);
-    // AABB obstacle: footprint computed from rotated local box (w × d).
-    addRotatedBoxObstacle(plinthX, plinthZ, PLINTH_SIZE.w, PLINTH_SIZE.d, s.ry);
-
-    // Spotlight on painting — tighter cone, sized for the 2.8m residential ceiling.
-    // Fixture sits at PAINTING_CENTER_Y + SPOTLIGHT_OFFSET.y; housing top is +0.05.
-    const spot = new THREE.SpotLight(0xfff5e0, 1.8, 3.0, Math.PI / 9, 0.5);
-    const off = new THREE.Vector3(0, SPOTLIGHT_OFFSET.y, SPOTLIGHT_OFFSET.z);
-    off.applyAxisAngle(yAxis, s.ry);
-    spot.position.set(groupX + off.x, PAINTING_CENTER_Y + off.y, groupZ + off.z);
-    // Create a separate target object (don't use pMesh, scene.add would reparent it!)
-    const spotTarget = new THREE.Object3D();
-    spotTarget.position.set(groupX, PAINTING_CENTER_Y, groupZ);
-    spot.target = spotTarget;
-    scene.add(spot);
-    scene.add(spotTarget);
-
-    // Visible light fixture: dark housing + glowing bulb
-    const fix = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.1), FIXTURE_MAT);
-    fix.position.copy(spot.position);
-    fix.position.y += 0.05;
-    fix.rotation.y = s.ry;
-    scene.add(fix);
-
-    // Emissive bulb peeking out the underside of the housing
-    const bulb = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.06), BULB_MAT);
-    bulb.position.copy(fix.position);
-    bulb.position.y -= 0.04;
-    bulb.rotation.y = s.ry;
-    scene.add(bulb);
-
-    paintings.push({
-      mesh: pMesh,
-      group,
-      potInfo,
-      hasPot,
-      found: false,
-      worldPos: new THREE.Vector3(groupX, PAINTING_CENTER_Y, groupZ),
-      index: idx,
-    });
-  });
 }
 
 /* ===== WALL COLLISION =====
@@ -2688,6 +2101,8 @@ function setupInput() {
 
   // Minimap toggle (mobile button; desktop uses the M key)
   document.getElementById('mapToggle').addEventListener('click', toggleMinimap);
+  // Tap/click on the open minimap = teleport to that spot
+  minimapEl.addEventListener('click', minimapTeleport);
 
   // Start button — begin the walkthrough
   document.getElementById('startBtn').addEventListener('click', () => {
@@ -2866,6 +2281,21 @@ function toggleMinimap() {
   // Build lazily on first open: the element needs layout for clientWidth, and
   // wallSegs/ROOMS are fully populated well before any toggle.
   if (minimapOn && !mapStatic) buildMapStatic();
+}
+
+/* Tap/click on the minimap teleports the player there ("spring naar"). Only
+ * points inside a room count — taps on walls or outside the plan are ignored.
+ * resolveCollision() then nudges the landing spot out of any wall band. */
+function minimapTeleport(e) {
+  if (!mapStatic) return;
+  const box = minimapEl.getBoundingClientRect();
+  const x = ENV.xMin + (e.clientX - box.left - mapPad) / mapScale;
+  const z = ENV.zMin + (e.clientY - box.top - mapPad) / mapScale;
+  if (!roomAt(x, z)) return;
+  cancelWalkTarget();
+  const spot = resolveCollision(x, z);
+  playerPos.x = spot.x;
+  playerPos.z = spot.z;
 }
 
 /* =====================================================================
@@ -3440,7 +2870,9 @@ function animate() {
   if (r !== currentRoom) {
     currentRoom = r;
     if (r) lastRoom = r;
-    const label = r ? r.name : 'Onderweg…';
+    const label = r
+      ? `${r.name} · ${r.area.toFixed(1).replace('.', ',')} m²`
+      : 'Onderweg…';
     document.getElementById('roomLabel').textContent = label;
     if (designPanelOpen()) refreshPanel();
   }
