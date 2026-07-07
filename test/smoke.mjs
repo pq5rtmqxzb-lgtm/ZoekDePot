@@ -33,7 +33,9 @@ const browser = await chromium.launch(launchOpts);
 // logs explain themselves.
 async function awaitBoot(page, errs = []) {
   try {
-    await page.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 30000 });
+    // First boot can be slow on CI runners: canvas->texture uploads stall on
+    // software GL (observed 'GPU stall due to ReadPixels'), so allow 120 s.
+    await page.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 120000 });
   } catch (e) {
     const diag = await page.evaluate(async () => {
       const res = performance.getEntriesByType('resource')
