@@ -22,10 +22,24 @@ const check = (name, ok, detail = '') => {
   results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ' — ' + detail : ''}`);
 };
 
-const launchOpts = process.env.PW_EXECUTABLE_PATH
-  ? { executablePath: process.env.PW_EXECUTABLE_PATH }
-  : {};
+// --enable-unsafe-swiftshader: allow software WebGL on runners without a GPU
+// (GitHub Actions' headless shell refuses to create a GL context otherwise).
+const launchOpts = { args: ['--enable-unsafe-swiftshader'] };
+if (process.env.PW_EXECUTABLE_PATH) launchOpts.executablePath = process.env.PW_EXECUTABLE_PATH;
 const browser = await chromium.launch(launchOpts);
+
+// Wait for the app to boot; on failure, print what the page shows (e.g. the
+// Dutch "no 3D support" fallback) so CI logs explain themselves.
+async function awaitBoot(page) {
+  try {
+    await page.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 30000 });
+  } catch (e) {
+    const body = await page.evaluate(
+      () => document.body.innerText.replace(/\s+/g, ' ').slice(0, 300)).catch(() => '(unavailable)');
+    console.error(`BOOT FAILURE — page text: "${body}"`);
+    throw e;
+  }
+}
 
 // World↔minimap mapping (mirrors mapXY in the app: ENV envelope, pad 8,
 // canvas 150x224 CSS px).
@@ -41,7 +55,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const errors = [];
 page.on('pageerror', e => errors.push(String(e)));
 await page.goto(BASE + '/index.html');
-await page.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await awaitBoot(page);
 check('app boots (window.__state present)', true);
 
 await page.click('#startBtn');
@@ -170,7 +184,7 @@ const derrors = [];
 dpage.on('pageerror', e => derrors.push(String(e)));
 // Gang corridor at (3.2, 5.9), 0.6 m from the badkamer door, facing east (+X).
 await dpage.goto(BASE + '/index.html?pos=3.2,5.9,-1.5708');
-await dpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await awaitBoot(dpage);
 await dpage.waitForFunction(() => window.__state().doorOpen >= 1, null, { timeout: 30000 });
 check('door opens on approach', true);
 
@@ -205,7 +219,7 @@ const mepage = await browser.newPage({ viewport: { width: 1280, height: 800 } })
 const meerrors = [];
 mepage.on('pageerror', e => meerrors.push(String(e)));
 await mepage.goto(BASE + '/index.html?pos=3.21,7.5,-1.5708');   // facing the berging wall
-await mepage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await awaitBoot(mepage);
 await mepage.keyboard.press('r');
 await mepage.waitForTimeout(300);
 check('measure mode arms (R key)',
@@ -249,7 +263,7 @@ const vpage = await browser.newPage();
 const verrors = [];
 vpage.on('pageerror', e => verrors.push(String(e)));
 await vpage.goto(BASE + '/index.html#scheme=' + v1enc);
-await vpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await awaitBoot(vpage);
 await vpage.waitForFunction(() => window.__state().tod === 1, null, { timeout: 15000 });
 check('v1 scheme URL maps nacht to tod 1', true);
 check('no page errors (v1 scheme)', verrors.length === 0, verrors.join(' | '));
@@ -260,7 +274,7 @@ const fpage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const ferrors = [];
 fpage.on('pageerror', e => ferrors.push(String(e)));
 await fpage.goto(BASE + '/index.html');
-await fpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await awaitBoot(fpage);
 await fpage.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
 await fpage.click('#startBtn');
 await fpage.keyboard.press('i');
@@ -305,7 +319,7 @@ check('rotate changes ry by 45°', Math.abs(furRot.ry - fur0.ry - Math.PI / 4) <
 await fpage.click('#dpShare');
 await fpage.waitForFunction(() => location.hash.includes('scheme='), null, { timeout: 15000 });
 await fpage.reload();
-await fpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await awaitBoot(fpage);
 await fpage.waitForFunction(() => window.__state().furCount === 1, null, { timeout: 15000 });
 check('furniture survives share-URL reload', true);
 
@@ -324,7 +338,7 @@ const gpage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const gerrors = [];
 gpage.on('pageerror', e => gerrors.push(String(e)));
 await gpage.goto(BASE + '/index.html');
-await gpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await awaitBoot(gpage);
 await gpage.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
 await gpage.click('#startBtn');
 await gpage.keyboard.press('i');
@@ -352,7 +366,7 @@ check('gallery: Laad restores the paint',
       await gswatch.evaluate(el => el.classList.contains('sel')));
 
 await gpage.reload();
-await gpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await awaitBoot(gpage);
 await gpage.click('#startBtn');
 await gpage.keyboard.press('i');
 await gpage.waitForTimeout(400);
@@ -371,7 +385,7 @@ const ppage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const perrors = [];
 ppage.on('pageerror', e => perrors.push(String(e)));
 await ppage.goto(BASE + '/index.html?pos=8.5,6.5,2.4');
-await ppage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await awaitBoot(ppage);
 await ppage.waitForTimeout(2000);   // let a few frames render
 await ppage.click('#photoToggle');
 await ppage.waitForTimeout(300);
@@ -403,7 +417,7 @@ const mpage = await mob.newPage();
 const merrors = [];
 mpage.on('pageerror', e => merrors.push(String(e)));
 await mpage.goto(BASE + '/index.html');
-await mpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await awaitBoot(mpage);
 await mpage.tap('#startBtn');
 await mpage.waitForTimeout(500);
 
