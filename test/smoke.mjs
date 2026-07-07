@@ -11,7 +11,7 @@
  * asserted with generous thresholds — we test "moves at all", not speed.
  */
 import { chromium } from 'playwright';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, statSync } from 'node:fs';
 
 const BASE = process.env.BASE_URL || 'http://localhost:8123';
 const ARTIFACTS = new URL('./artifacts/', import.meta.url).pathname;
@@ -340,6 +340,33 @@ check('gallery: Verwijder empties the list',
       await gpage.locator('#schemeList .furRow').count() === 0);
 check('no page errors (gallery)', gerrors.length === 0, gerrors.join(' | '));
 await gpage.close();
+
+/* ---------- Photo mode ---------- */
+const ppage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const perrors = [];
+ppage.on('pageerror', e => perrors.push(String(e)));
+await ppage.goto(BASE + '/index.html?pos=8.5,6.5,2.4');
+await ppage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await ppage.waitForTimeout(2000);   // let a few frames render
+await ppage.click('#photoToggle');
+await ppage.waitForTimeout(300);
+check('photo mode hides the HUD', await ppage.isHidden('#roomLabel'));
+
+const [download] = await Promise.all([
+  ppage.waitForEvent('download', { timeout: 30000 }),
+  ppage.click('#photoShot'),
+]);
+const dlPath = await download.path();
+const dlSize = dlPath ? statSync(dlPath).size : 0;
+check('photo downloads a real PNG',
+      /^ons-nieuwe-huis-.*\.png$/.test(download.suggestedFilename()) && dlSize > 10000,
+      `${download.suggestedFilename()} (${dlSize} bytes)`);
+
+await ppage.click('#photoExit');
+await ppage.waitForTimeout(300);
+check('exiting photo mode restores the HUD', await ppage.isVisible('#roomLabel'));
+check('no page errors (photo)', perrors.length === 0, perrors.join(' | '));
+await ppage.close();
 
 /* ---------- Mobile emulation ---------- */
 const mob = await browser.newContext({

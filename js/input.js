@@ -6,6 +6,7 @@ import { setWalkTarget } from './walk.js';
 import { toggleMinimap, minimapTeleport, minimapEl } from './minimap.js';
 import { toggleMeasure, measureTap } from './measure.js';
 import { moveCustomAt } from './customFurniture.js';
+import { enterPhotoMode, exitPhotoMode, capturePhoto, photoModeOn } from './photo.js';
 import { showToast } from './toast.js';
 
 /* Touch state */
@@ -30,6 +31,7 @@ export function setupInput() {
     if (e.code === 'Escape') {
       if (designPanelOpen()) toggleDesignPanel(false);
       else if (S.measure.armed) toggleMeasure(false);
+      else if (photoModeOn()) exitPhotoMode();
     }
   });
   addEventListener('keyup', e => { S.keys[e.code] = false; });
@@ -157,6 +159,10 @@ export function setupInput() {
   document.getElementById('mapToggle').addEventListener('click', toggleMinimap);
   // Measure toggle (HUD button; desktop also has the R key)
   document.getElementById('measureToggle').addEventListener('click', () => toggleMeasure());
+  // Photo mode
+  document.getElementById('photoToggle').addEventListener('click', enterPhotoMode);
+  document.getElementById('photoShot').addEventListener('click', capturePhoto);
+  document.getElementById('photoExit').addEventListener('click', exitPhotoMode);
   // Tap/click on the open minimap = teleport to that spot
   minimapEl.addEventListener('click', minimapTeleport);
 
