@@ -15,7 +15,9 @@ python3 -m http.server
 # → http://localhost:8000/
 ```
 
-Three.js wordt via CDN (unpkg) geladen, dus er is een internetverbinding nodig.
+Three.js (r160) staat gevendored in `vendor/three/`, dus de app werkt volledig
+offline en heeft geen CDN nodig. Netlify publiceert de repo-root zonder
+buildstap (zie `netlify.toml`).
 
 ## Besturing
 
