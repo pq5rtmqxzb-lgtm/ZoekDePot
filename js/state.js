@@ -40,4 +40,5 @@ export const S = {
   walkMarker: null,     // pulsing floor ring shown while auto-walking
   walkPrevDist: 0, walkStuckT: 0,
   minimapOn: false,
+  doors: [],            // { pivot, base, seg, angle, target } hinged leaves
 };

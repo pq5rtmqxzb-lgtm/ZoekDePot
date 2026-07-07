@@ -8,6 +8,7 @@ import {
 } from './builders.js';
 import { segOnRectEdge, segOnPolyEdge } from './rooms.js';
 import { skyTex } from './textures.js';
+import { buildDoorLeaf } from './doors.js';
 
 /* ===== APARTMENT GEOMETRY (Type R3.sp, bouwnummer 25) ===== */
 export function buildApartment() {
@@ -58,6 +59,7 @@ export function buildApartment() {
       mesh.userData.geomIndex = i;
       S.wallMeshes.push({ mesh, seg: g, index: i });
     }
+    if (g.kind === 'door') buildDoorLeaf(g);
   });
 
   // Assign each solid wall to every room whose floor-rect edge it lies on, so

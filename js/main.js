@@ -18,6 +18,7 @@ import { roomAt } from './rooms.js';
 import { resolveCollision } from './collision.js';
 import { cancelWalkTarget } from './walk.js';
 import { drawMinimap } from './minimap.js';
+import { updateDoors } from './doors.js';
 
 await loadModel();
 
@@ -78,6 +79,7 @@ function init() {
     x: S.playerPos.x, z: S.playerPos.z, camY: S.camera.position.y,
     yaw: S.yaw, pitch: S.pitch, tod: S.scheme.tod, todFading: !!S.todAnim,
     room: S.currentRoom && S.currentRoom.id,
+    doorOpen: S.doors.filter(d => Math.abs(d.angle) > 1).length,
   });
 
   // Prevent default touch behaviors on the canvas only — leave overlays
@@ -184,6 +186,8 @@ function animate() {
   S.camera.rotation.order = 'YXZ';
   S.camera.rotation.x = S.pitch;
   S.camera.rotation.y = S.yaw;
+
+  updateDoors(dt);
 
   // Track which room we're standing in for the HUD + design-panel target.
   const r = roomAt(S.playerPos.x, S.playerPos.z);

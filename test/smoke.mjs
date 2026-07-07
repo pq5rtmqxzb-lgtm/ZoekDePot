@@ -124,6 +124,42 @@ await page.screenshot({ path: ARTIFACTS + 'desktop.png' });
 check('no page errors (desktop)', errors.length === 0, errors.join(' | '));
 await page.close();
 
+/* ---------- Doors (fresh page, spawn next to the badkamer door) ---------- */
+const dpage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const derrors = [];
+dpage.on('pageerror', e => derrors.push(String(e)));
+// Gang corridor at (3.2, 5.9), 0.6 m from the badkamer door, facing east (+X).
+await dpage.goto(BASE + '/index.html?pos=3.2,5.9,-1.5708');
+await dpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await dpage.waitForFunction(() => window.__state().doorOpen >= 1, null, { timeout: 30000 });
+check('door opens on approach', true);
+
+// Walk east through the open doorway into the badkamer — the span must stay
+// walkable (door leaves have no collision).
+await dpage.keyboard.down('w');
+try {
+  await dpage.waitForFunction(() => window.__state().room === 'badkamer', null, { timeout: 30000 });
+  check('doorway stays walkable (entered badkamer)', true);
+} catch {
+  const st = await dpage.evaluate(() => window.__state());
+  check('doorway stays walkable (entered badkamer)', false, JSON.stringify(st));
+}
+await dpage.keyboard.up('w');
+
+// Teleport to the south balcony (far from every door) → all doors close.
+await dpage.keyboard.press('m');
+await dpage.waitForTimeout(300);
+const dmapBox = await dpage.evaluate(() => {
+  const b = document.getElementById('minimap').getBoundingClientRect();
+  return { x: b.left, y: b.top };
+});
+const bz = mapPoint(8.0, 16.5);
+await dpage.mouse.click(dmapBox.x + bz.x, dmapBox.y + bz.y);
+await dpage.waitForFunction(() => window.__state().doorOpen === 0, null, { timeout: 30000 });
+check('doors close when far away', true);
+check('no page errors (doors)', derrors.length === 0, derrors.join(' | '));
+await dpage.close();
+
 /* ---------- Mobile emulation ---------- */
 const mob = await browser.newContext({
   viewport: { width: 390, height: 844 },

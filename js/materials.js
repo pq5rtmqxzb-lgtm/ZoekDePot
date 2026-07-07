@@ -15,6 +15,8 @@ export const CROWN_MAT = new THREE.MeshStandardMaterial({ color: 0xe0dcd4, rough
 // Door casings: light painted wood (NL standard "blank gelakt" white-ish trim)
 export const DOORFRAME_MAT = new THREE.MeshStandardMaterial({ color: 0xefece4, roughness: 0.55, metalness: 0.02 });
 export const WINDOW_FRAME_MAT = new THREE.MeshStandardMaterial({ color: 0x4a3826, roughness: 0.7 });
+// Door leaves: NL standard "blank gelakt" white, a touch warmer than the frames
+export const DOOR_LEAF_MAT = new THREE.MeshStandardMaterial({ color: 0xf4f1ea, roughness: 0.5, metalness: 0.02 });
 
 // Residential additions
 export const TILE_MAT       = new THREE.MeshStandardMaterial({ color: 0xe8e6e0, roughness: 0.45, metalness: 0.05 });

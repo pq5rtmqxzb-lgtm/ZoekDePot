@@ -437,7 +437,8 @@
       "z2": 7.92,
       "t": 0.1,
       "note": "boiler closet door",
-      "section": "TECHNISCHE BERGING"
+      "section": "TECHNISCHE BERGING",
+      "leaf": false
     },
     {
       "kind": "door",
@@ -447,7 +448,8 @@
       "z2": 7.92,
       "t": 0.1,
       "note": "WM/CD niche doors",
-      "section": "TECHNISCHE BERGING"
+      "section": "TECHNISCHE BERGING",
+      "leaf": false
     },
     {
       "kind": "wall",
