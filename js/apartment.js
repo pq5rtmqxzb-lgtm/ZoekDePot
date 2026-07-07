@@ -7,7 +7,7 @@ import {
   addRoomFloor, addRoomFloorPoly,
 } from './builders.js';
 import { segOnRectEdge, segOnPolyEdge } from './rooms.js';
-import { skyTex } from './textures.js';
+import { skyTex, makeTexture } from './textures.js';
 import { buildDoorLeaf } from './doors.js';
 
 /* ===== APARTMENT GEOMETRY (Type R3.sp, bouwnummer 25) ===== */
@@ -110,8 +110,15 @@ export function buildApartment() {
     [8.0, -10.0, 1.50], [12.5, -11.5, 1.60],
     [-5.0, -14.5, 1.70], [0.0, -15.0, 1.70], [6.0, -15.5, 1.65],
     [-8.0, -2.0, 1.35], [-9.5, -7.0, 1.50],
+    // South rows (seen from balkon zuid + slaapkamer 2) — kept at street
+    // distance and slightly lighter scales so the southern light stays open.
+    [-2.0, 24.0, 1.05], [3.5, 25.0, 0.95], [9.0, 23.5, 1.05], [13.0, 25.0, 1.15],
+    [0.5, 29.0, 1.35],  [6.0, 30.0, 1.40], [11.5, 29.5, 1.30],
+    // West side (past the NW tip and the slaapk2 windows).
+    [-6.5, 3.0, 1.20], [-7.5, 8.5, 1.35], [-6.0, 13.0, 1.20],
   ];
   buildForest(FOREST);
+  buildNeighborhood();
 }
 
 /* One old-growth tree: tapered bark trunk from the forest floor, a few thick
@@ -151,10 +158,12 @@ function computeTreeParts(x, z, s = 1.0) {
     const matIndex = Math.floor(rnd() * LEAF_MATS.length);
     const bx = x + (rnd() - 0.5) * 2.6 * s;
     let bz = z + (rnd() - 0.5) * 2.6 * s;
-    // Foliage may overhang the north balcony, but must not poke through the
-    // facade (only relevant for the north rows; southern/western trees stand
-    // clear of the building).
+    // Foliage may overhang a balcony, but must not poke through the facades:
+    // clamp blob extents against the north face, the south face and the west
+    // side depending on which row the tree belongs to.
     if (z < 0 && bx > -2.5 && bx < 11.5 && bz + r > -1.25) bz = -1.25 - r;
+    if (z > 17 && bx > -2.5 && bx < 12.5 && bz - r < 18.0) bz = 18.0 + r;
+    if (x < -3 && bz > -2 && bz < 18 && bx + r > -2.0) bx = -2.0 - r;
     const by = canopyY + (rnd() - 0.35) * 2.6 * s;
     const sy = 0.75 + rnd() * 0.25;
     parts.blobs.push({
@@ -165,6 +174,52 @@ function computeTreeParts(x, z, s = 1.0) {
     });
   }
   return parts;
+}
+
+/* Simple massing of the neighbouring blocks: dark volumes across the street
+ * to the south, east and west, with a window grid that glows warmly as the
+ * time-of-day multiplier rises (updatePointLights drives the emissive).
+ * They sit inside the fog range so they fade naturally at night. */
+function buildNeighborhood() {
+  // [cx, cz, w(x), d(z), h]
+  const BLOCKS = [
+    [1.0, 38.0, 15, 9, 12], [17.0, 36.0, 11, 9, 10],   // south, across the street
+    [26.0, 6.0, 11, 13, 14], [24.5, 16.5, 9, 8, 10],   // east
+    [-18.5, 2.0, 9, 11, 12], [-17.5, 12.5, 8, 8, 10],  // west
+  ];
+  for (const [cx, cz, w, d, h] of BLOCKS) {
+    // One shared window layout, drawn twice: the facade map (concrete + dark
+    // glass + warm panes) and an emissive map that carries ONLY the lit panes
+    // so the facade itself never glows at night.
+    const cols = 6, rows = 10;
+    const lit = Array.from({ length: rows * cols },
+      () => (Math.random() < 0.4 ? 200 + Math.random() * 40 | 0 : 0));
+    const drawWindows = emissiveOnly => (ctx, tw, th) => {
+      ctx.fillStyle = emissiveOnly ? '#000000' : '#a8a49c';
+      ctx.fillRect(0, 0, tw, th);
+      const ww = tw / cols, wh = th / rows;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const g = lit[r * cols + c];
+          if (emissiveOnly && !g) continue;
+          ctx.fillStyle = g ? `rgb(255, ${g}, 150)` : '#4a5058';
+          ctx.fillRect(c * ww + ww * 0.22, r * wh + wh * 0.25, ww * 0.56, wh * 0.5);
+        }
+      }
+    };
+    const repU = Math.max(1, Math.round(w / 6)), repV = Math.max(1, Math.round(h / 7));
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xd8dade, roughness: 0.9,
+      map: makeTexture(drawWindows(false), 128, 256, repU, repV),
+      emissiveMap: makeTexture(drawWindows(true), 128, 256, repU, repV),
+      emissive: 0xffcf9a, emissiveIntensity: 0,   // driven by updatePointLights
+    });
+    const block = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    block.position.set(cx, GROUND_Y + h / 2, cz);
+    block.userData.noMeasure = true;
+    S.scene.add(block);
+    S.neighborMats.push(mat);
+  }
 }
 
 export function buildForest(spots) {

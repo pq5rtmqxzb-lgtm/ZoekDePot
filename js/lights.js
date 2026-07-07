@@ -75,6 +75,9 @@ export function updatePointLights() {
     p.light.intensity = p.baseI * S.curPointMul * (p.cull ?? 1);
     p.light.visible = p.light.intensity > 0.005;
   }
+  // Neighbour windows: dark by day (mul 1.0), glowing by night (mul 1.8).
+  const glow = Math.max(0, Math.min(1, (S.curPointMul - 1.0) / 0.8));
+  for (const m of S.neighborMats) m.emissiveIntensity = glow * 0.9;
 }
 
 const CULL_INTERVAL = 0.15;   // s between visibility passes

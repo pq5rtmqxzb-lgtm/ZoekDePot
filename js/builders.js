@@ -242,6 +242,17 @@ export function addRailing(x1, z1, x2, z2) {
   top.rotation.y = angle;
   S.scene.add(top);
 
+  // Rounded stainless handrail cap on top of the flat rail
+  const cap = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.032, 0.032, len, 10),
+    METAL_MAT
+  );
+  cap.rotation.z = Math.PI / 2;          // lie along local X…
+  cap.position.set(cx, RAIL_H + 0.045, cz);
+  cap.rotation.y = angle + Math.PI / 2;  // …then align with the segment
+  cap.rotation.order = 'YZX';
+  S.scene.add(cap);
+
   // Bottom rail
   const bot = new THREE.Mesh(
     new THREE.BoxGeometry(0.05, 0.04, len),

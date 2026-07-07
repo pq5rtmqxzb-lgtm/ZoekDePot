@@ -44,4 +44,5 @@ export const S = {
   measure: { armed: false, points: [], dist: 0 },
   customFurn: [],       // { mesh, obstacle, data } placed own furniture
   moveArm: null,        // item awaiting a floor tap in move mode
+  neighborMats: [],     // neighbour-block materials (windows glow at night)
 };
