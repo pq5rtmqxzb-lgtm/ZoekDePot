@@ -36,7 +36,11 @@ zet de keuzes in de URL zodat je ze kunt delen.
 
 | Pad | Inhoud |
 |---|---|
-| `index.html` | De volledige app: HTML, CSS en de Three.js-module, inclusief alle geometrie- en kamerdata. |
+| `index.html` | De HTML-schil: CSS, DOM en de import map. |
+| `js/` | De app als native ES-modules (`main.js` is het startpunt; gedeelde staat leeft in `state.js`). |
+| `data/model.json` | Muur-hartlijnen + kamerdefinities — gedeelde bron voor app én tools. |
+| `vendor/three/` | Gevendorde Three.js r160. |
+| `test/` | Playwright-rooktest (`npm test`, zie ook `.github/workflows/smoke.yml`). |
 | `compare.html` | Dev-viewer: PDF, gegenereerde SVG en model-overlay naast elkaar. |
 | `plans/` | Bronbestanden: de verkooptekening (`YP_bouwnummer_25.pdf`) en de technische omschrijving. |
 | `floorplan/` | `apartment.json` (maatvoering als data) + gegenereerde SVG/PNG-overlays. |
