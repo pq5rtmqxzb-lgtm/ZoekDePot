@@ -3,7 +3,10 @@ import { PAINT_PALETTE } from './constants.js';
 import { editTarget } from './rooms.js';
 import { paintRoomWalls, reapplyAccents, setRoomFloor } from './paint.js';
 import { setTimeOfDayT, TOD_PRESETS } from './tod.js';
-import { resetSchemeToDefaults, applyScheme, saveAndShare } from './scheme.js';
+import {
+  resetSchemeToDefaults, applyScheme, saveAndShare,
+  listSavedSchemes, saveSchemeAs, loadSchemeByName, deleteSchemeByName,
+} from './scheme.js';
 import { toggleMeasure } from './measure.js';
 import { spawnCustom, armMove, rotateCustom, deleteCustom } from './customFurniture.js';
 import { showToast } from './toast.js';
@@ -119,6 +122,14 @@ export function buildDesignPanel() {
   document.getElementById('dpReset').addEventListener('click', () => {
     resetSchemeToDefaults(); applyScheme(); refreshPanel(); showToast('Teruggezet naar standaard');
   });
+
+  // Scheme gallery — named saves in this browser.
+  document.getElementById('schemeSaveAs').addEventListener('click', () => {
+    if (saveSchemeAs(document.getElementById('schemeName').value)) {
+      document.getElementById('schemeName').value = '';
+      refreshPanel();
+    }
+  });
   document.getElementById('dpClose').addEventListener('click', () => toggleDesignPanel(false));
   document.getElementById('designToggle').addEventListener('click', () => toggleDesignPanel());
 }
@@ -138,6 +149,32 @@ export function refreshPanel() {
   const slider = document.getElementById('dpTodSlider');
   if (slider) slider.value = S.scheme.tod;
   refreshFurnList();
+  refreshSchemeList();
+}
+
+// Saved-schemes rows (Laad / Verwijder per entry).
+function refreshSchemeList() {
+  const list = document.getElementById('schemeList');
+  if (!list) return;
+  list.innerHTML = '';
+  for (const entry of listSavedSchemes()) {
+    const row = document.createElement('div');
+    row.className = 'furRow';
+    const name = document.createElement('span');
+    name.className = 'furRowName';
+    name.textContent = entry.name;
+    row.appendChild(name);
+    const mk = (label, fn, aria) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.setAttribute('aria-label', `${aria} schema ${entry.name}`);
+      b.addEventListener('click', fn);
+      row.appendChild(b);
+    };
+    mk('Laad', () => { loadSchemeByName(entry.name); refreshPanel(); }, 'Laad');
+    mk('Verwijder', () => { deleteSchemeByName(entry.name); refreshSchemeList(); }, 'Verwijder');
+    list.appendChild(row);
+  }
 }
 
 // Rebuild the placed-furniture rows (Verplaats / Draai / Verwijder per item).

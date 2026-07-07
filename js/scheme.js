@@ -61,6 +61,71 @@ export function loadScheme() {
   else { try { enc = localStorage.getItem('huisScheme'); } catch (e) {} }
   if (enc) decodeAndMergeScheme(enc);
 }
+/* --- scheme gallery ---------------------------------------------------
+ * Named saves in localStorage['huisSchemes'] = [{ name, savedAt, enc }].
+ * enc reuses encodeScheme()'s format, so gallery entries and share URLs are
+ * interchangeable. Capped at 20 entries (oldest evicted). The legacy
+ * single-slot 'huisScheme' save is migrated into the gallery on first read. */
+const GALLERY_KEY = 'huisSchemes';
+const GALLERY_MAX = 20;
+
+export function listSavedSchemes() {
+  try {
+    const raw = localStorage.getItem(GALLERY_KEY);
+    if (raw) {
+      const list = JSON.parse(raw);
+      return Array.isArray(list) ? list.filter(e => e && e.name && e.enc) : [];
+    }
+    const legacy = localStorage.getItem('huisScheme');
+    if (legacy) {
+      const seeded = [{ name: 'Mijn schema', savedAt: Date.now(), enc: legacy }];
+      localStorage.setItem(GALLERY_KEY, JSON.stringify(seeded));
+      return seeded;
+    }
+  } catch (e) { /* private mode / corrupt store */ }
+  return [];
+}
+
+function writeGallery(list) {
+  try { localStorage.setItem(GALLERY_KEY, JSON.stringify(list)); return true; }
+  catch (e) { return false; }
+}
+
+export function saveSchemeAs(name) {
+  name = (name || '').trim().slice(0, 30);
+  if (!name) { showToast('Geef het schema eerst een naam'); return false; }
+  const list = listSavedSchemes();
+  const entry = { name, savedAt: Date.now(), enc: encodeScheme() };
+  const i = list.findIndex(e => e.name === name);
+  let msg = `Schema "${name}" bewaard`;
+  if (i >= 0) { list[i] = entry; msg = `Schema "${name}" bijgewerkt`; }
+  else {
+    list.push(entry);
+    if (list.length > GALLERY_MAX) {
+      const evicted = list.shift();
+      msg = `"${name}" bewaard — oudste ("${evicted.name}") is verwijderd (max ${GALLERY_MAX})`;
+    }
+  }
+  if (!writeGallery(list)) { showToast('Opslaan mislukt (privémodus?)'); return false; }
+  showToast(msg);
+  return true;
+}
+
+export function loadSchemeByName(name) {
+  const entry = listSavedSchemes().find(e => e.name === name);
+  if (!entry) { showToast('Schema niet gevonden'); return false; }
+  resetSchemeToDefaults();
+  if (!decodeAndMergeScheme(entry.enc)) { showToast('Schema is beschadigd'); return false; }
+  applyScheme();
+  showToast(`Schema "${name}" geladen`);
+  return true;
+}
+
+export function deleteSchemeByName(name) {
+  writeGallery(listSavedSchemes().filter(e => e.name !== name));
+  showToast(`Schema "${name}" verwijderd`);
+}
+
 export function saveAndShare() {
   const enc = encodeScheme();
   try { localStorage.setItem('huisScheme', enc); } catch (e) {}

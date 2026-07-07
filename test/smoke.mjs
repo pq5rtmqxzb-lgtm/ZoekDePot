@@ -294,6 +294,53 @@ check('delete removes the item', true);
 check('no page errors (furniture)', ferrors.length === 0, ferrors.join(' | '));
 await fpage.close();
 
+/* ---------- Scheme gallery ---------- */
+const gpage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const gerrors = [];
+gpage.on('pageerror', e => gerrors.push(String(e)));
+await gpage.goto(BASE + '/index.html');
+await gpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await gpage.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
+await gpage.click('#startBtn');
+await gpage.keyboard.press('i');
+await gpage.waitForTimeout(400);
+
+const gswatch = gpage.locator('#dpWallSwatches .swatch').nth(4);
+await gswatch.click();
+await gpage.waitForTimeout(200);
+check('gallery: paint applied', await gswatch.evaluate(el => el.classList.contains('sel')));
+
+await gpage.fill('#schemeName', 'Test');
+await gpage.click('#schemeSaveAs');
+await gpage.waitForTimeout(200);
+check('gallery: Bewaar als adds an entry',
+      await gpage.locator('#schemeList .furRow').count() === 1);
+
+await gpage.click('#dpReset');
+await gpage.waitForTimeout(300);
+check('gallery: reset clears the paint',
+      !(await gswatch.evaluate(el => el.classList.contains('sel'))));
+
+await gpage.click('#schemeList .furRow button:nth-of-type(1)');   // Laad
+await gpage.waitForTimeout(300);
+check('gallery: Laad restores the paint',
+      await gswatch.evaluate(el => el.classList.contains('sel')));
+
+await gpage.reload();
+await gpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await gpage.click('#startBtn');
+await gpage.keyboard.press('i');
+await gpage.waitForTimeout(400);
+check('gallery: entry survives reload',
+      await gpage.locator('#schemeList .furRow').count() === 1);
+
+await gpage.click('#schemeList .furRow button:nth-of-type(2)');   // Verwijder
+await gpage.waitForTimeout(200);
+check('gallery: Verwijder empties the list',
+      await gpage.locator('#schemeList .furRow').count() === 0);
+check('no page errors (gallery)', gerrors.length === 0, gerrors.join(' | '));
+await gpage.close();
+
 /* ---------- Mobile emulation ---------- */
 const mob = await browser.newContext({
   viewport: { width: 390, height: 844 },
