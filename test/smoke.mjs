@@ -28,15 +28,22 @@ const launchOpts = { args: ['--enable-unsafe-swiftshader'] };
 if (process.env.PW_EXECUTABLE_PATH) launchOpts.executablePath = process.env.PW_EXECUTABLE_PATH;
 const browser = await chromium.launch(launchOpts);
 
-// Wait for the app to boot; on failure, print what the page shows (e.g. the
-// Dutch "no 3D support" fallback) so CI logs explain themselves.
-async function awaitBoot(page) {
+// Wait for the app to boot; on failure, dump everything we can see (page
+// errors, console errors, per-resource HTTP statuses, visible text) so CI
+// logs explain themselves.
+async function awaitBoot(page, errs = []) {
   try {
     await page.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 30000 });
   } catch (e) {
-    const body = await page.evaluate(
-      () => document.body.innerText.replace(/\s+/g, ' ').slice(0, 300)).catch(() => '(unavailable)');
-    console.error(`BOOT FAILURE — page text: "${body}"`);
+    const diag = await page.evaluate(async () => {
+      const res = performance.getEntriesByType('resource')
+        .map(r => `${r.name.split('/').slice(-2).join('/')}:${r.responseStatus ?? '?'}`);
+      let model;
+      try { model = 'fetch=' + (await fetch('./data/model.json')).status; }
+      catch (err) { model = 'fetch threw: ' + err; }
+      return { res, model, body: document.body.innerText.replace(/\s+/g, ' ').slice(0, 200) };
+    }).catch(err => ({ evalFailed: String(err) }));
+    console.error('BOOT FAILURE', JSON.stringify({ pageErrors: errs, ...diag }, null, 1));
     throw e;
   }
 }
@@ -54,8 +61,11 @@ const mapPoint = (wx, wz) => ({
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const errors = [];
 page.on('pageerror', e => errors.push(String(e)));
+page.on('console', m => {
+  if (m.type() === 'error' || m.type() === 'warning') errors.push('console: ' + m.text());
+});
 await page.goto(BASE + '/index.html');
-await awaitBoot(page);
+await awaitBoot(page, errors);
 check('app boots (window.__state present)', true);
 
 await page.click('#startBtn');
