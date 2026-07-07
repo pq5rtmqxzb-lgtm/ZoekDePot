@@ -2,9 +2,12 @@ import { S } from './state.js';
 import { WALL_THICK, PLAYER_R, ENV } from './constants.js';
 
 /* Axis-aligned obstacle that blocks the player. Reuses resolveCollision() via
- * the shared `obstacles` list. */
+ * the shared `obstacles` list. Returns the obstacle so movable furniture can
+ * remove it again (removeObstacle). */
 export function addBoxObstacle(cx, cz, w, d) {
-  S.obstacles.push({ cx, cz, hw: w / 2, hd: d / 2 });
+  const o = { cx, cz, hw: w / 2, hd: d / 2 };
+  S.obstacles.push(o);
+  return o;
 }
 
 /* Same as addBoxObstacle but takes a local-frame footprint (w in local x,
@@ -16,7 +19,12 @@ export function addRotatedBoxObstacle(cx, cz, w, d, ry) {
   const s = Math.abs(Math.sin(ry));
   const aabbW = w * c + d * s;
   const aabbD = w * s + d * c;
-  S.obstacles.push({ cx, cz, hw: aabbW / 2, hd: aabbD / 2 });
+  return addBoxObstacle(cx, cz, aabbW, aabbD);
+}
+
+export function removeObstacle(o) {
+  const i = S.obstacles.indexOf(o);
+  if (i >= 0) S.obstacles.splice(i, 1);
 }
 
 /* ===== WALL COLLISION =====

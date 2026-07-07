@@ -2,6 +2,7 @@ import { S } from './state.js';
 import { DEFAULT_WALL_HEX, KIND_DEFAULT_FINISH } from './constants.js';
 import { paintRoomWalls, setRoomFloor, reapplyAccents } from './paint.js';
 import { setTimeOfDayT } from './tod.js';
+import { rebuildCustomFromScheme } from './customFurniture.js';
 import { showToast } from './toast.js';
 
 /* --- scheme save / load ---------------------------------------------
@@ -24,6 +25,7 @@ export function applyScheme() {
     setRoomFloor(room, rs.f);
   }
   reapplyAccents();
+  rebuildCustomFromScheme();
   setTimeOfDayT(S.scheme.tod, true);  // page load / reset: show the mood at once
 }
 export function encodeScheme() {

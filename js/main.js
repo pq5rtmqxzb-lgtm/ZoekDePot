@@ -84,6 +84,8 @@ function init() {
     exposure: S.renderer.toneMappingExposure,
     measureDist: S.measure.points.length === 2 ? S.measure.dist : null,
     measurePts: S.measure.points.map(p => [p.x, p.y, p.z]),
+    furCount: S.customFurn.length,
+    fur: S.customFurn.map(i => i.data),
   });
 
   // Prevent default touch behaviors on the canvas only — leave overlays

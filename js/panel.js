@@ -5,6 +5,7 @@ import { paintRoomWalls, reapplyAccents, setRoomFloor } from './paint.js';
 import { setTimeOfDayT, TOD_PRESETS } from './tod.js';
 import { resetSchemeToDefaults, applyScheme, saveAndShare } from './scheme.js';
 import { toggleMeasure } from './measure.js';
+import { spawnCustom, armMove, rotateCustom, deleteCustom } from './customFurniture.js';
 import { showToast } from './toast.js';
 
 const hex2css = h => '#' + h.toString(16).padStart(6, '0');
@@ -102,6 +103,18 @@ export function buildDesignPanel() {
     refreshPanel();
   });
 
+  // Eigen meubel — spawn a block with your own dimensions in front of you.
+  document.getElementById('furPlace').addEventListener('click', () => {
+    const item = spawnCustom({
+      name: document.getElementById('furName').value,
+      w: document.getElementById('furW').value,
+      d: document.getElementById('furD').value,
+      h: document.getElementById('furH').value,
+    });
+    showToast(`"${item.data.name}" geplaatst — loop eromheen of verplaats hem`);
+    refreshPanel();
+  });
+
   document.getElementById('dpShare').addEventListener('click', saveAndShare);
   document.getElementById('dpReset').addEventListener('click', () => {
     resetSchemeToDefaults(); applyScheme(); refreshPanel(); showToast('Teruggezet naar standaard');
@@ -124,4 +137,31 @@ export function refreshPanel() {
     el.classList.toggle('sel', Math.abs(+el.dataset.t - S.scheme.tod) < 0.03));
   const slider = document.getElementById('dpTodSlider');
   if (slider) slider.value = S.scheme.tod;
+  refreshFurnList();
+}
+
+// Rebuild the placed-furniture rows (Verplaats / Draai / Verwijder per item).
+function refreshFurnList() {
+  const list = document.getElementById('furList');
+  if (!list) return;
+  list.innerHTML = '';
+  for (const item of S.customFurn) {
+    const row = document.createElement('div');
+    row.className = 'furRow';
+    const name = document.createElement('span');
+    name.className = 'furRowName';
+    name.textContent = `${item.data.name} (${item.data.w}×${item.data.d}×${item.data.h})`;
+    row.appendChild(name);
+    const mk = (label, fn, aria) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.setAttribute('aria-label', `${aria} ${item.data.name}`);
+      b.addEventListener('click', fn);
+      row.appendChild(b);
+    };
+    mk('Verplaats', () => { armMove(item); toggleDesignPanel(false); }, 'Verplaats');
+    mk('Draai', () => { rotateCustom(item); showToast(`"${item.data.name}" gedraaid`); }, 'Draai');
+    mk('Verwijder', () => { deleteCustom(item); refreshFurnList(); showToast(`"${item.data.name}" verwijderd`); }, 'Verwijder');
+    list.appendChild(row);
+  }
 }

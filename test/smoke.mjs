@@ -230,6 +230,70 @@ check('v1 scheme URL maps nacht to tod 1', true);
 check('no page errors (v1 scheme)', verrors.length === 0, verrors.join(' | '));
 await vpage.close();
 
+/* ---------- Custom furniture placer ---------- */
+const fpage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const ferrors = [];
+fpage.on('pageerror', e => ferrors.push(String(e)));
+await fpage.goto(BASE + '/index.html');
+await fpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await fpage.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
+await fpage.click('#startBtn');
+await fpage.keyboard.press('i');
+await fpage.waitForTimeout(400);
+await fpage.fill('#furName', 'Testkast');
+await fpage.fill('#furW', '120');
+await fpage.fill('#furD', '60');
+await fpage.fill('#furH', '180');
+await fpage.click('#furPlace');
+await fpage.waitForFunction(() => window.__state().furCount === 1, null, { timeout: 15000 });
+const fur0 = (await fpage.evaluate(() => window.__state())).fur[0];
+check('furniture spawns with entered dimensions',
+      fur0.name === 'Testkast' && fur0.w === 120 && fur0.d === 60 && fur0.h === 180,
+      JSON.stringify(fur0));
+
+// Teleport onto the item via the minimap: resolveCollision must push the
+// player back out of its footprint (it collides like real furniture).
+await fpage.keyboard.press('Escape');   // close panel
+await fpage.keyboard.press('m');
+await fpage.waitForTimeout(300);
+const fmapBox = await fpage.evaluate(() => {
+  const b = document.getElementById('minimap').getBoundingClientRect();
+  return { x: b.left, y: b.top };
+});
+const onFur = mapPoint(fur0.x, fur0.z);
+await fpage.mouse.click(fmapBox.x + onFur.x, fmapBox.y + onFur.y);
+await fpage.waitForTimeout(400);
+const fs = await fpage.evaluate(() => window.__state());
+const clearX = Math.abs(fs.x - fur0.x) - (0.60 + 0.26);   // aabb half-w + player r
+const clearZ = Math.abs(fs.z - fur0.z) - (0.30 + 0.26);
+check('furniture blocks the player (teleport pushed out)',
+      clearX > -0.02 || clearZ > -0.02,
+      `player=(${fs.x.toFixed(2)}, ${fs.z.toFixed(2)}) fur=(${fur0.x}, ${fur0.z})`);
+
+// Rotate 45°, then share + reload: the item must survive the round-trip.
+await fpage.keyboard.press('i');
+await fpage.waitForTimeout(400);
+await fpage.click('#furList .furRow button:nth-of-type(2)');   // Draai
+const furRot = (await fpage.evaluate(() => window.__state())).fur[0];
+check('rotate changes ry by 45°', Math.abs(furRot.ry - fur0.ry - Math.PI / 4) < 0.01,
+      `ry ${fur0.ry} -> ${furRot.ry}`);
+await fpage.click('#dpShare');
+await fpage.waitForFunction(() => location.hash.includes('scheme='), null, { timeout: 15000 });
+await fpage.reload();
+await fpage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await fpage.waitForFunction(() => window.__state().furCount === 1, null, { timeout: 15000 });
+check('furniture survives share-URL reload', true);
+
+// Delete removes mesh + obstacle.
+await fpage.click('#startBtn');
+await fpage.keyboard.press('i');
+await fpage.waitForTimeout(400);
+await fpage.click('#furList .furRow button:nth-of-type(3)');   // Verwijder
+await fpage.waitForFunction(() => window.__state().furCount === 0, null, { timeout: 15000 });
+check('delete removes the item', true);
+check('no page errors (furniture)', ferrors.length === 0, ferrors.join(' | '));
+await fpage.close();
+
 /* ---------- Mobile emulation ---------- */
 const mob = await browser.newContext({
   viewport: { width: 390, height: 844 },

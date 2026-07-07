@@ -5,6 +5,7 @@ import { pickAccentWall } from './paint.js';
 import { setWalkTarget } from './walk.js';
 import { toggleMinimap, minimapTeleport, minimapEl } from './minimap.js';
 import { toggleMeasure, measureTap } from './measure.js';
+import { moveCustomAt } from './customFurniture.js';
 import { showToast } from './toast.js';
 
 /* Touch state */
@@ -39,12 +40,14 @@ export function setupInput() {
   S.renderer.domElement.addEventListener('click', e => {
     if (!S.gameStarted || designPanelOpen()) return;
     if (!S.isMobile && !isLocked) {
-      // Measuring works without pointer lock: measure at the clicked spot.
+      // Measuring/moving works without pointer lock, at the clicked spot.
       if (S.measure.armed) { measureTap(e.clientX, e.clientY); return; }
+      if (S.moveArm && moveCustomAt(e.clientX, e.clientY)) return;
       S.renderer.domElement.requestPointerLock();
       return;
     }
     if (isLocked && S.measure.armed) { measureTap(innerWidth / 2, innerHeight / 2); return; }
+    if (isLocked && S.moveArm && moveCustomAt(innerWidth / 2, innerHeight / 2)) return;
     if (isLocked && S.accentArm) pickAccentWall(innerWidth / 2, innerHeight / 2);
   });
   document.addEventListener('pointerlockchange', () => {
@@ -101,6 +104,7 @@ export function setupInput() {
       // for people who find the joystick fiddly).
       if (s && Date.now() - s.t < 300 && s.dist < 15) {
         if (S.measure.armed) measureTap(t.clientX, t.clientY);
+        else if (S.moveArm && moveCustomAt(t.clientX, t.clientY)) { /* placed */ }
         else if (S.accentArm) pickAccentWall(t.clientX, t.clientY);
         else setWalkTarget(t.clientX, t.clientY);
       }

@@ -137,6 +137,23 @@ canvas { display: block; width: 100%; height: 100%; }
 .modeRow { display: flex; gap: 8px; }
 .modeRow .modeBtn { flex: 1; text-align: center; }
 #dpTodSlider { width: 100%; margin-top: 10px; accent-color: #ffd24a; cursor: pointer; }
+#designPanel input[type="text"], #designPanel input[type="number"] {
+  background: rgba(255,255,255,0.08); color: #fff;
+  border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;
+  padding: 6px 8px; font: 13px 'Georgia', serif;
+}
+#furName { width: 100%; margin-bottom: 8px; }
+.furDims { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; color: #cfcfcf; font-size: 13px; }
+.furDims input { width: 58px; }
+#furList { margin-top: 10px; }
+.furRow { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 13px; }
+.furRow .furRowName { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.furRow button {
+  pointer-events: auto; cursor: pointer;
+  background: rgba(255,255,255,0.1); color: #fff;
+  border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;
+  padding: 4px 8px; font-size: 12px;
+}
 #accentBtn.armed { background: rgba(210,140,60,0.4); border-color: #e2a05a; }
 .actionRow { display: flex; gap: 8px; }
 .actionRow .actionBtn { flex: 1; text-align: center; }
@@ -228,6 +245,18 @@ canvas { display: block; width: 100%; height: 100%; }
     <div class="modeRow" id="dpTod"></div>
     <input type="range" id="dpTodSlider" min="0" max="1" step="0.01" value="0"
            aria-label="Tijdstip (dag tot nacht)">
+  </section>
+  <section>
+    <h3>Eigen meubel</h3>
+    <input id="furName" type="text" placeholder="Naam (bijv. onze kast)" maxlength="24"
+           aria-label="Naam van het meubel">
+    <div class="furDims">
+      <input id="furW" type="number" min="10" max="400" value="100" aria-label="Breedte in cm"> ×
+      <input id="furD" type="number" min="10" max="400" value="50" aria-label="Diepte in cm"> ×
+      <input id="furH" type="number" min="10" max="400" value="90" aria-label="Hoogte in cm"> cm
+    </div>
+    <button class="actionBtn" id="furPlace">Plaats voor je neus</button>
+    <div id="furList"></div>
   </section>
   <section>
     <h3>Schema</h3>
