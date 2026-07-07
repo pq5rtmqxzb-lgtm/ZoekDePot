@@ -24,13 +24,18 @@ buildstap (zie `netlify.toml`).
 | | Desktop | Mobiel |
 |---|---|---|
 | Lopen | WASD / pijltjes | joystick (linksonder) of **tik waar je heen wilt** |
-| Rondkijken | muis (klik voor pointer lock) | vegen op de rechterhelft |
+| Rondkijken | muis (klik voor pointer lock) of **Q/E** | vegen op de rechterhelft |
 | Plattegrond | **M** | knop "Kaart" — **tik op de kaart om ernaartoe te springen** |
-| Ontwerp-paneel | **I** | knop "Ontwerp" |
+| Meten | **R** of knop "Meet" — twee klikken/tikken | idem |
+| Foto | knop "Foto" → "Bewaar foto" (PNG) | idem |
+| Inricht-paneel | **I** | knop "Inrichten" |
 
-Het ontwerp-paneel kiest per kamer muurverf, accentmuur (tik een muur aan),
-vloerafwerking en de lichtsfeer (ochtend/dag/avond/nacht). "Bewaar & deel"
-zet de keuzes in de URL zodat je ze kunt delen.
+Deuren zwaaien vanzelf open als je dichterbij komt. Het inricht-paneel kiest
+per kamer muurverf, accentmuur (tik een muur aan), vloerafwerking en de
+lichtsfeer (dag→avond→nacht, met schuifje voor elk moment ertussen). Onder
+"Eigen meubel" zet je een blok met je eigen maten neer (verplaats/draai/
+verwijder) om te zien of je spullen passen. "Bewaar & deel" zet alles in de
+URL; "Bewaar als" bewaart genoemde schema's in je browser.
 
 ## Mappen
 

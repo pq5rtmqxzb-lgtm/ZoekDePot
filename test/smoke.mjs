@@ -62,6 +62,14 @@ check('WASD walking works',
       Math.hypot(sWalk.x - s0.x, sWalk.z - s0.z) > 0.05,
       `moved ${Math.hypot(sWalk.x - s0.x, sWalk.z - s0.z).toFixed(2)} m`);
 
+// Q/E keyboard look
+await page.keyboard.down('q');
+await page.waitForTimeout(800);
+await page.keyboard.up('q');
+const sTurn = await page.evaluate(() => window.__state());
+check('Q turns the camera', sTurn.yaw > sWalk.yaw + 0.02,
+      `yaw ${sWalk.yaw.toFixed(2)} -> ${sTurn.yaw.toFixed(2)}`);
+
 // Minimap: open with M, click woonkamer centre (world 8.5, 6.5) → teleport
 await page.keyboard.press('m');
 await page.waitForTimeout(300);
@@ -115,6 +123,14 @@ check('wall swatch paints (selected + toast)',
       await swatch.evaluate(el => el.classList.contains('sel')) &&
       await page.evaluate(() =>
         document.getElementById('dpToast').textContent.length > 0));
+
+// Keyboard operability: focus another swatch and activate it with Enter.
+const kbSwatch = page.locator('#dpWallSwatches .swatch').nth(5);
+await kbSwatch.evaluate(el => el.focus());
+await page.keyboard.press('Enter');
+await page.waitForTimeout(300);
+check('swatch activates via keyboard (Enter)',
+      await kbSwatch.evaluate(el => el.classList.contains('sel')));
 
 // The 1 s mood fade advances at most 0.05 s of animation per frame (dt
 // clamp), so at headless ~2 fps it needs ~10 s wall time — hence 30 s.

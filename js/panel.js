@@ -13,6 +13,17 @@ import { showToast } from './toast.js';
 
 const hex2css = h => '#' + h.toString(16).padStart(6, '0');
 
+// Swatches are divs; give them button semantics + Enter/Space activation so
+// the panel is fully keyboard-operable.
+function swatchA11y(el, label) {
+  el.setAttribute('role', 'button');
+  el.setAttribute('tabindex', '0');
+  el.setAttribute('aria-label', label);
+  el.addEventListener('keydown', e => {
+    if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); el.click(); }
+  });
+}
+
 /* --- panel UI -------------------------------------------------------- */
 export function designPanelOpen() {
   const p = document.getElementById('designPanel');
@@ -40,6 +51,7 @@ export function buildDesignPanel() {
     const s = document.createElement('div');
     s.className = 'swatch'; s.dataset.hex = p.hex;
     s.style.background = hex2css(p.hex); s.title = p.name;
+    swatchA11y(s, `Muurverf ${p.name}`);
     s.addEventListener('click', () => {
       const room = editTarget();
       S.scheme.rooms[room.id].w = p.hex;
@@ -57,6 +69,7 @@ export function buildDesignPanel() {
     const s = document.createElement('div');
     s.className = 'swatch'; s.dataset.hex = p.hex;
     s.style.background = hex2css(p.hex); s.title = p.name;
+    swatchA11y(s, `Accentkleur ${p.name}`);
     if (p.hex === S.accentHex) s.classList.add('sel');
     s.addEventListener('click', () => {
       S.accentHex = p.hex;

@@ -121,6 +121,10 @@ function animate() {
   if (S.keys['KeyA'] || S.keys['ArrowLeft']) kr -= 1;
   if (S.keys['KeyD'] || S.keys['ArrowRight']) kr += 1;
 
+  // Keyboard look (Q/E) — a mouse-free way to turn.
+  if (S.keys['KeyQ']) S.yaw += 1.8 * dt;
+  if (S.keys['KeyE']) S.yaw -= 1.8 * dt;
+
   let fwd = joystickActive ? S.moveF : kf;
   let rgt = joystickActive ? S.moveR : kr;
 

@@ -137,6 +137,7 @@ canvas { display: block; width: 100%; height: 100%; }
 .modeRow { display: flex; gap: 8px; }
 .modeRow .modeBtn { flex: 1; text-align: center; }
 #dpTodSlider { width: 100%; margin-top: 10px; accent-color: #ffd24a; cursor: pointer; }
+:focus-visible { outline: 2px solid #ffd24a; outline-offset: 2px; }
 #designPanel input[type="text"], #designPanel input[type="number"] {
   background: rgba(255,255,255,0.08); color: #fff;
   border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;
@@ -229,18 +230,18 @@ body.photo #ui { display: none; }
   <p>Wandel alvast door het appartement (Type R3.sp, Ypsilon Park) en krijg een gevoel voor het huis dat nog gebouwd moet worden.</p>
   <p>Probeer verschillende muurkleuren, vloeren en sferen via de knop <b>Inrichten</b> rechtsboven.</p>
   <p style="font-size:14px; opacity:0.7;" class="mobile-controls"><b>Tik op de vloer</b> en je loopt er vanzelf naartoe. Vegen = rondkijken.</p>
-  <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis = rondkijken, I = inrichten, M = plattegrond</p>
+  <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis of Q/E = rondkijken, I = inrichten, M = plattegrond, R = meten</p>
   <button id="startBtn">Begin de rondleiding</button>
 </div>
 <div id="ui">
   <div id="title">Ons Nieuwe Huis</div>
-  <div id="roomLabel">—</div>
-  <button id="designToggle">Inrichten</button>
+  <div id="roomLabel" aria-live="polite">—</div>
+  <button id="designToggle" aria-label="Inrichtpaneel openen">Inrichten</button>
   <div id="crosshair" class="desktop-controls"></div>
   <div id="joystickArea" class="mobile-controls">
     <div id="joystickKnob"></div>
   </div>
-  <canvas id="minimap"></canvas>
+  <canvas id="minimap" aria-hidden="true"></canvas>
   <button id="mapToggle" class="mobile-controls" aria-label="Plattegrond">Kaart</button>
   <button id="measureToggle" aria-label="Meetgereedschap">Meet</button>
   <button id="photoToggle" aria-label="Fotomodus">Foto</button>
@@ -250,7 +251,7 @@ body.photo #ui { display: none; }
   <button id="photoShot">Bewaar foto</button>
   <button id="photoExit" aria-label="Fotomodus sluiten">&times;</button>
 </div>
-<div id="designPanel">
+<div id="designPanel" role="dialog" aria-label="Inrichten">
   <h2>Inrichten <button class="closeBtn" id="dpClose" aria-label="Sluiten">&times;</button></h2>
   <div class="dpRoom">Huidige kamer: <b id="dpRoomName">—</b></div>
   <div class="dpHint">Wijzigingen gelden voor de kamer waar je staat.</div>
