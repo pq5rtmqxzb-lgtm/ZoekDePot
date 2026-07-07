@@ -264,150 +264,29 @@ const ENV = { xMin: -1.55, xMax: 10.74, zMin: -1.08, zMax: 17.55 };
 // init() asserts this matches WALL_HEIGHT.
 const CEILING_FROM_JSON = 2.80;
 
-// Apartment geometry (walls, doors, sliding doors, windows, railings).
-// Coordinates are wall CENTRELINES placed at the centre of the PDF's wall
-// slabs, so both faces land within ~5 cm of the source drawing (verified with
-// tools/compare-to-pdf.py). Segments marked `t: T_INT` are interior partitions
-// (the PDF draws them ~0.10 m thick); unmarked segments are facade/structural
-// walls at the default WALL_THICK (0.20 m).
-// `kind` chooses the builder: wall = solid wall (adds collision segment),
-// door = decorative door frame (no collision in span), sliding = sliding-door
-// visual (no collision in span), window = fixed glazing with sill (collision),
-// railing = balcony rail (with collision).
-const T_INT = 0.10;
-const APARTMENT_GEOM = [
-  // === NORTH FACADE (slab z -0.18..0.01, centreline -0.085; the stretch
-  //     x 5.18..6.98 has its inner face recessed to z=0.21 -> centreline 0.115).
-  { kind: 'wall',    x1: 10.53, z1: -0.085, x2: 10.68, z2: -0.085 }, // NE corner piece
-  { kind: 'sliding', x1:  7.04, z1: -0.085, x2: 10.53, z2: -0.085 }, // woonkamer schuifpui (PDF panels 7.04..8.82 + 8.74..10.53)
-  { kind: 'wall',    x1:  6.98, z1: -0.085, x2:  6.98, z2:  0.115 }, // jog east of the window band
-  { kind: 'window',  x1:  5.18, z1:  0.115, x2:  6.98, z2:  0.115 }, // woonkamer NE window (recessed band)
-  { kind: 'wall',    x1:  5.18, z1: -0.085, x2:  5.18, z2:  0.115 }, // jog west of the window band
-  { kind: 'sliding', x1:  1.58, z1: -0.085, x2:  5.18, z2: -0.085 }, // slaapk1 schuifpui (PDF panels 1.64..3.34 + 3.42..5.13)
-  { kind: 'wall',    x1:  1.58, z1: -0.085, x2:  1.58, z2:  0.115 }, // jog at the NW tip section
-  { kind: 'window',  x1:  0.71, z1:  0.115, x2:  1.58, z2:  0.115 }, // slaapk1 tip window (inner face z=0.21)
-
-  // === NW TIP (stepped zigzag, then the long chamfer to the stair core).
-  //     Traced from the PDF's vector inner faces.
-  { kind: 'wall',    x1:  0.71, z1:  0.115, x2: -0.12, z2:  0.02 },  // tip facet 1
-  { kind: 'wall',    x1: -0.12, z1:  0.02,  x2: -0.46, z2:  0.62 },  // tip facet 2
-  { kind: 'wall',    x1: -0.46, z1:  0.62,  x2: -0.61, z2:  0.88 },  // connector
-  { kind: 'wall',    x1: -0.31, z1:  0.71,  x2:  0.19, z2:  0.71 },  // interior pier (north edge)
-  { kind: 'wall',    x1:  0.19, z1:  0.71,  x2:  0.19, z2:  1.21 },  // interior pier (east edge)
-  { kind: 'wall',    x1:  0.13, z1:  1.31,  x2: -0.61, z2:  0.88 },  // interior pier (hypotenuse)
-  { kind: 'wall',    x1: -0.61, z1:  0.88,  x2: -1.33, z2:  2.12 },  // 1397 mm facet
-  { kind: 'wall',    x1: -1.33, z1:  2.12,  x2:  1.92, z2:  3.95 },  // long chamfer (to the core)
-
-  // === ENTRANCE + SHAFT. The voordeur sits in the short x=1.92 wall between
-  //     the chamfer end and the shaft, opening west onto the core landing.
-  //     The X-hatched installatieschacht is the walled trapezoid between the
-  //     second chamfer, the entry and the technische berging.
-  { kind: 'door',    x1:  1.92, z1:  3.95,  x2:  1.92, z2:  4.87 },  // VOORDEUR
-  { kind: 'wall',    x1:  1.60, z1:  4.18,  x2:  1.92, z2:  3.98 },  // filler chamfer-2 -> door jamb
-  { kind: 'wall',    x1:  1.60, z1:  4.18,  x2:  0.15, z2:  6.69 },  // chamfer-2 (facade to the core)
-  { kind: 'wall',    x1:  1.30, z1:  4.91,  x2:  2.67, z2:  4.91 , t: T_INT },  // shaft north wall (z 4.86..4.96)
-  { kind: 'door',    x1:  2.67, z1:  4.91,  x2:  3.60, z2:  4.91 , t: T_INT },  // slaapk1 door (from the gang)
-  { kind: 'wall',    x1:  3.60, z1:  4.91,  x2:  3.81, z2:  4.91 , t: T_INT },  // stub door -> pier
-  { kind: 'wall',    x1:  3.81, z1:  4.26,  x2:  3.81, z2:  4.91 , t: T_INT },  // pier alcove/corridor (x 3.76..3.86)
-  { kind: 'wall',    x1:  2.51, z1:  4.91,  x2:  2.51, z2:  5.66 , t: T_INT },  // shaft east wall (x 2.46..2.56)
-  { kind: 'wall',    x1:  0.86, z1:  5.66,  x2:  2.51, z2:  5.66 , t: T_INT },  // shaft south = berging north (z 5.61..5.71)
-
-  // === SLAAPKAMER 1 (x 1.92..5.59, z 0.21..4.21 + entry alcove to z=4.87).
-  { kind: 'wall',    x1:  5.64, z1:  0.115, x2:  5.64, z2:  4.26 , t: T_INT },  // east wall (slab 5.59..5.68)
-  { kind: 'wall',    x1:  3.81, z1:  4.26,  x2:  6.99, z2:  4.26 , t: T_INT },  // south wall (x 3.76..5.59) + badkamer north
-
-  // === BADKAMER (groot) — x 3.86..6.94, z 4.30..7.04, door on the west wall.
-  { kind: 'wall',    x1:  3.81, z1:  4.26,  x2:  3.81, z2:  5.38 , t: T_INT },  // west (N of door)
-  { kind: 'door',    x1:  3.81, z1:  5.38,  x2:  3.81, z2:  6.40 , t: T_INT },  // badkamer door (from gang)
-  { kind: 'wall',    x1:  3.81, z1:  6.40,  x2:  3.81, z2:  7.09 , t: T_INT },  // west (S of door)
-  { kind: 'wall',    x1:  3.81, z1:  7.09,  x2:  6.99, z2:  7.09 , t: T_INT },  // badkamer south (z 7.04..7.14)
-  { kind: 'wall',    x1:  6.99, z1:  4.26,  x2:  6.99, z2:  8.16 , t: T_INT },  // woonkamer west wall (x 6.94..7.04)
-
-  // === BERGING + TOILET band (z 7.14..8.07): berging x 3.86..4.75 (880 mm),
-  //     toilet x 4.84..6.63 (1785 mm), mini-shaft x 6.64..6.94 east of toilet.
-  { kind: 'wall',    x1:  3.81, z1:  7.09,  x2:  3.81, z2:  8.12 , t: T_INT },  // berging west
-  { kind: 'wall',    x1:  4.80, z1:  7.09,  x2:  4.80, z2:  8.12 , t: T_INT },  // berging/toilet divider (x 4.75..4.84)
-  { kind: 'wall',    x1:  6.69, z1:  7.09,  x2:  6.69, z2:  8.12 , t: T_INT },  // toilet east / mini-shaft west
-  { kind: 'door',    x1:  3.81, z1:  8.12,  x2:  4.80, z2:  8.12 , t: T_INT },  // berging door (full-width, from gang)
-  { kind: 'wall',    x1:  4.80, z1:  8.12,  x2:  5.32, z2:  8.12 , t: T_INT },
-  { kind: 'door',    x1:  5.32, z1:  8.12,  x2:  6.22, z2:  8.12 , t: T_INT },  // toilet door (from gang)
-  { kind: 'wall',    x1:  6.22, z1:  8.12,  x2:  6.99, z2:  8.12 , t: T_INT },
-
-  // === TECHNISCHE BERGING (west room, x 0.19..2.46, z 5.71..7.14; WTW unit)
-  //     plus the boiler closet + wasmachine/droger niche south of it (z 7.14..7.92).
-  { kind: 'wall',    x1:  2.51, z1:  5.66,  x2:  2.51, z2:  5.78 , t: T_INT },
-  { kind: 'door',    x1:  2.51, z1:  5.78,  x2:  2.51, z2:  6.38 , t: T_INT },  // berging door (east wall, from gang)
-  { kind: 'wall',    x1:  2.51, z1:  6.38,  x2:  2.51, z2:  7.92 , t: T_INT },  // east wall continues past the niche
-  { kind: 'wall',    x1:  0.17, z1:  7.17,  x2:  2.51, z2:  7.17 , t: T_INT },  // berging south / closet north
-  { kind: 'wall',    x1:  1.05, z1:  7.17,  x2:  1.05, z2:  7.92 , t: T_INT },  // boiler closet | WM/CD divider
-  { kind: 'wall',    x1:  0.17, z1:  7.92,  x2:  0.32, z2:  7.92 , t: T_INT },
-  { kind: 'door',    x1:  0.32, z1:  7.92,  x2:  1.00, z2:  7.92 , t: T_INT },  // boiler closet door
-  { kind: 'door',    x1:  1.10, z1:  7.92,  x2:  2.40, z2:  7.92 , t: T_INT },  // WM/CD niche doors
-  { kind: 'wall',    x1:  2.40, z1:  7.92,  x2:  2.51, z2:  7.92 , t: T_INT },
-
-  // === GANG -> WOONKAMER door (in the woonkamer west wall, south of the toilet).
-  { kind: 'door',    x1:  6.99, z1:  8.16,  x2:  6.99, z2:  9.09 , t: T_INT },  // gang -> woonkamer
-  { kind: 'wall',    x1:  6.99, z1:  9.09,  x2:  6.99, z2:  9.59 , t: T_INT },
-
-  // === DIVIDING WALL gang | slaapk2-zone | keuken (slab z 9.54..9.63).
-  //     Doors: badkamer-klein (x 0.49..1.19) and the slaapk2 entry nook
-  //     (x 2.74..3.77). Behind the solid east part runs the keukenopstelling.
-  { kind: 'wall',    x1:  0.07, z1:  9.59,  x2:  0.49, z2:  9.59 , t: T_INT },
-  { kind: 'door',    x1:  0.49, z1:  9.59,  x2:  1.19, z2:  9.59 , t: T_INT },  // badkamer klein door (from gang)
-  { kind: 'wall',    x1:  1.19, z1:  9.59,  x2:  2.74, z2:  9.59 , t: T_INT },
-  { kind: 'door',    x1:  2.74, z1:  9.59,  x2:  3.77, z2:  9.59 , t: T_INT },  // slaapk2 nook door (from gang)
-  { kind: 'wall',    x1:  3.77, z1:  9.59,  x2:  6.99, z2:  9.59 , t: T_INT },  // solid behind the kitchen counter
-
-  // === BADKAMER KLEIN (west, x 0.19..2.54, z 9.64..11.41 — shower + basins)
-  //     and the slaapk2 entry nook east of it (x 2.64..4.31, open to slaapk2).
-  { kind: 'wall',    x1:  2.59, z1:  9.59,  x2:  2.59, z2: 11.46 , t: T_INT },  // badkklein east / nook west (x 2.54..2.64)
-  { kind: 'wall',    x1:  0.07, z1: 11.46,  x2:  2.59, z2: 11.46 , t: T_INT },  // badkklein south (z 11.41..11.51)
-
-  // === SLAAPKAMER 2 + KEUKEN divider (slab x 4.31..4.40, z 9.64..15.41+).
-  { kind: 'wall',    x1:  4.36, z1:  9.59,  x2:  4.36, z2: 15.60 , t: T_INT },
-
-  // === WEST FACADE (slab -0.06..0.19, centreline ~0.07) + SW diagonal corner.
-  { kind: 'wall',    x1:  0.07, z1:  6.69,  x2:  0.07, z2: 14.90 },
-  { kind: 'wall',    x1:  0.07, z1: 14.90,  x2:  1.12, z2: 15.56 },  // SW diagonal (inner 0.19,14.85 -> 1.15,15.41)
-
-  // === SOUTH FACADE slaapk2 + keuken: window piers at inner z=15.41,
-  //     sliding doors recessed to z=15.68..15.79.
-  { kind: 'wall',    x1:  1.12, z1: 15.60,  x2:  1.73, z2: 15.60 },  // pier west of the slaapk2 slider
-  { kind: 'wall',    x1:  1.73, z1: 15.60,  x2:  1.73, z2: 15.74 },
-  { kind: 'sliding', x1:  1.73, z1: 15.74,  x2:  3.40, z2: 15.74 },  // slaapk2 schuifpui
-  { kind: 'wall',    x1:  3.40, z1: 15.74,  x2:  3.40, z2: 15.60 },
-  { kind: 'wall',    x1:  3.40, z1: 15.60,  x2:  4.62, z2: 15.60 },  // pier across the slaapk2/keuken wall
-  { kind: 'wall',    x1:  4.62, z1: 15.60,  x2:  4.62, z2: 15.74 },
-  { kind: 'sliding', x1:  4.62, z1: 15.74,  x2:  6.52, z2: 15.74 },  // keuken schuifpui
-  { kind: 'wall',    x1:  6.62, z1: 13.90,  x2:  6.62, z2: 15.74 },  // keukenbaai | zuid-balkon partition (x 6.52..6.72)
-
-  // === SOUTH FACADE woonkamer (slab 13.81..13.99, centreline 13.90).
-  { kind: 'wall',    x1:  6.62, z1: 13.90,  x2:  6.77, z2: 13.90 },
-  { kind: 'sliding', x1:  6.77, z1: 13.90,  x2: 10.19, z2: 13.90 },  // woonkamer schuifpui (PDF panels 6.77..8.52 + 8.44..10.19)
-  { kind: 'wall',    x1: 10.19, z1: 13.90,  x2: 10.68, z2: 13.90 },
-
-  // === EAST FACADE (slab 10.52..10.74, centreline 10.63, no openings).
-  { kind: 'wall',    x1: 10.63, z1: -0.085, x2: 10.63, z2: 13.90 },
-
-  // === NOORD BALKON (railing z=-1.08, x 1.74..10.74). The west end is a
-  //     circular arc (R≈2.11, tangent to the railing) back to the facade tip.
-  { kind: 'railing', x1:  1.74, z1: -1.08,  x2: 10.74, z2: -1.08 },
-  { kind: 'railing', x1: 10.74, z1: -1.08,  x2: 10.74, z2: -0.19 },
-  { kind: 'railing', x1:  1.74, z1: -1.08,  x2:  1.30, z2: -1.03 },  // arc chords
-  { kind: 'railing', x1:  1.30, z1: -1.03,  x2:  0.85, z2: -0.88 },
-  { kind: 'railing', x1:  0.85, z1: -0.88,  x2:  0.39, z2: -0.59 },
-  { kind: 'railing', x1:  0.39, z1: -0.59,  x2:  0.02, z2: -0.19 },
-
-  // === ZUID BALKON (railing z=17.55, x 3.10..10.74). The SW corner is a big
-  //     circular arc (R≈2.77, tangent to the railing) up to the facade diagonal.
-  { kind: 'railing', x1:  3.10, z1: 17.55,  x2: 10.74, z2: 17.55 },
-  { kind: 'railing', x1: 10.74, z1: 17.55,  x2: 10.74, z2: 13.99 },
-  { kind: 'railing', x1:  3.10, z1: 17.55,  x2:  2.62, z2: 17.51 },  // arc chords
-  { kind: 'railing', x1:  2.62, z1: 17.51,  x2:  1.93, z2: 17.29 },
-  { kind: 'railing', x1:  1.93, z1: 17.29,  x2:  1.32, z2: 16.90 },
-  { kind: 'railing', x1:  1.32, z1: 16.90,  x2:  0.83, z2: 16.37 },
-  { kind: 'railing', x1:  0.83, z1: 16.37,  x2:  0.60, z2: 15.97 },
-];
+// Apartment geometry (walls, doors, sliding doors, windows, railings) and the
+// room definitions live in data/model.json — the single source of truth that
+// the Python verification tools (tools/*.py) read as well. Coordinates are
+// wall CENTRELINES at the centre of the PDF's wall slabs, so both faces land
+// within ~5 cm of the source drawing (verified with tools/compare-to-pdf.py).
+// Rows may carry `t` (wall thickness; facade/structural default WALL_THICK
+// 0.20 m, interior partitions 0.10 m). `kind` chooses the builder:
+// wall = solid wall (adds collision segment), door = decorative door frame
+// (no collision in span), sliding = sliding-door visual (no collision in
+// span), window = fixed glazing with sill (collision), railing = balcony
+// rail (with collision).
+let MODEL;
+try {
+  MODEL = await (await fetch('./data/model.json')).json();
+} catch (err) {
+  document.getElementById('introOverlay').innerHTML =
+    '<h1>Ons Nieuwe Huis</h1><p>Kon de plattegrond (data/model.json) niet laden.</p>';
+  throw err;
+}
+if (MODEL.version !== 1) {
+  console.warn('data/model.json heeft versie', MODEL.version, '— deze app verwacht versie 1.');
+}
+const APARTMENT_GEOM = MODEL.geom;
 
 /* ===== ROOMS =====
  * Each room groups the floor rectangles + polygons (from buildApartment) it owns,
@@ -417,46 +296,7 @@ const APARTMENT_GEOM = [
  * with diagonal/curved boundaries (NW tip, SW corners, balcony curves).
  * Enclosed rooms (toilet, bergingen, badkklein) are listed before their
  * container so the "which room am I in" lookup prefers the smaller space. */
-const ROOMS = [
-  { id: 'toilet',    name: 'Toilet',                kind: 'tegel', rects: [
-      { x1: 4.84, z1: 7.14, x2: 6.63, z2: 8.07 } ] },
-  { id: 'berging',   name: 'Berging',               kind: 'tegel', rects: [
-      { x1: 3.86, z1: 7.14, x2: 4.75, z2: 8.07 } ] },
-  { id: 'berging2',  name: 'Berging (techniek)',    kind: 'tegel', rects: [
-      { x1: 0.86, z1: 5.71, x2: 2.46, z2: 7.12 } ], polys: [
-      [[0.86, 5.71], [0.86, 7.12], [0.17, 7.12], [0.17, 6.72]] ] },  // wedge west of the rect, up to chamfer-2
-  { id: 'badkklein', name: 'Badkamer (klein)',      kind: 'tegel', rects: [
-      { x1: 0.17, z1: 9.63, x2: 2.54, z2: 11.41 } ] },
-  { id: 'badkamer',  name: 'Badkamer',              kind: 'tegel', rects: [
-      { x1: 3.86, z1: 4.31, x2: 6.94, z2: 7.04 } ] },
-  { id: 'slaapk1',   name: 'Slaapkamer 1',          kind: 'hout',  rects: [
-      { x1: 1.92, z1: 0.21, x2: 5.59, z2: 4.21 },
-      { x1: 1.92, z1: 4.21, x2: 3.76, z2: 4.87 } ], polys: [   // entry alcove
-      [[1.92, 0.21], [0.71, 0.21], [-0.12, 0.02], [-0.46, 0.62], [-0.61, 0.88],
-       [-1.33, 2.12], [1.92, 3.95]] ] },                       // NW tip
-  { id: 'slaapk2',   name: 'Slaapkamer 2',          kind: 'hout',  rects: [
-      { x1: 2.64, z1: 9.63,  x2: 4.31, z2: 11.41 },            // entry nook (open to the room)
-      { x1: 0.17, z1: 11.51, x2: 4.31, z2: 14.85 },
-      { x1: 1.68, z1: 15.41, x2: 3.45, z2: 15.70 } ], polys: [ // slider bay
-      [[0.17, 14.85], [1.15, 15.41], [4.31, 15.41], [4.31, 14.85]] ] }, // SW diagonal strip
-  { id: 'gang',      name: 'Gang',                  kind: 'hout',  rects: [
-      { x1: 2.56, z1: 4.96, x2: 3.86, z2: 9.54 },              // corridor along the shaft/bergingen
-      { x1: 0.17, z1: 7.92, x2: 2.56, z2: 9.54 },              // wide south part
-      { x1: 0.17, z1: 7.17, x2: 2.51, z2: 7.92 },              // boiler + WM/CD closets
-      { x1: 3.86, z1: 8.17, x2: 6.94, z2: 9.54 } ] },          // east arm to the woonkamer door
-  { id: 'woonkamer', name: 'Woonkamer',             kind: 'hout',  rects: [
-      { x1: 5.74, z1: 0.21,  x2: 10.52, z2: 4.21 },            // north strip east of slaapk1
-      { x1: 7.04, z1: 4.21,  x2: 10.52, z2: 13.85 },           // main living area
-      { x1: 4.40, z1: 9.63,  x2: 7.04,  z2: 13.81 },           // open kitchen bay
-      { x1: 4.40, z1: 13.81, x2: 6.52,  z2: 15.70 } ] },       // kitchen bay south end
-  { id: 'balkon_n',  name: 'Balkon (noord)',        kind: 'steen', rects: [], polys: [
-      [[0.02, -0.19], [10.74, -0.19], [10.74, -1.08], [1.74, -1.08],
-       [1.30, -1.03], [0.85, -0.88], [0.39, -0.59]] ] },
-  { id: 'balkon_z',  name: 'Balkon (zuid)',         kind: 'steen', rects: [], polys: [
-      [[0.60, 15.97], [1.12, 15.80], [6.72, 15.80], [6.72, 13.99], [10.74, 13.99],
-       [10.74, 17.55], [3.10, 17.55], [2.62, 17.51], [1.93, 17.29], [1.32, 16.90],
-       [0.83, 16.37]] ] },
-];
+const ROOMS = MODEL.rooms;
 ROOMS.forEach(r => {
   r.walls = []; r.floorMeshes = []; r.polys = r.polys || [];
   // Floor area for the HUD — rects and polys of one room never overlap.

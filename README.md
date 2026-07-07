@@ -49,7 +49,7 @@ De scripts (vereisen `pymupdf` en `Pillow`) controleren dat het zo blijft:
 
 ```sh
 python3 tools/compare-to-pdf.py   # meet elke muur tegen de PDF-vectoren
-python3 tools/plan-overlay.py     # legt APARTMENT_GEOM uit index.html over apartment.json
+python3 tools/plan-overlay.py     # legt data/model.json over apartment.json
 python3 tools/pdf-overlay.py      # tekent het model over de PDF-scan heen
 python3 tools/render-floorplan.py # genereert floorplan/floorplan.svg uit apartment.json
 ```
@@ -62,7 +62,7 @@ geometrie.
 
 - Testhooks: `?pos=x,z,yaw` zet een startpositie (voor screenshots) en
   `window.__state()` geeft de spelerspositie/kamer terug.
-- Wanden zijn hartlijnen (`APARTMENT_GEOM`); kamers met vloer-rects/-polygonen
-  staan in `ROOMS`. Beide leven in `index.html` en worden door de tools
-  geparset — hernoem die constanten niet zomaar.
+- Wanden zijn hartlijnen (`geom`); kamers met vloer-rects/-polygonen staan in
+  `rooms`. Beide leven in `data/model.json` — de gedeelde bron voor de app
+  (fetch) én de Python-tools.
 - Schaduwen en de zon staan op mobiel uit (performance).

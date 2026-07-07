@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Phase 3 fidelity check: overlay the 3D model's plan on apartment.json.
 
-Reads the `APARTMENT_GEOM` array straight out of index.html (the wall
-centrelines the 3D walkthrough is actually built from) and draws it on top of
-the room polygons from apartment.json, at the same 1:50 world scale used by
+Reads the wall centrelines from data/model.json (the geometry the 3D
+walkthrough is actually built from) and draws them on top of the room
+polygons from apartment.json, at the same 1:50 world scale used by
 render-floorplan.py. Two outputs:
 
   * floorplan/overlay.png  — a top-down picture for the side-by-side viewer.
@@ -17,7 +17,6 @@ import importlib.util
 import json
 import math
 import pathlib
-import re
 
 import matplotlib
 matplotlib.use("Agg")
@@ -26,7 +25,7 @@ from matplotlib.patches import Polygon as MplPolygon
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FLOORPLAN_DIR = ROOT / "floorplan"
-INDEX = ROOT / "index.html"
+MODEL_JSON = ROOT / "data" / "model.json"
 OUT_PNG = FLOORPLAN_DIR / "overlay.png"
 
 TOL = 0.05  # metres; a wall endpoint further than this from any plan edge is flagged
@@ -50,25 +49,10 @@ KIND_STYLE = {
 
 
 def parse_apartment_geom():
-    """Pull the APARTMENT_GEOM array out of index.html as a list of dicts."""
-    src = INDEX.read_text()
-    m = re.search(r"const APARTMENT_GEOM\s*=\s*\[(.*?)\n\];", src, re.S)
-    if not m:
-        raise SystemExit("Could not find APARTMENT_GEOM in index.html")
-    body = m.group(1)
-    segs = []
-    row = re.compile(
-        r"kind:\s*'(\w+)'\s*,\s*x1:\s*(-?[\d.]+)\s*,\s*z1:\s*(-?[\d.]+)\s*,"
-        r"\s*x2:\s*(-?[\d.]+)\s*,\s*z2:\s*(-?[\d.]+)"
-    )
-    for mo in row.finditer(body):
-        kind, x1, z1, x2, z2 = mo.groups()
-        segs.append(
-            {"kind": kind, "x1": float(x1), "z1": float(z1),
-             "x2": float(x2), "z2": float(z2)}
-        )
+    """Load the wall-centreline segments from data/model.json."""
+    segs = json.loads(MODEL_JSON.read_text())["geom"]
     if not segs:
-        raise SystemExit("APARTMENT_GEOM parsed but no segments matched")
+        raise SystemExit("data/model.json contains no geometry")
     return segs
 
 
