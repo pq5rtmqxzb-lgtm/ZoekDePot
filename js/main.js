@@ -19,6 +19,7 @@ import { resolveCollision } from './collision.js';
 import { cancelWalkTarget } from './walk.js';
 import { drawMinimap } from './minimap.js';
 import { updateDoors } from './doors.js';
+import { updateMeasureLabel } from './measure.js';
 
 await loadModel();
 
@@ -80,6 +81,8 @@ function init() {
     yaw: S.yaw, pitch: S.pitch, tod: S.scheme.tod, todFading: !!S.todAnim,
     room: S.currentRoom && S.currentRoom.id,
     doorOpen: S.doors.filter(d => Math.abs(d.angle) > 1).length,
+    measureDist: S.measure.points.length === 2 ? S.measure.dist : null,
+    measurePts: S.measure.points.map(p => [p.x, p.y, p.z]),
   });
 
   // Prevent default touch behaviors on the canvas only — leave overlays
@@ -202,6 +205,7 @@ function animate() {
   }
 
   if (S.minimapOn) drawMinimap();
+  updateMeasureLabel();
 
   S.renderer.render(S.scene, S.camera);
 }

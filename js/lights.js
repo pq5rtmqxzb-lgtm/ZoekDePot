@@ -37,6 +37,7 @@ export function setupLights() {
       new THREE.MeshBasicMaterial({ color: color })
     );
     disc.position.set(x, WALL_HEIGHT - 0.01, z);
+    disc.userData.noMeasure = true;
     S.scene.add(disc);
     S.pointLightInfo.push({ light: pl, baseI: intensity, disc });
   }

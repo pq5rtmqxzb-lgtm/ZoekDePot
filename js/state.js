@@ -41,4 +41,5 @@ export const S = {
   walkPrevDist: 0, walkStuckT: 0,
   minimapOn: false,
   doors: [],            // { pivot, base, seg, angle, target } hinged leaves
+  measure: { armed: false, points: [], dist: 0 },
 };

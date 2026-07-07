@@ -163,6 +163,19 @@ canvas { display: block; width: 100%; height: 100%; }
 }
 #mapToggle:active { background: rgba(255,255,255,0.25); }
 #minimap.show + #mapToggle { bottom: 250px; }
+#measureToggle {
+  position: absolute; top: 52px; left: 16px;
+  pointer-events: auto; cursor: pointer;
+  background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.35);
+  padding: 8px 14px; border-radius: 20px; font-size: 13px; font-family: 'Georgia', serif;
+}
+#measureToggle.armed { background: rgba(255,139,61,0.55); border-color: #ff8b3d; }
+#measureLabel {
+  position: absolute; display: none; transform: translate(-50%, -130%);
+  background: rgba(20,22,26,0.82); color: #ffd9b8; padding: 3px 10px;
+  border-radius: 12px; font: 13px/1.5 'Georgia', serif;
+  pointer-events: none; white-space: nowrap;
+}
 .mobile-controls { display: none; }
 @media (hover: none) and (pointer: coarse) {
   .mobile-controls { display: block !important; }
@@ -189,6 +202,8 @@ canvas { display: block; width: 100%; height: 100%; }
   </div>
   <canvas id="minimap"></canvas>
   <button id="mapToggle" class="mobile-controls" aria-label="Plattegrond">Kaart</button>
+  <button id="measureToggle" aria-label="Meetgereedschap">Meet</button>
+  <div id="measureLabel"></div>
 </div>
 <div id="designPanel">
   <h2>Inrichten <button class="closeBtn" id="dpClose" aria-label="Sluiten">&times;</button></h2>

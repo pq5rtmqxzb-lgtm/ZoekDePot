@@ -4,6 +4,7 @@ import { editTarget } from './rooms.js';
 import { paintRoomWalls, reapplyAccents, setRoomFloor } from './paint.js';
 import { setTimeOfDay } from './tod.js';
 import { resetSchemeToDefaults, applyScheme, saveAndShare } from './scheme.js';
+import { toggleMeasure } from './measure.js';
 import { showToast } from './toast.js';
 
 const hex2css = h => '#' + h.toString(16).padStart(6, '0');
@@ -63,6 +64,7 @@ export function buildDesignPanel() {
 
   document.getElementById('accentBtn').addEventListener('click', () => {
     S.accentArm = !S.accentArm;
+    if (S.accentArm) toggleMeasure(false);   // pick modes are mutually exclusive
     document.getElementById('accentBtn').classList.toggle('armed', S.accentArm);
     showToast(S.accentArm
       ? (S.isMobile ? 'Tik op een muur om de accentkleur te plaatsen'

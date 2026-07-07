@@ -4,6 +4,7 @@ import { designPanelOpen, toggleDesignPanel } from './panel.js';
 import { pickAccentWall } from './paint.js';
 import { setWalkTarget } from './walk.js';
 import { toggleMinimap, minimapTeleport, minimapEl } from './minimap.js';
+import { toggleMeasure, measureTap } from './measure.js';
 import { showToast } from './toast.js';
 
 /* Touch state */
@@ -24,19 +25,26 @@ export function setupInput() {
     if (!S.gameStarted) return;
     if (e.code === 'KeyI') { e.preventDefault(); toggleDesignPanel(); }
     if (e.code === 'KeyM') { e.preventDefault(); toggleMinimap(); }
-    if (e.code === 'Escape' && designPanelOpen()) toggleDesignPanel(false);
+    if (e.code === 'KeyR') { e.preventDefault(); toggleMeasure(); }
+    if (e.code === 'Escape') {
+      if (designPanelOpen()) toggleDesignPanel(false);
+      else if (S.measure.armed) toggleMeasure(false);
+    }
   });
   addEventListener('keyup', e => { S.keys[e.code] = false; });
 
   // Pointer lock (desktop). While the design panel is open we leave the cursor
   // free so the user can click swatches.
   let isLocked = false;
-  S.renderer.domElement.addEventListener('click', () => {
+  S.renderer.domElement.addEventListener('click', e => {
     if (!S.gameStarted || designPanelOpen()) return;
     if (!S.isMobile && !isLocked) {
+      // Measuring works without pointer lock: measure at the clicked spot.
+      if (S.measure.armed) { measureTap(e.clientX, e.clientY); return; }
       S.renderer.domElement.requestPointerLock();
       return;
     }
+    if (isLocked && S.measure.armed) { measureTap(innerWidth / 2, innerHeight / 2); return; }
     if (isLocked && S.accentArm) pickAccentWall(innerWidth / 2, innerHeight / 2);
   });
   document.addEventListener('pointerlockchange', () => {
@@ -92,7 +100,8 @@ export function setupInput() {
       // and the camera turns and walks there by itself (one-finger movement
       // for people who find the joystick fiddly).
       if (s && Date.now() - s.t < 300 && s.dist < 15) {
-        if (S.accentArm) pickAccentWall(t.clientX, t.clientY);
+        if (S.measure.armed) measureTap(t.clientX, t.clientY);
+        else if (S.accentArm) pickAccentWall(t.clientX, t.clientY);
         else setWalkTarget(t.clientX, t.clientY);
       }
       delete touchStarts[t.identifier];
@@ -142,6 +151,8 @@ export function setupInput() {
 
   // Minimap toggle (mobile button; desktop uses the M key)
   document.getElementById('mapToggle').addEventListener('click', toggleMinimap);
+  // Measure toggle (HUD button; desktop also has the R key)
+  document.getElementById('measureToggle').addEventListener('click', () => toggleMeasure());
   // Tap/click on the open minimap = teleport to that spot
   minimapEl.addEventListener('click', minimapTeleport);
 

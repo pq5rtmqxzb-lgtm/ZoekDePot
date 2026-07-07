@@ -30,11 +30,13 @@ export function buildDoorLeaf(g) {
 
   const leafW = len - 0.10, leafH = 2.28, leafT = 0.04;
   const leaf = new THREE.Mesh(new THREE.BoxGeometry(leafW, leafH, leafT), DOOR_LEAF_MAT);
+  leaf.userData.noMeasure = true;   // a swinging surface gives confusing numbers
   leaf.position.set(0.05 + leafW / 2, leafH / 2, 0);
   pivot.add(leaf);
 
   // Deurklink — one bar through the leaf so it reads from both sides.
   const handle = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.035, 0.14), METAL_MAT);
+  handle.userData.noMeasure = true;
   handle.position.set(0.05 + leafW - 0.12, 1.02, 0);
   pivot.add(handle);
 

@@ -84,6 +84,7 @@ export function buildApartment() {
   );
   // Centered roughly on the apartment middle
   cyclorama.position.set(4.2, 5, 6.9);
+  cyclorama.userData.noMeasure = true;
   S.scene.add(cyclorama);
   // Outdoor ground plane — the apartment is on the 2e verdieping, so the
   // forest floor lies ~6 m below the apartment floor.
@@ -93,6 +94,7 @@ export function buildApartment() {
   );
   outdoor.rotation.x = -Math.PI / 2;
   outdoor.position.set(4.2, GROUND_Y, 6.9);
+  outdoor.userData.noMeasure = true;
   S.scene.add(outdoor);
 
   // Old forest on the master-bedroom (north) side: tall trunks rising from
@@ -121,6 +123,7 @@ export function addForestTree(x, z, s = 1.0) {
     new THREE.CylinderGeometry(0.22 * s, 0.38 * s, trunkH, 9), BARK_MAT);
   trunk.position.set(x, GROUND_Y + trunkH / 2, z);
   trunk.rotation.y = (x * 7 + z * 13) % 1;
+  trunk.userData.noMeasure = true;
   S.scene.add(trunk);
 
   const canopyY = GROUND_Y + trunkH;          // canopy centre ≈ apartment level
@@ -132,6 +135,7 @@ export function addForestTree(x, z, s = 1.0) {
     limb.position.set(x + Math.cos(a) * 0.55 * s, canopyY - 0.25 * s, z + Math.sin(a) * 0.55 * s);
     limb.rotation.z = Math.cos(a) * 0.7;
     limb.rotation.x = Math.sin(a) * 0.7;
+    limb.userData.noMeasure = true;
     S.scene.add(limb);
   }
   // Leaf masses — low-poly spheres, deterministic offsets per tree
@@ -149,6 +153,7 @@ export function addForestTree(x, z, s = 1.0) {
     if (bx > -2.5 && bx < 11.5 && bz + r > -1.25) bz = -1.25 - r;
     blob.position.set(bx, canopyY + (rnd() - 0.35) * 2.6 * s, bz);
     blob.scale.y = 0.75 + rnd() * 0.25;
+    blob.userData.noMeasure = true;
     S.scene.add(blob);
   }
 }

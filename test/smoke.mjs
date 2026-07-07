@@ -160,6 +160,48 @@ check('doors close when far away', true);
 check('no page errors (doors)', derrors.length === 0, derrors.join(' | '));
 await dpage.close();
 
+/* ---------- Measure tool (fresh page, in the gang corridor) ---------- */
+const mepage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const meerrors = [];
+mepage.on('pageerror', e => meerrors.push(String(e)));
+await mepage.goto(BASE + '/index.html?pos=3.21,7.5,-1.5708');   // facing the berging wall
+await mepage.waitForFunction(() => typeof window.__state === 'function', null, { timeout: 20000 });
+await mepage.keyboard.press('r');
+await mepage.waitForTimeout(300);
+check('measure mode arms (R key)',
+      await mepage.evaluate(() => document.getElementById('measureToggle').classList.contains('armed')));
+
+// Two unlocked clicks measure at the clicked screen points.
+await mepage.mouse.click(640, 400);
+await mepage.waitForFunction(() => window.__state().measurePts.length === 1, null, { timeout: 15000 });
+await mepage.mouse.click(640, 780);
+await mepage.waitForFunction(() => window.__state().measurePts.length === 2, null, { timeout: 15000 });
+const me = await mepage.evaluate(() => window.__state());
+const [A, B] = me.measurePts;
+const expect = Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
+const inBounds = p => p[0] > -2 && p[0] < 11 && p[1] >= 0 && p[1] <= 2.8 && p[2] > -2 && p[2] < 18;
+check('measure points hit real surfaces', inBounds(A) && inBounds(B),
+      JSON.stringify(me.measurePts));
+check('measured distance matches the two points',
+      me.measureDist !== null && Math.abs(me.measureDist - expect) < 1e-6,
+      `dist=${me.measureDist?.toFixed(3)} expect=${expect.toFixed(3)}`);
+await mepage.waitForTimeout(600);   // a frame for the label projection
+const labelText = await mepage.textContent('#measureLabel');
+check('measure label shows formatted metres',
+      new RegExp(`^${me.measureDist.toFixed(2).replace('.', ',')} m$`).test(labelText),
+      `label="${labelText}"`);
+await mepage.screenshot({ path: ARTIFACTS + 'measure.png' });
+
+// Third click restarts; Escape clears and disarms.
+await mepage.mouse.click(400, 400);
+await mepage.waitForFunction(() => window.__state().measurePts.length === 1, null, { timeout: 15000 });
+await mepage.keyboard.press('Escape');
+await mepage.waitForFunction(() => window.__state().measurePts.length === 0, null, { timeout: 15000 });
+check('third click restarts, Escape clears',
+      await mepage.evaluate(() => !document.getElementById('measureToggle').classList.contains('armed')));
+check('no page errors (measure)', meerrors.length === 0, meerrors.join(' | '));
+await mepage.close();
+
 /* ---------- Mobile emulation ---------- */
 const mob = await browser.newContext({
   viewport: { width: 390, height: 844 },

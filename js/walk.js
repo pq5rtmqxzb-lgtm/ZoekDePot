@@ -46,6 +46,7 @@ export function setWalkTarget(cx, cy) {
                                     side: THREE.DoubleSide, depthWrite: false }));
     S.walkMarker.rotation.x = -Math.PI / 2;
     S.walkMarker.renderOrder = 5;
+    S.walkMarker.userData.noMeasure = true;
     S.scene.add(S.walkMarker);
   }
   S.walkMarker.position.set(tx, 0.02, tz);
