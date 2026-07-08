@@ -16,8 +16,8 @@ Where a black PDF wall has no coloured line on it (or vice-versa), the plan and
 the ground truth disagree there.
 """
 import importlib.util
+import json
 import pathlib
-import re
 
 import matplotlib
 matplotlib.use("Agg")
@@ -28,7 +28,7 @@ from matplotlib.patches import Polygon as MplPolygon
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FLOORPLAN_DIR = ROOT / "floorplan"
 PDF_PNG = FLOORPLAN_DIR / "floorplan-pdf.png"
-INDEX = ROOT / "index.html"
+MODEL_JSON = ROOT / "data" / "model.json"
 OUT_PNG = FLOORPLAN_DIR / "pdf-overlay.png"
 
 # world (meters) -> PDF pixel.
@@ -51,13 +51,8 @@ KIND_STYLE = {"wall": "#0a64ff", "door": "#ff8000", "sliding": "#13c24b",
 
 
 def parse_geom():
-    body = re.search(r"const APARTMENT_GEOM\s*=\s*\[(.*?)\n\];", INDEX.read_text(), re.S).group(1)
-    segs = []
-    for mo in re.finditer(
-        r"kind:\s*'(\w+)'.*?x1:\s*(-?[\d.]+).*?z1:\s*(-?[\d.]+).*?x2:\s*(-?[\d.]+).*?z2:\s*(-?[\d.]+)", body):
-        k, x1, z1, x2, z2 = mo.groups()
-        segs.append((k, float(x1), float(z1), float(x2), float(z2)))
-    return segs
+    geom = json.loads(MODEL_JSON.read_text())["geom"]
+    return [(g["kind"], g["x1"], g["z1"], g["x2"], g["z2"]) for g in geom]
 
 
 def draw(show_rooms=True, show_walls=True):

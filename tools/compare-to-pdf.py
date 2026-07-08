@@ -11,6 +11,7 @@ are in one frame.
 Usage:  python3 tools/compare-to-pdf.py
 """
 import importlib.util
+import json
 import pathlib
 import re
 from collections import defaultdict
@@ -19,7 +20,7 @@ import fitz  # pymupdf
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PDF = ROOT / "floorplan" / "YP_bouwnummer_25.pdf"
-INDEX = ROOT / "index.html"
+MODEL_JSON = ROOT / "data" / "model.json"
 
 # Same affine as tools/pdf-overlay.py. floorplan-pdf.png is the page at 2x, so
 # 1 PDF point = 2 png px. world<->png:  col = 306 + 113.4*x ; row = 347 + 113.4*z
@@ -32,13 +33,8 @@ def pt_to_world(xp, yp):
 
 
 def load_model():
-    body = re.search(r"const APARTMENT_GEOM\s*=\s*\[(.*?)\n\];", INDEX.read_text(), re.S).group(1)
-    segs = []
-    for mo in re.finditer(
-        r"kind:\s*'(\w+)'.*?x1:\s*(-?[\d.]+).*?z1:\s*(-?[\d.]+).*?x2:\s*(-?[\d.]+).*?z2:\s*(-?[\d.]+)", body):
-        k, x1, z1, x2, z2 = mo.groups()
-        segs.append((k, float(x1), float(z1), float(x2), float(z2)))
-    return segs
+    geom = json.loads(MODEL_JSON.read_text())["geom"]
+    return [(g["kind"], g["x1"], g["z1"], g["x2"], g["z2"]) for g in geom]
 
 
 def pdf_segments(min_len=0.22):
