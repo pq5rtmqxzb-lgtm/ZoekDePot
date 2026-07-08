@@ -14,6 +14,12 @@ import { chromium } from 'playwright';
 import { mkdirSync, statSync } from 'node:fs';
 
 const BASE = process.env.BASE_URL || 'http://localhost:8123';
+// CI runners rasterize WebGL in software far slower than dev machines: use a
+// smaller canvas there (4x fewer pixels) and stretch real-time interaction
+// windows (key holds, walk waits) by SLOW.
+const CI = !!process.env.CI;
+const VW = CI ? 640 : 1280, VH = CI ? 400 : 800;
+const SLOW = CI ? 4 : 1;
 const ARTIFACTS = new URL('./artifacts/', import.meta.url).pathname;
 mkdirSync(ARTIFACTS, { recursive: true });
 
@@ -32,6 +38,7 @@ const browser = await chromium.launch(launchOpts);
 // errors, console errors, per-resource HTTP statuses, visible text) so CI
 // logs explain themselves.
 async function awaitBoot(page, errs = []) {
+  page.setDefaultTimeout(120000);   // slow-GL runners need patient clicks
   try {
     // First boot can be slow on CI runners: canvas->texture uploads stall on
     // software GL (observed 'GPU stall due to ReadPixels'), so allow 120 s.
@@ -60,7 +67,7 @@ const mapPoint = (wx, wz) => ({
 });
 
 /* ---------- Desktop ---------- */
-const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const page = await browser.newPage({ viewport: { width: VW, height: VH } });
 const errors = [];
 page.on('pageerror', e => errors.push(String(e)));
 page.on('console', m => {
@@ -81,7 +88,7 @@ check('spawn in gang', s0.room === 'gang', JSON.stringify(s0));
 
 // WASD forward in the open corridor
 await page.keyboard.down('w');
-await page.waitForTimeout(1000);
+await page.waitForTimeout(1000 * SLOW);
 await page.keyboard.up('w');
 const sWalk = await page.evaluate(() => window.__state());
 check('WASD walking works',
@@ -90,7 +97,7 @@ check('WASD walking works',
 
 // Q/E keyboard look
 await page.keyboard.down('q');
-await page.waitForTimeout(800);
+await page.waitForTimeout(800 * SLOW);
 await page.keyboard.up('q');
 const sTurn = await page.evaluate(() => window.__state());
 check('Q turns the camera', sTurn.yaw > sWalk.yaw + 0.02,
@@ -120,7 +127,7 @@ check('HUD updates after teleport', /Woonkamer · \d+,\d m²/.test(label1), `lab
 // slow headless frames).
 await page.waitForFunction(
   () => { const s = window.__state(); return s.activeLights > 0 && s.activeLights < 16; },
-  null, { timeout: 60000 });
+  null, { timeout: 180000 });
 check('occlusion culling trims active lights',
       true, `active=${(await page.evaluate(() => window.__state())).activeLights}/20`);
 
@@ -163,7 +170,7 @@ check('swatch activates via keyboard (Enter)',
 await page.click('#dpTod .modeBtn[data-tod="avond"]');
 await page.waitForFunction(
   () => { const s = window.__state(); return s.tod === 0.5 && !s.todFading; },
-  null, { timeout: 30000 });
+  null, { timeout: 120000 });
 check('time-of-day fades to avond (tod 0.5)', true);
 
 // Continuous slider: setting 0.75 applies instantly (no fade) and lands
@@ -183,7 +190,7 @@ check('slider mood sits between presets',
 await page.click('#dpTod .modeBtn[data-tod="dag"]');
 await page.waitForFunction(
   () => { const s = window.__state(); return s.tod === 0 && !s.todFading; },
-  null, { timeout: 30000 });
+  null, { timeout: 120000 });
 await page.keyboard.press('Escape');   // close panel
 
 await page.screenshot({ path: ARTIFACTS + 'desktop.png' });
@@ -191,20 +198,20 @@ check('no page errors (desktop)', errors.length === 0, errors.join(' | '));
 await page.close();
 
 /* ---------- Doors (fresh page, spawn next to the badkamer door) ---------- */
-const dpage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const dpage = await browser.newPage({ viewport: { width: VW, height: VH } });
 const derrors = [];
 dpage.on('pageerror', e => derrors.push(String(e)));
 // Gang corridor at (3.2, 5.9), 0.6 m from the badkamer door, facing east (+X).
 await dpage.goto(BASE + '/index.html?pos=3.2,5.9,-1.5708');
 await awaitBoot(dpage);
-await dpage.waitForFunction(() => window.__state().doorOpen >= 1, null, { timeout: 30000 });
+await dpage.waitForFunction(() => window.__state().doorOpen >= 1, null, { timeout: 120000 });
 check('door opens on approach', true);
 
 // Walk east through the open doorway into the badkamer — the span must stay
 // walkable (door leaves have no collision).
 await dpage.keyboard.down('w');
 try {
-  await dpage.waitForFunction(() => window.__state().room === 'badkamer', null, { timeout: 30000 });
+  await dpage.waitForFunction(() => window.__state().room === 'badkamer', null, { timeout: 120000 });
   check('doorway stays walkable (entered badkamer)', true);
 } catch {
   const st = await dpage.evaluate(() => window.__state());
@@ -221,13 +228,13 @@ const dmapBox = await dpage.evaluate(() => {
 });
 const bz = mapPoint(8.0, 16.5);
 await dpage.mouse.click(dmapBox.x + bz.x, dmapBox.y + bz.y);
-await dpage.waitForFunction(() => window.__state().doorOpen === 0, null, { timeout: 30000 });
+await dpage.waitForFunction(() => window.__state().doorOpen === 0, null, { timeout: 120000 });
 check('doors close when far away', true);
 check('no page errors (doors)', derrors.length === 0, derrors.join(' | '));
 await dpage.close();
 
 /* ---------- Measure tool (fresh page, in the gang corridor) ---------- */
-const mepage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const mepage = await browser.newPage({ viewport: { width: VW, height: VH } });
 const meerrors = [];
 mepage.on('pageerror', e => meerrors.push(String(e)));
 await mepage.goto(BASE + '/index.html?pos=3.21,7.5,-1.5708');   // facing the berging wall
@@ -238,10 +245,10 @@ check('measure mode arms (R key)',
       await mepage.evaluate(() => document.getElementById('measureToggle').classList.contains('armed')));
 
 // Two unlocked clicks measure at the clicked screen points.
-await mepage.mouse.click(640, 400);
-await mepage.waitForFunction(() => window.__state().measurePts.length === 1, null, { timeout: 15000 });
-await mepage.mouse.click(640, 780);
-await mepage.waitForFunction(() => window.__state().measurePts.length === 2, null, { timeout: 15000 });
+await mepage.mouse.click(VW / 2, VH / 2);
+await mepage.waitForFunction(() => window.__state().measurePts.length === 1, null, { timeout: 90000 });
+await mepage.mouse.click(VW / 2, VH - 20);
+await mepage.waitForFunction(() => window.__state().measurePts.length === 2, null, { timeout: 90000 });
 const me = await mepage.evaluate(() => window.__state());
 const [A, B] = me.measurePts;
 const expect = Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
@@ -259,10 +266,10 @@ check('measure label shows formatted metres',
 await mepage.screenshot({ path: ARTIFACTS + 'measure.png' });
 
 // Third click restarts; Escape clears and disarms.
-await mepage.mouse.click(400, 400);
-await mepage.waitForFunction(() => window.__state().measurePts.length === 1, null, { timeout: 15000 });
+await mepage.mouse.click(VW * 0.3, VH / 2);
+await mepage.waitForFunction(() => window.__state().measurePts.length === 1, null, { timeout: 90000 });
 await mepage.keyboard.press('Escape');
-await mepage.waitForFunction(() => window.__state().measurePts.length === 0, null, { timeout: 15000 });
+await mepage.waitForFunction(() => window.__state().measurePts.length === 0, null, { timeout: 90000 });
 check('third click restarts, Escape clears',
       await mepage.evaluate(() => !document.getElementById('measureToggle').classList.contains('armed')));
 check('no page errors (measure)', meerrors.length === 0, meerrors.join(' | '));
@@ -276,13 +283,13 @@ const verrors = [];
 vpage.on('pageerror', e => verrors.push(String(e)));
 await vpage.goto(BASE + '/index.html#scheme=' + v1enc);
 await awaitBoot(vpage);
-await vpage.waitForFunction(() => window.__state().tod === 1, null, { timeout: 15000 });
+await vpage.waitForFunction(() => window.__state().tod === 1, null, { timeout: 90000 });
 check('v1 scheme URL maps nacht to tod 1', true);
 check('no page errors (v1 scheme)', verrors.length === 0, verrors.join(' | '));
 await vpage.close();
 
 /* ---------- Custom furniture placer ---------- */
-const fpage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const fpage = await browser.newPage({ viewport: { width: VW, height: VH } });
 const ferrors = [];
 fpage.on('pageerror', e => ferrors.push(String(e)));
 await fpage.goto(BASE + '/index.html');
@@ -296,7 +303,7 @@ await fpage.fill('#furW', '120');
 await fpage.fill('#furD', '60');
 await fpage.fill('#furH', '180');
 await fpage.click('#furPlace');
-await fpage.waitForFunction(() => window.__state().furCount === 1, null, { timeout: 15000 });
+await fpage.waitForFunction(() => window.__state().furCount === 1, null, { timeout: 90000 });
 const fur0 = (await fpage.evaluate(() => window.__state())).fur[0];
 check('furniture spawns with entered dimensions',
       fur0.name === 'Testkast' && fur0.w === 120 && fur0.d === 60 && fur0.h === 180,
@@ -329,10 +336,10 @@ const furRot = (await fpage.evaluate(() => window.__state())).fur[0];
 check('rotate changes ry by 45°', Math.abs(furRot.ry - fur0.ry - Math.PI / 4) < 0.01,
       `ry ${fur0.ry} -> ${furRot.ry}`);
 await fpage.click('#dpShare');
-await fpage.waitForFunction(() => location.hash.includes('scheme='), null, { timeout: 15000 });
+await fpage.waitForFunction(() => location.hash.includes('scheme='), null, { timeout: 90000 });
 await fpage.reload();
 await awaitBoot(fpage);
-await fpage.waitForFunction(() => window.__state().furCount === 1, null, { timeout: 15000 });
+await fpage.waitForFunction(() => window.__state().furCount === 1, null, { timeout: 90000 });
 check('furniture survives share-URL reload', true);
 
 // Delete removes mesh + obstacle.
@@ -340,13 +347,13 @@ await fpage.click('#startBtn');
 await fpage.keyboard.press('i');
 await fpage.waitForTimeout(400);
 await fpage.click('#furList .furRow button:nth-of-type(3)');   // Verwijder
-await fpage.waitForFunction(() => window.__state().furCount === 0, null, { timeout: 15000 });
+await fpage.waitForFunction(() => window.__state().furCount === 0, null, { timeout: 90000 });
 check('delete removes the item', true);
 check('no page errors (furniture)', ferrors.length === 0, ferrors.join(' | '));
 await fpage.close();
 
 /* ---------- Scheme gallery ---------- */
-const gpage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const gpage = await browser.newPage({ viewport: { width: VW, height: VH } });
 const gerrors = [];
 gpage.on('pageerror', e => gerrors.push(String(e)));
 await gpage.goto(BASE + '/index.html');
@@ -393,7 +400,7 @@ check('no page errors (gallery)', gerrors.length === 0, gerrors.join(' | '));
 await gpage.close();
 
 /* ---------- Photo mode ---------- */
-const ppage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const ppage = await browser.newPage({ viewport: { width: VW, height: VH } });
 const perrors = [];
 ppage.on('pageerror', e => perrors.push(String(e)));
 await ppage.goto(BASE + '/index.html?pos=8.5,6.5,2.4');
@@ -404,7 +411,7 @@ await ppage.waitForTimeout(300);
 check('photo mode hides the HUD', await ppage.isHidden('#roomLabel'));
 
 const [download] = await Promise.all([
-  ppage.waitForEvent('download', { timeout: 30000 }),
+  ppage.waitForEvent('download', { timeout: 120000 }),
   ppage.click('#photoShot'),
 ]);
 const dlPath = await download.path();
@@ -447,7 +454,7 @@ check('mobile: minimap tap teleports to woonkamer', m1.room === 'woonkamer',
 // Tap-to-walk on the canvas (tap the floor ahead, low-centre of screen)
 const before = await mpage.evaluate(() => window.__state());
 await mpage.touchscreen.tap(195, 600);
-await mpage.waitForTimeout(1500);
+await mpage.waitForTimeout(1500 * SLOW);
 const after = await mpage.evaluate(() => window.__state());
 check('mobile: tap-to-walk works',
       Math.hypot(after.x - before.x, after.z - before.z) > 0.1,
