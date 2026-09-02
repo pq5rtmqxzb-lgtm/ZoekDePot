@@ -129,7 +129,7 @@ def main():
     print("(offset = perpendicular distance, m; flagged > 0.15 m)\n")
     rows = []
     for k, x1, z1, x2, z2 in model:
-        if k in ("railing", "door"):
+        if k in ("railing", "door", "screen"):
             continue
         vert = abs(x1 - x2) < 0.06
         horiz = abs(z1 - z2) < 0.06

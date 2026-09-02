@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_doc": "3D-model bron voor type R3.sp (bouwnummer 25). geom = muur-hartlijnen {kind: wall|door|sliding|window|railing, x1,z1,x2,z2, t? (dikte, default 0.20), note/section = documentatie}. rooms = vloervlakken per kamer. Gelezen door index.html (fetch) en tools/{plan-overlay,compare-to-pdf,pdf-overlay}.py. Maatvoering geverifieerd tegen plans/YP_bouwnummer_25.pdf met tools/compare-to-pdf.py.",
+  "_doc": "3D-model bron voor type R3.sp (bouwnummer 25). geom = muur-hartlijnen {kind: wall|door|sidelight|sliding|window|railing|screen, x1,z1,x2,z2, t? (dikte, default 0.20), open_to? [x,z] (deuren: het punt waar het blad naartoe openzwaait; x1,z1 = scharnierzijde), entrance/closet (deurtype), note/section = documentatie}. rooms = vloervlakken per kamer, ceil? = plafondhoogte (default 2.80; badkamers en verkeersruimten 2.55 volgens de Technische Omschrijving). Gelezen door js/data.js (fetch) en tools/{plan-overlay,compare-to-pdf,pdf-overlay}.py. Maatvoering + deurdraairichtingen geverifieerd tegen de vectoren van plans/YP_bouwnummer_25.pdf.",
   "geom": [
     {
       "kind": "wall",
@@ -18,33 +18,17 @@
       "x2": 10.53,
       "z2": -0.085,
       "note": "woonkamer schuifpui (PDF panels 7.04..8.82 + 8.74..10.53)",
-      "section": "NORTH FACADE"
-    },
-    {
-      "kind": "wall",
-      "x1": 6.98,
-      "z1": -0.085,
-      "x2": 6.98,
-      "z2": 0.115,
-      "note": "jog east of the window band",
-      "section": "NORTH FACADE"
-    },
-    {
-      "kind": "window",
-      "x1": 5.18,
-      "z1": 0.115,
-      "x2": 6.98,
-      "z2": 0.115,
-      "note": "woonkamer NE window (recessed band)",
-      "section": "NORTH FACADE"
+      "section": "NORTH FACADE",
+      "slide": "x1"
     },
     {
       "kind": "wall",
       "x1": 5.18,
-      "z1": -0.085,
-      "x2": 5.18,
-      "z2": 0.115,
-      "note": "jog west of the window band",
+      "z1": 0.02,
+      "x2": 6.98,
+      "z2": 0.02,
+      "t": 0.4,
+      "note": "solid facade between the two schuifpuien (PDF: filled wall, no window)",
       "section": "NORTH FACADE"
     },
     {
@@ -54,24 +38,17 @@
       "x2": 5.18,
       "z2": -0.085,
       "note": "slaapk1 schuifpui (PDF panels 1.64..3.34 + 3.42..5.13)",
-      "section": "NORTH FACADE"
+      "section": "NORTH FACADE",
+      "slide": "x2"
     },
     {
       "kind": "wall",
-      "x1": 1.58,
-      "z1": -0.085,
-      "x2": 1.58,
-      "z2": 0.115,
-      "note": "jog at the NW tip section",
-      "section": "NORTH FACADE"
-    },
-    {
-      "kind": "window",
       "x1": 0.71,
-      "z1": 0.115,
+      "z1": 0.02,
       "x2": 1.58,
-      "z2": 0.115,
-      "note": "slaapk1 tip window (inner face z=0.21)",
+      "z2": 0.02,
+      "t": 0.4,
+      "note": "solid facade at the tip section (PDF: filled wall z -0.18..0.22)",
       "section": "NORTH FACADE"
     },
     {
@@ -147,13 +124,14 @@
       "section": "NW TIP"
     },
     {
-      "kind": "door",
-      "x1": 1.92,
+      "kind": "wall",
+      "x1": 1.97,
       "z1": 3.95,
-      "x2": 1.92,
-      "z2": 4.87,
-      "note": "VOORDEUR",
-      "section": "ENTRANCE + SHAFT. The voordeur sits in the short x=1.92 wall between"
+      "x2": 1.97,
+      "z2": 4.91,
+      "t": 0.1,
+      "note": "shaft wall (PDF: solid, X-hatched installatieschacht behind it)",
+      "section": "ENTRANCE + SHAFT"
     },
     {
       "kind": "wall",
@@ -162,7 +140,7 @@
       "x2": 1.92,
       "z2": 3.98,
       "note": "filler chamfer-2 -> door jamb",
-      "section": "ENTRANCE + SHAFT. The voordeur sits in the short x=1.92 wall between"
+      "section": "ENTRANCE + SHAFT"
     },
     {
       "kind": "wall",
@@ -171,7 +149,7 @@
       "x2": 0.15,
       "z2": 6.69,
       "note": "chamfer-2 (facade to the core)",
-      "section": "ENTRANCE + SHAFT. The voordeur sits in the short x=1.92 wall between"
+      "section": "ENTRANCE + SHAFT"
     },
     {
       "kind": "wall",
@@ -181,17 +159,21 @@
       "z2": 4.91,
       "t": 0.1,
       "note": "shaft north wall (z 4.86..4.96)",
-      "section": "ENTRANCE + SHAFT. The voordeur sits in the short x=1.92 wall between"
+      "section": "ENTRANCE + SHAFT"
     },
     {
       "kind": "door",
-      "x1": 2.67,
+      "x1": 3.6,
       "z1": 4.91,
-      "x2": 3.6,
+      "x2": 2.67,
       "z2": 4.91,
       "t": 0.1,
-      "note": "slaapk1 door (from the gang)",
-      "section": "ENTRANCE + SHAFT. The voordeur sits in the short x=1.92 wall between"
+      "note": "slaapk1 door (PDF arc: hinge east, swings north into the room)",
+      "section": "ENTRANCE + SHAFT",
+      "open_to": [
+        3.1,
+        4.4
+      ]
     },
     {
       "kind": "wall",
@@ -201,7 +183,7 @@
       "z2": 4.91,
       "t": 0.1,
       "note": "stub door -> pier",
-      "section": "ENTRANCE + SHAFT. The voordeur sits in the short x=1.92 wall between"
+      "section": "ENTRANCE + SHAFT"
     },
     {
       "kind": "wall",
@@ -211,7 +193,7 @@
       "z2": 4.91,
       "t": 0.1,
       "note": "pier alcove/corridor (x 3.76..3.86)",
-      "section": "ENTRANCE + SHAFT. The voordeur sits in the short x=1.92 wall between"
+      "section": "ENTRANCE + SHAFT"
     },
     {
       "kind": "wall",
@@ -221,7 +203,7 @@
       "z2": 5.66,
       "t": 0.1,
       "note": "shaft east wall (x 2.46..2.56)",
-      "section": "ENTRANCE + SHAFT. The voordeur sits in the short x=1.92 wall between"
+      "section": "ENTRANCE + SHAFT"
     },
     {
       "kind": "wall",
@@ -231,17 +213,27 @@
       "z2": 5.66,
       "t": 0.1,
       "note": "shaft south = berging north (z 5.61..5.71)",
-      "section": "ENTRANCE + SHAFT. The voordeur sits in the short x=1.92 wall between"
+      "section": "ENTRANCE + SHAFT"
     },
     {
       "kind": "wall",
       "x1": 5.64,
-      "z1": 0.115,
+      "z1": 0.02,
       "x2": 5.64,
       "z2": 4.26,
       "t": 0.1,
       "note": "east wall (slab 5.59..5.68)",
       "section": "SLAAPKAMER 1"
+    },
+    {
+      "kind": "wall",
+      "x1": 5.335,
+      "z1": 0.71,
+      "x2": 5.335,
+      "z2": 1.28,
+      "t": 0.51,
+      "note": "kolom in slaapk1 (PDF x 5.08..5.59, z 0.71..1.28)",
+      "section": "KOLOMMEN"
     },
     {
       "kind": "wall",
@@ -258,7 +250,7 @@
       "x1": 3.81,
       "z1": 4.26,
       "x2": 3.81,
-      "z2": 5.38,
+      "z2": 5.45,
       "t": 0.1,
       "note": "west (N of door)",
       "section": "BADKAMER"
@@ -266,17 +258,21 @@
     {
       "kind": "door",
       "x1": 3.81,
-      "z1": 5.38,
+      "z1": 6.38,
       "x2": 3.81,
-      "z2": 6.4,
+      "z2": 5.45,
       "t": 0.1,
-      "note": "badkamer door (from gang)",
-      "section": "BADKAMER"
+      "note": "badkamer door (PDF arc: hinge south, swings west into the gang)",
+      "section": "BADKAMER",
+      "open_to": [
+        3.1,
+        5.9
+      ]
     },
     {
       "kind": "wall",
       "x1": 3.81,
-      "z1": 6.4,
+      "z1": 6.38,
       "x2": 3.81,
       "z2": 7.09,
       "t": 0.1,
@@ -295,10 +291,20 @@
     },
     {
       "kind": "wall",
+      "x1": 5.32,
+      "z1": 6.4,
+      "x2": 5.32,
+      "z2": 7.09,
+      "t": 0.56,
+      "note": "kolom in de badkamer (PDF x 5.04..5.60, z 6.40..7.04)",
+      "section": "KOLOMMEN"
+    },
+    {
+      "kind": "wall",
       "x1": 6.99,
       "z1": 4.26,
       "x2": 6.99,
-      "z2": 8.16,
+      "z2": 8.17,
       "t": 0.1,
       "note": "woonkamer west wall (x 6.94..7.04)",
       "section": "BADKAMER"
@@ -308,9 +314,32 @@
       "x1": 3.81,
       "z1": 7.09,
       "x2": 3.81,
+      "z2": 7.19,
+      "t": 0.1,
+      "section": "BERGING + TOILET band"
+    },
+    {
+      "kind": "door",
+      "x1": 3.81,
+      "z1": 7.19,
+      "x2": 3.81,
+      "z2": 8.02,
+      "t": 0.1,
+      "note": "berging door (PDF arc: hinge north, swings west into the gang)",
+      "section": "BERGING + TOILET band",
+      "open_to": [
+        3.1,
+        7.6
+      ],
+      "closet": true
+    },
+    {
+      "kind": "wall",
+      "x1": 3.81,
+      "z1": 8.02,
+      "x2": 3.81,
       "z2": 8.12,
       "t": 0.1,
-      "note": "berging west",
       "section": "BERGING + TOILET band"
     },
     {
@@ -334,13 +363,13 @@
       "section": "BERGING + TOILET band"
     },
     {
-      "kind": "door",
+      "kind": "wall",
       "x1": 3.81,
       "z1": 8.12,
       "x2": 4.8,
       "z2": 8.12,
       "t": 0.1,
-      "note": "berging door (full-width, from gang)",
+      "note": "berging south (solid; PDF)",
       "section": "BERGING + TOILET band"
     },
     {
@@ -359,8 +388,12 @@
       "x2": 6.22,
       "z2": 8.12,
       "t": 0.1,
-      "note": "toilet door (from gang)",
-      "section": "BERGING + TOILET band"
+      "note": "toilet door (PDF arc: hinge west, swings south into the gang)",
+      "section": "BERGING + TOILET band",
+      "open_to": [
+        5.8,
+        8.8
+      ]
     },
     {
       "kind": "wall",
@@ -376,104 +409,149 @@
       "x1": 2.51,
       "z1": 5.66,
       "x2": 2.51,
-      "z2": 5.78,
+      "z2": 6.16,
       "t": 0.1,
       "section": "TECHNISCHE BERGING"
     },
     {
       "kind": "door",
       "x1": 2.51,
-      "z1": 5.78,
+      "z1": 6.16,
       "x2": 2.51,
-      "z2": 6.38,
+      "z2": 7.09,
       "t": 0.1,
-      "note": "berging door (east wall, from gang)",
-      "section": "TECHNISCHE BERGING"
+      "note": "berging door (PDF arc: hinge north, swings east into the gang)",
+      "section": "TECHNISCHE BERGING",
+      "open_to": [
+        3.2,
+        6.6
+      ]
     },
     {
       "kind": "wall",
       "x1": 2.51,
-      "z1": 6.38,
+      "z1": 7.09,
       "x2": 2.51,
-      "z2": 7.92,
+      "z2": 7.9,
       "t": 0.1,
-      "note": "east wall continues past the niche",
       "section": "TECHNISCHE BERGING"
     },
     {
       "kind": "wall",
       "x1": 0.17,
-      "z1": 7.17,
-      "x2": 2.51,
-      "z2": 7.17,
+      "z1": 7.26,
+      "x2": 1.8,
+      "z2": 7.26,
       "t": 0.1,
-      "note": "berging south / closet north",
+      "note": "berging south / closets north (z 7.21..7.31, only up to the WM/CD niche)",
       "section": "TECHNISCHE BERGING"
     },
     {
       "kind": "wall",
-      "x1": 1.05,
-      "z1": 7.17,
-      "x2": 1.05,
-      "z2": 7.92,
-      "t": 0.1,
-      "note": "boiler closet | WM/CD divider",
+      "x1": 1.03,
+      "z1": 7.26,
+      "x2": 1.03,
+      "z2": 7.855,
+      "t": 0.06,
+      "note": "boiler | VV-kast divider",
+      "section": "TECHNISCHE BERGING"
+    },
+    {
+      "kind": "wall",
+      "x1": 1.765,
+      "z1": 7.21,
+      "x2": 1.765,
+      "z2": 7.855,
+      "t": 0.07,
+      "note": "VV-kast | WM/CD niche divider",
       "section": "TECHNISCHE BERGING"
     },
     {
       "kind": "wall",
       "x1": 0.17,
-      "z1": 7.92,
-      "x2": 0.32,
-      "z2": 7.92,
-      "t": 0.1,
+      "z1": 7.855,
+      "x2": 0.25,
+      "z2": 7.855,
+      "t": 0.09,
       "section": "TECHNISCHE BERGING"
     },
     {
       "kind": "door",
-      "x1": 0.32,
-      "z1": 7.92,
-      "x2": 1,
-      "z2": 7.92,
-      "t": 0.1,
-      "note": "boiler closet door",
+      "x1": 0.25,
+      "z1": 7.855,
+      "x2": 0.98,
+      "z2": 7.855,
+      "t": 0.09,
+      "note": "boiler closet door (hinge west, swings into the gang)",
       "section": "TECHNISCHE BERGING",
-      "leaf": false
-    },
-    {
-      "kind": "door",
-      "x1": 1.1,
-      "z1": 7.92,
-      "x2": 2.4,
-      "z2": 7.92,
-      "t": 0.1,
-      "note": "WM/CD niche doors",
-      "section": "TECHNISCHE BERGING",
-      "leaf": false
+      "open_to": [
+        0.6,
+        8.6
+      ],
+      "closet": true
     },
     {
       "kind": "wall",
-      "x1": 2.4,
-      "z1": 7.92,
-      "x2": 2.51,
-      "z2": 7.92,
-      "t": 0.1,
+      "x1": 0.98,
+      "z1": 7.855,
+      "x2": 1.1,
+      "z2": 7.855,
+      "t": 0.09,
       "section": "TECHNISCHE BERGING"
     },
     {
       "kind": "door",
+      "x1": 1.68,
+      "z1": 7.855,
+      "x2": 1.1,
+      "z2": 7.855,
+      "t": 0.09,
+      "note": "vloerverwarmingsverdeler closet door (hinge east, swings into the gang)",
+      "section": "TECHNISCHE BERGING",
+      "open_to": [
+        1.4,
+        8.6
+      ],
+      "closet": true
+    },
+    {
+      "kind": "wall",
+      "x1": 1.68,
+      "z1": 7.855,
+      "x2": 2.51,
+      "z2": 7.855,
+      "t": 0.09,
+      "note": "solid in front of the WM/CD niche",
+      "section": "TECHNISCHE BERGING"
+    },
+    {
+      "kind": "sidelight",
       "x1": 6.99,
-      "z1": 8.16,
+      "z1": 8.17,
       "x2": 6.99,
-      "z2": 9.09,
+      "z2": 8.55,
       "t": 0.1,
-      "note": "gang -> woonkamer",
+      "note": "vast glas naast de woonkamerdeur (nestelkozijn met zijlicht)",
       "section": "GANG -> WOONKAMER door"
     },
     {
+      "kind": "door",
+      "x1": 6.99,
+      "z1": 8.58,
+      "x2": 6.99,
+      "z2": 9.51,
+      "t": 0.1,
+      "note": "woonkamer door (PDF arc: hinge north, swings east into the woonkamer)",
+      "section": "GANG -> WOONKAMER door",
+      "open_to": [
+        7.8,
+        9.0
+      ]
+    },
+    {
       "kind": "wall",
       "x1": 6.99,
-      "z1": 9.09,
+      "z1": 9.51,
       "x2": 6.99,
       "z2": 9.59,
       "t": 0.1,
@@ -483,43 +561,29 @@
       "kind": "wall",
       "x1": 0.07,
       "z1": 9.59,
-      "x2": 0.49,
+      "x2": 2.79,
       "z2": 9.59,
       "t": 0.1,
+      "note": "solid (badkamer klein has NO door to the gang; its door is on the nook side)",
       "section": "DIVIDING WALL gang | slaapk2-zone | keuken"
     },
     {
       "kind": "door",
-      "x1": 0.49,
+      "x1": 3.72,
       "z1": 9.59,
-      "x2": 1.19,
+      "x2": 2.79,
       "z2": 9.59,
       "t": 0.1,
-      "note": "badkamer klein door (from gang)",
-      "section": "DIVIDING WALL gang | slaapk2-zone | keuken"
+      "note": "slaapk2 door (PDF arc: hinge east, swings south into the nook)",
+      "section": "DIVIDING WALL gang | slaapk2-zone | keuken",
+      "open_to": [
+        3.2,
+        10.3
+      ]
     },
     {
       "kind": "wall",
-      "x1": 1.19,
-      "z1": 9.59,
-      "x2": 2.74,
-      "z2": 9.59,
-      "t": 0.1,
-      "section": "DIVIDING WALL gang | slaapk2-zone | keuken"
-    },
-    {
-      "kind": "door",
-      "x1": 2.74,
-      "z1": 9.59,
-      "x2": 3.77,
-      "z2": 9.59,
-      "t": 0.1,
-      "note": "slaapk2 nook door (from gang)",
-      "section": "DIVIDING WALL gang | slaapk2-zone | keuken"
-    },
-    {
-      "kind": "wall",
-      "x1": 3.77,
+      "x1": 3.72,
       "z1": 9.59,
       "x2": 6.99,
       "z2": 9.59,
@@ -532,9 +596,32 @@
       "x1": 2.59,
       "z1": 9.59,
       "x2": 2.59,
-      "z2": 11.46,
+      "z2": 10.32,
       "t": 0.1,
       "note": "badkklein east / nook west (x 2.54..2.64)",
+      "section": "BADKAMER KLEIN"
+    },
+    {
+      "kind": "door",
+      "x1": 2.59,
+      "z1": 10.32,
+      "x2": 2.59,
+      "z2": 11.25,
+      "t": 0.1,
+      "note": "badkamer klein door (PDF arc: hinge north, swings east into the slaapk2 nook)",
+      "section": "BADKAMER KLEIN",
+      "open_to": [
+        3.3,
+        10.8
+      ]
+    },
+    {
+      "kind": "wall",
+      "x1": 2.59,
+      "z1": 11.25,
+      "x2": 2.59,
+      "z2": 11.46,
+      "t": 0.1,
       "section": "BADKAMER KLEIN"
     },
     {
@@ -558,10 +645,45 @@
     },
     {
       "kind": "wall",
+      "x1": 5.33,
+      "z1": 14.4,
+      "x2": 5.33,
+      "z2": 14.9,
+      "t": 0.5,
+      "note": "vrijstaande kolom in de keukenbaai (PDF x 5.08..5.58, z 14.40..14.90)",
+      "section": "KOLOMMEN"
+    },
+    {
+      "kind": "wall",
       "x1": 0.07,
       "z1": 6.69,
       "x2": 0.07,
+      "z2": 8.03,
+      "t": 0.24,
+      "section": "WEST FACADE (corridor party wall, 205 mm metalstud)"
+    },
+    {
+      "kind": "door",
+      "x1": 0.07,
+      "z1": 8.03,
+      "x2": 0.07,
+      "z2": 8.96,
+      "t": 0.24,
+      "note": "VOORDEUR (from the corridor; PDF arc hinge north, swings into the gang)",
+      "section": "WEST FACADE",
+      "open_to": [
+        1.0,
+        8.5
+      ],
+      "entrance": true
+    },
+    {
+      "kind": "wall",
+      "x1": 0.07,
+      "z1": 8.96,
+      "x2": 0.07,
       "z2": 14.9,
+      "t": 0.24,
       "section": "WEST FACADE"
     },
     {
@@ -597,7 +719,8 @@
       "x2": 3.4,
       "z2": 15.74,
       "note": "slaapk2 schuifpui",
-      "section": "SOUTH FACADE slaapk2 + keuken: window piers at inner z=15.41,"
+      "section": "SOUTH FACADE slaapk2 + keuken: window piers at inner z=15.41,",
+      "slide": "x2"
     },
     {
       "kind": "wall",
@@ -631,7 +754,8 @@
       "x2": 6.52,
       "z2": 15.74,
       "note": "keuken schuifpui",
-      "section": "SOUTH FACADE slaapk2 + keuken: window piers at inner z=15.41,"
+      "section": "SOUTH FACADE slaapk2 + keuken: window piers at inner z=15.41,",
+      "slide": "x2"
     },
     {
       "kind": "wall",
@@ -657,7 +781,8 @@
       "x2": 10.19,
       "z2": 13.9,
       "note": "woonkamer schuifpui (PDF panels 6.77..8.52 + 8.44..10.19)",
-      "section": "SOUTH FACADE woonkamer"
+      "section": "SOUTH FACADE woonkamer",
+      "slide": "x1"
     },
     {
       "kind": "wall",
@@ -670,115 +795,166 @@
     {
       "kind": "wall",
       "x1": 10.63,
+      "z1": 13.6,
+      "x2": 10.63,
+      "z2": 15.8,
+      "t": 0.76,
+      "note": "ZO-penant: gevelkolom die 1.9 m het balkon op steekt (PDF x 10.25..11.01, z 13.60..15.80)",
+      "section": "KOLOMMEN",
+      "clad": "all"
+    },
+    {
+      "kind": "wall",
+      "x1": 10.63,
       "z1": -0.085,
       "x2": 10.63,
       "z2": 13.9,
       "section": "EAST FACADE"
     },
     {
-      "kind": "railing",
-      "x1": 1.74,
+      "kind": "screen",
+      "x1": 10.74,
       "z1": -1.08,
       "x2": 10.74,
+      "z2": -0.19,
+      "note": "privacyscherm naar de buren (PDF: dunne lijn x 10.75)",
+      "section": "NOORD BALKON"
+    },
+    {
+      "kind": "railing",
+      "x1": 10.74,
+      "z1": -1.08,
+      "x2": 1.73,
       "z2": -1.08,
       "section": "NOORD BALKON"
     },
     {
       "kind": "railing",
+      "x1": 1.73,
+      "z1": -1.08,
+      "x2": 1.38,
+      "z2": -1.11,
+      "section": "NOORD BALKON"
+    },
+    {
+      "kind": "railing",
+      "x1": 1.38,
+      "z1": -1.11,
+      "x2": 0.86,
+      "z2": -1.22,
+      "section": "NOORD BALKON"
+    },
+    {
+      "kind": "railing",
+      "x1": 0.86,
+      "z1": -1.22,
+      "x2": 0.55,
+      "z2": -1.33,
+      "section": "NOORD BALKON"
+    },
+    {
+      "kind": "railing",
+      "x1": 0.55,
+      "z1": -1.33,
+      "x2": 0.3,
+      "z2": -1.31,
+      "section": "NOORD BALKON"
+    },
+    {
+      "kind": "railing",
+      "x1": 0.3,
+      "z1": -1.31,
+      "x2": 0.14,
+      "z2": -1.05,
+      "section": "NOORD BALKON"
+    },
+    {
+      "kind": "railing",
+      "x1": 0.14,
+      "z1": -1.05,
+      "x2": -0.03,
+      "z2": -0.75,
+      "section": "NOORD BALKON"
+    },
+    {
+      "kind": "railing",
+      "x1": -0.03,
+      "z1": -0.75,
+      "x2": -0.1,
+      "z2": -0.42,
+      "section": "NOORD BALKON"
+    },
+    {
+      "kind": "screen",
       "x1": 10.74,
-      "z1": -1.08,
+      "z1": 15.8,
       "x2": 10.74,
-      "z2": -0.19,
-      "section": "NOORD BALKON"
+      "z2": 17.55,
+      "note": "privacyscherm naar de buren",
+      "section": "ZUID BALKON"
     },
     {
       "kind": "railing",
-      "x1": 1.74,
-      "z1": -1.08,
-      "x2": 1.3,
-      "z2": -1.03,
-      "note": "arc chords",
-      "section": "NOORD BALKON"
-    },
-    {
-      "kind": "railing",
-      "x1": 1.3,
-      "z1": -1.03,
-      "x2": 0.85,
-      "z2": -0.88,
-      "section": "NOORD BALKON"
-    },
-    {
-      "kind": "railing",
-      "x1": 0.85,
-      "z1": -0.88,
-      "x2": 0.39,
-      "z2": -0.59,
-      "section": "NOORD BALKON"
-    },
-    {
-      "kind": "railing",
-      "x1": 0.39,
-      "z1": -0.59,
-      "x2": 0.02,
-      "z2": -0.19,
-      "section": "NOORD BALKON"
-    },
-    {
-      "kind": "railing",
-      "x1": 3.1,
+      "x1": 10.74,
       "z1": 17.55,
-      "x2": 10.74,
+      "x2": 3.12,
       "z2": 17.55,
       "section": "ZUID BALKON"
     },
     {
       "kind": "railing",
-      "x1": 10.74,
+      "x1": 3.12,
       "z1": 17.55,
-      "x2": 10.74,
-      "z2": 13.99,
+      "x2": 2.72,
+      "z2": 17.62,
       "section": "ZUID BALKON"
     },
     {
       "kind": "railing",
-      "x1": 3.1,
-      "z1": 17.55,
-      "x2": 2.62,
-      "z2": 17.51,
-      "note": "arc chords",
+      "x1": 2.72,
+      "z1": 17.62,
+      "x2": 2.31,
+      "z2": 17.73,
       "section": "ZUID BALKON"
     },
     {
       "kind": "railing",
-      "x1": 2.62,
-      "z1": 17.51,
-      "x2": 1.93,
-      "z2": 17.29,
+      "x1": 2.31,
+      "z1": 17.73,
+      "x2": 2.06,
+      "z2": 17.82,
       "section": "ZUID BALKON"
     },
     {
       "kind": "railing",
-      "x1": 1.93,
-      "z1": 17.29,
-      "x2": 1.32,
-      "z2": 16.9,
+      "x1": 2.06,
+      "z1": 17.82,
+      "x2": 1.8,
+      "z2": 17.96,
       "section": "ZUID BALKON"
     },
     {
       "kind": "railing",
-      "x1": 1.32,
-      "z1": 16.9,
-      "x2": 0.83,
-      "z2": 16.37,
+      "x1": 1.8,
+      "z1": 17.96,
+      "x2": 0.66,
+      "z2": 16.01,
       "section": "ZUID BALKON"
     },
     {
       "kind": "railing",
-      "x1": 0.83,
-      "z1": 16.37,
-      "x2": 0.6,
-      "z2": 15.97,
+      "x1": 0.66,
+      "z1": 16.01,
+      "x2": 0.86,
+      "z2": 15.88,
+      "section": "ZUID BALKON"
+    },
+    {
+      "kind": "railing",
+      "x1": 0.86,
+      "z1": 15.88,
+      "x2": 1.12,
+      "z2": 15.8,
       "section": "ZUID BALKON"
     }
   ],
@@ -795,7 +971,8 @@
           "z2": 8.07
         }
       ],
-      "polys": []
+      "polys": [],
+      "ceil": 2.55
     },
     {
       "id": "berging",
@@ -809,7 +986,8 @@
           "z2": 8.07
         }
       ],
-      "polys": []
+      "polys": [],
+      "ceil": 2.55
     },
     {
       "id": "berging2",
@@ -820,7 +998,13 @@
           "x1": 0.86,
           "z1": 5.71,
           "x2": 2.46,
-          "z2": 7.12
+          "z2": 7.21
+        },
+        {
+          "x1": 1.8,
+          "z1": 7.21,
+          "x2": 2.46,
+          "z2": 7.81
         }
       ],
       "polys": [
@@ -831,18 +1015,49 @@
           ],
           [
             0.86,
-            7.12
+            7.21
           ],
           [
-            0.17,
-            7.12
+            0.19,
+            7.21
           ],
           [
-            0.17,
+            0.19,
             6.72
           ]
         ]
-      ]
+      ],
+      "ceil": 2.55
+    },
+    {
+      "id": "kast_boiler",
+      "name": "Kast (boiler)",
+      "kind": "tegel",
+      "rects": [
+        {
+          "x1": 0.19,
+          "z1": 7.31,
+          "x2": 1.0,
+          "z2": 7.81
+        }
+      ],
+      "polys": [],
+      "ceil": 2.55
+    },
+    {
+      "id": "kast_vv",
+      "name": "Kast (vloerverwarming)",
+      "kind": "tegel",
+      "rects": [
+        {
+          "x1": 1.06,
+          "z1": 7.31,
+          "x2": 1.73,
+          "z2": 7.81
+        }
+      ],
+      "polys": [],
+      "ceil": 2.55
     },
     {
       "id": "badkklein",
@@ -850,13 +1065,14 @@
       "kind": "tegel",
       "rects": [
         {
-          "x1": 0.17,
+          "x1": 0.19,
           "z1": 9.63,
           "x2": 2.54,
           "z2": 11.41
         }
       ],
-      "polys": []
+      "polys": [],
+      "ceil": 2.55
     },
     {
       "id": "badkamer",
@@ -870,7 +1086,8 @@
           "z2": 7.04
         }
       ],
-      "polys": []
+      "polys": [],
+      "ceil": 2.55
     },
     {
       "id": "slaapk1",
@@ -888,6 +1105,12 @@
           "z1": 4.21,
           "x2": 3.76,
           "z2": 4.87
+        },
+        {
+          "x1": 1.58,
+          "z1": 0.0,
+          "x2": 5.18,
+          "z2": 0.21
         }
       ],
       "polys": [
@@ -935,7 +1158,7 @@
           "z2": 11.41
         },
         {
-          "x1": 0.17,
+          "x1": 0.19,
           "z1": 11.51,
           "x2": 4.31,
           "z2": 14.85
@@ -950,7 +1173,7 @@
       "polys": [
         [
           [
-            0.17,
+            0.19,
             14.85
           ],
           [
@@ -980,16 +1203,10 @@
           "z2": 9.54
         },
         {
-          "x1": 0.17,
-          "z1": 7.92,
+          "x1": 0.19,
+          "z1": 7.9,
           "x2": 2.56,
           "z2": 9.54
-        },
-        {
-          "x1": 0.17,
-          "z1": 7.17,
-          "x2": 2.51,
-          "z2": 7.92
         },
         {
           "x1": 3.86,
@@ -998,7 +1215,8 @@
           "z2": 9.54
         }
       ],
-      "polys": []
+      "polys": [],
+      "ceil": 2.55
     },
     {
       "id": "woonkamer",
@@ -1028,6 +1246,12 @@
           "z1": 13.81,
           "x2": 6.52,
           "z2": 15.7
+        },
+        {
+          "x1": 7.04,
+          "z1": 0.0,
+          "x2": 10.53,
+          "z2": 0.21
         }
       ],
       "polys": []
@@ -1040,7 +1264,15 @@
       "polys": [
         [
           [
-            0.02,
+            -0.1,
+            -0.42
+          ],
+          [
+            -0.03,
+            -0.24
+          ],
+          [
+            0.3,
             -0.19
           ],
           [
@@ -1052,20 +1284,32 @@
             -1.08
           ],
           [
-            1.74,
+            1.73,
             -1.08
           ],
           [
-            1.3,
-            -1.03
+            1.38,
+            -1.11
           ],
           [
-            0.85,
-            -0.88
+            0.86,
+            -1.22
           ],
           [
-            0.39,
-            -0.59
+            0.55,
+            -1.33
+          ],
+          [
+            0.3,
+            -1.31
+          ],
+          [
+            0.14,
+            -1.05
+          ],
+          [
+            -0.03,
+            -0.75
           ]
         ]
       ]
@@ -1077,10 +1321,6 @@
       "rects": [],
       "polys": [
         [
-          [
-            0.6,
-            15.97
-          ],
           [
             1.12,
             15.8
@@ -1094,32 +1334,82 @@
             13.99
           ],
           [
-            10.74,
+            10.25,
             13.99
           ],
           [
+            10.25,
+            15.8
+          ],
+          [
+            10.74,
+            15.8
+          ],
+          [
             10.74,
             17.55
           ],
           [
-            3.1,
+            3.12,
             17.55
           ],
           [
-            2.62,
-            17.51
+            2.72,
+            17.62
           ],
           [
-            1.93,
-            17.29
+            2.31,
+            17.73
           ],
           [
-            1.32,
-            16.9
+            2.06,
+            17.82
           ],
           [
-            0.83,
-            16.37
+            1.8,
+            17.96
+          ],
+          [
+            0.66,
+            16.01
+          ],
+          [
+            0.86,
+            15.88
+          ]
+        ]
+      ]
+    },
+    {
+      "id": "corridor",
+      "name": "Corridor (algemene ruimte)",
+      "kind": "tapijt",
+      "ceil": 2.55,
+      "rects": [
+        {
+          "x1": -1.96,
+          "z1": 6.3,
+          "x2": -0.06,
+          "z2": 12.4
+        }
+      ],
+      "polys": [
+        [
+          [
+            -0.06,
+            6.3
+          ],
+          [
+            0.375,
+            6.3
+          ],
+          [
+            0.15,
+            6.69
+          ],
+          [
+            -0.06,
+            6.69
           ]
         ]
       ]

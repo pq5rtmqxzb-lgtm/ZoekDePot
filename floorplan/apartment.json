@@ -3,22 +3,31 @@
   "phase3_model_fidelity": {
     "tool": "tools/compare-to-pdf.py (model walls + diagonals vs the PDF's own vector lines)",
     "tolerance_m": 0.15,
-    "status": "PASS - every axis-aligned wall matches a PDF line within 0.12 m (most within 0.04 m; model uses wall-slab centrelines, the PDF draws both faces). All five diagonal walls match PDF diagonals within 0.10 m.",
+    "status": "PASS - every axis-aligned wall matches a PDF line within 0.12 m (columns: centreline-vs-face 0.25 m by construction). Door positions AND swing directions were re-read from the PDF's door-arc polylines (2025-09 realism pass).",
     "resolved": [
       "NW corner rebuilt: the long chamfer runs (-1.33,2.12)->(1.92,3.95) (NOT to (0,4.10) as before); the tip is a stepped zigzag with a small interior pier, with a window (inner face z=0.21) at x 0.71..1.58.",
-      "Second chamfer added: (1.69,4.23)->(0.24,6.74) inner face - the entrance facade to the stair core. The VOORDEUR is the x=1.92 wall piece z 3.95..4.87, opening onto the core landing.",
       "Slaapkamer 1 (23.45 m2) includes an entry alcove x 1.92..3.76, z 4.21..4.87; its door is in the z=4.87..4.96 plane at x 2.67..3.60. Its south wall z=4.21..4.30 only spans x 3.76..5.59.",
       "Installatieschacht (X-hatched trapezoid) walled between chamfer-2, the entry and the technische berging: north z=4.86..4.96 (x 1.92..2.56), east x=2.46..2.56, south z=5.61..5.71.",
       "Technische berging (WTW/boiler/WM/CD) added west of the gang: x 0.19..2.46, z 5.71..7.14, door on its east wall; boiler closet + WM/CD niche south of it (z 7.14..7.92).",
       "Badkamer (8.06 m2) south wall is at z=7.04..7.14 (was 6.85). Berging/toilet band z 7.14..8.07: berging x 3.86..4.75 (880 mm), toilet x 4.84..6.63 (1785 mm), mini-shaft x 6.64..6.94.",
-      "Badkamer klein (3.81 m2) confirmed WEST (x 0.19..2.54, z 9.64..11.41, dims 2330x1765), entered from the GANG (door x 0.49..1.19 in the z=9.54 wall). East strip x 2.64..4.31 is slaapkamer 2's entry nook (open to the room, gang door x 2.74..3.77).",
       "Slaapkamer 2 (18.90 m2) is 0.65 m deeper than before: facade inner face z=15.41 (3900 mm from the en-suite wall), window piers + recessed schuifpui x 1.68..3.45 at z=15.68..15.79, SW diagonal (0.19,14.85)->(1.15,15.41).",
       "West facade slab -0.06..0.19 (inner face x=0.19, was modelled at x=0).",
       "North facade: slaapk1 schuifpui x 1.58..5.18, woonkamer window band x 5.18..6.98 (inner face z=0.21), woonkamer schuifpui x 7.04..10.53.",
-      "Balconies: noord railing z=-1.08 spanning x 1.74..10.74 with a curved west end into the tip; zuid railing z=17.55..17.67 spanning x 3.10..10.74 with a large curved SW corner to the facade diagonal."
+      "Balconies: noord railing z=-1.08 spanning x 1.74..10.74 with a curved west end into the tip; zuid railing z=17.55..17.67 spanning x 3.10..10.74 with a large curved SW corner to the facade diagonal.",
+      "Second chamfer (1.69,4.23)->(0.24,6.74) is the wall to the stair core. The x=1.92 piece z 3.95..4.87 is SOLID (X-hatched shaft void behind it) - it is NOT the voordeur.",
+      "VOORDEUR: in the WEST party wall of the gang, z 8.03..8.96 (PDF arc (0.14,8.96)->(1.07,8.03): hinge north, swings east into the gang). The gemeenschappelijke corridor lies west of x=-0.06.",
+      "Badkamer klein (3.81 m2) is WEST (x 0.19..2.54, z 9.64..11.41) and is entered from the slaapkamer-2 nook through its EAST wall, door z 10.32..11.25 (hinge north, swings east). Its north wall to the gang is solid.",
+      "Gang -> woonkamer: door z 8.58..9.51 (hinge north, swings east into the woonkamer) with a fixed glass zijlicht z 8.17..8.55 north of it.",
+      "Technische berging door z 6.16..7.09 (hinge north, swings east). Closet band: boiler closet x 0.19..1.00 and vloerverwarmingsverdeler closet x 1.06..1.73 (z 7.31..7.81) with doors to the gang; WM/CD niche x 1.80..2.46 open to the berging.",
+      "Small berging (880 mm) opens WEST into the gang (door z 7.19..8.02, hinge north); its south wall is solid. Badkamer door z 5.45..6.38 hinges south and swings west; slaapk1 door hinges east and swings north; toilet door hinges west and swings south; slaapk2 nook door x 2.79..3.72 hinges east and swings south.",
+      "North facade x 0.71..1.58 and x 5.18..6.98 are SOLID (filled) facade, not windows.",
+      "Structural columns (existing concrete frame): slaapk1 x 5.08..5.59 z 0.71..1.28; badkamer x 5.04..5.60 z 6.40..7.04; keukenbaai x 5.08..5.58 z 14.40..14.90 (free-standing); ZO-penant x 10.25..11.01 z 13.60..15.80 (projects onto the south balcony).",
+      "Balcony curves bulge OUTWARD: north railing curves to (0.30,-1.31) and returns to the facade at (-0.10,-0.42); south railing curves from (3.12,17.55) to (1.80,17.96) then runs straight to the facade diagonal at (0.66,16.01).",
+      "Plafondhoogte (Technische Omschrijving): 2.80 m, badkamers en verkeersruimten 2.55 m (model.json rooms.ceil)."
     ],
     "still_uncertain": [
-      "Exact swing direction of a few interior door leaves (geometry of openings is exact).",
+      "Which pane of the north schuifpuien slides (the south ones are marked with dashed triangles in the PDF; the north ones are assumed).",
+      "The shared corridor west of the voordeur is indicative (the sales drawing stops at the party wall).",
       "The NW tip facet (0.71,0.21)->(-0.12,0.02) and the entry filler wall are drawn as filled wall mass in the PDF (no stroked centreline); their positions come from the raster image."
     ]
   },
@@ -52,7 +61,7 @@
       "id": "L0",
       "z_offset_m": 0.0,
       "ceiling_height_m": 2.8,
-      "ceiling_height_source": "User-provided (Technische Omschrijving PDF could not be read in this sandbox). Not extracted from the floor plan."
+      "ceiling_height_source": "Technische Omschrijving Ypsilon Park (15-12-2025): plafond circa 2800 mm +vloer; badkamers en verkeersruimten circa 2550 mm +vloer."
     }
   ],
   "raw_dimensions_pdf": [
@@ -845,6 +854,21 @@
   ],
   "openings": [
     {
+      "id": "voordeur",
+      "type": "door",
+      "wall_segment": "west party wall of the gang at x=0.07 (corridor side)",
+      "span_at_x_m": 0.07,
+      "span_y_m": [
+        8.03,
+        8.96
+      ],
+      "width_m": 0.93,
+      "height_m": 2.315,
+      "from_room": "corridor",
+      "to_room": "gang",
+      "note": "PDF arc (0.14,8.96)->(1.07,8.03): hinge north, swings into the gang"
+    },
+    {
       "id": "balkon_top_slaapk1",
       "type": "sliding_door",
       "wall_segment": "top facade between x=0.50 and x=2.50 at y=0",
@@ -952,32 +976,33 @@
     },
     {
       "id": "door_gang_woonkamer",
-      "type": "open_passage",
+      "type": "door",
       "wall_segment": "woonkamer west wall at x=6.948, gang horizontal arm range y=6.50-7.80",
       "span_at_x_m": 6.948,
       "span_y_m": [
-        6.5,
-        7.8
+        8.58,
+        9.51
       ],
-      "width_m": 1.3,
-      "height_m": 2.4,
+      "width_m": 0.93,
+      "height_m": 2.315,
       "from_room": "gang",
       "to_room": "woonkamer",
-      "note": "Wide open passage, not a hinged door"
+      "note": "Hinged door (hinge north, swings east) with a fixed glass zijlicht z 8.17..8.55"
     },
     {
       "id": "door_slaapk2_badkklein",
       "type": "door",
-      "wall_segment": "badk klein east wall at x=-0.63",
-      "span_at_x_m": -0.63,
+      "wall_segment": "badkamer klein EAST wall at x=2.59 (from the slaapkamer-2 nook)",
+      "span_at_x_m": 2.59,
       "span_y_m": [
-        10.2,
-        11.13
+        10.32,
+        11.25
       ],
       "width_m": 0.93,
       "height_m": 2.1,
       "from_room": "slaapkamer 2",
-      "to_room": "badkamer (klein)"
+      "to_room": "badkamer (klein)",
+      "note": "PDF arc: hinge north (z 10.32), swings east into the nook"
     }
   ],
   "uncertain": [

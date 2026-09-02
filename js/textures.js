@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { S } from './state.js';
 import {
   WALL_MAT, FLOOR_MAT, CEIL_MAT, MARBLE_MAT, TILE_MAT, STONE_TILE_MAT,
+  WALL_TILE_MAT, CARPET_MAT, CLADDING_MAT, LIMEWASH_MAT, LAMEL_CEIL_MAT,
 } from './materials.js';
 
 export let skyTex = null;
@@ -20,25 +21,31 @@ export function makeTexture(drawFn, w, h, repU = 1, repV = 1) {
   return tex;
 }
 
+/* Grain noise over a base fill: adds ±amp per-pixel brightness noise. */
+function noiseFill(ctx, w, h, base, amp) {
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, w, h);
+  const img = ctx.getImageData(0, 0, w, h);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const n = (Math.random() - 0.5) * amp;
+    img.data[i]   = Math.max(0, Math.min(255, img.data[i]   + n));
+    img.data[i+1] = Math.max(0, Math.min(255, img.data[i+1] + n));
+    img.data[i+2] = Math.max(0, Math.min(255, img.data[i+2] + n));
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
 /* ===== PROCEDURAL TEXTURES ===== */
 export function setupTextures(aniso) {
+  S.texAniso = aniso;
   // Plaster wall — base off-white with low-contrast grain and a few blotches
   const plasterTex = makeTexture((ctx, w, h) => {
-    ctx.fillStyle = '#f0ece4';
-    ctx.fillRect(0, 0, w, h);
-    const img = ctx.getImageData(0, 0, w, h);
-    for (let i = 0; i < img.data.length; i += 4) {
-      const n = (Math.random() - 0.5) * 22;
-      img.data[i]   = Math.max(0, Math.min(255, img.data[i]   + n));
-      img.data[i+1] = Math.max(0, Math.min(255, img.data[i+1] + n));
-      img.data[i+2] = Math.max(0, Math.min(255, img.data[i+2] + n));
-    }
-    ctx.putImageData(img, 0, 0);
-    for (let i = 0; i < 24; i++) {
-      ctx.fillStyle = `rgba(120,108,94,${0.025 + Math.random() * 0.04})`;
-      ctx.beginPath();
-      ctx.arc(Math.random() * w, Math.random() * h, 18 + Math.random() * 50, 0, Math.PI * 2);
-      ctx.fill();
+    // Fine-grained "sausklaar/behangklaar" plaster: light grain only, no
+    // blotches (those read as a polka-dot wallpaper on a 10 m wall).
+    noiseFill(ctx, w, h, '#f0ece4', 14);
+    for (let i = 0; i < 400; i++) {
+      ctx.fillStyle = `rgba(120,108,94,${0.02 + Math.random() * 0.03})`;
+      ctx.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 3, 1 + Math.random() * 3);
     }
   }, 512, 512, 4, 2);
   plasterTex.anisotropy = aniso;
@@ -46,9 +53,7 @@ export function setupTextures(aniso) {
   WALL_MAT.needsUpdate = true;
 
   // Oak "lamel" strip floor — narrow staggered strips (~0.18 m wide, ~1 m
-  // long at the room's tile cadence). Drawn by drawLamelStrips, which paints
-  // FULL rows: the old stagger logic left half-cells of alternating rows
-  // unpainted, which rendered as black squares on every wooden floor.
+  // long at the room's tile cadence).
   const plankTex = makeTexture((ctx, w, h) =>
     drawLamelStrips(ctx, w, h,
       ['#d3b285', '#c9a87a', '#dcbc90', '#c19e6e', '#d0ae80'],
@@ -79,20 +84,10 @@ export function setupTextures(aniso) {
   MARBLE_MAT.map = marbleTex;
   MARBLE_MAT.needsUpdate = true;
 
-  // White paint ceiling — near-white base with a faint stipple so it
-  // catches light unevenly like a rolled ceiling rather than flat color.
+  // White paint ceiling — near-white base with a faint stipple (sausklaar,
+  // gerold).
   const ceilingTex = makeTexture((ctx, w, h) => {
-    ctx.fillStyle = '#fafaf7';
-    ctx.fillRect(0, 0, w, h);
-    const img = ctx.getImageData(0, 0, w, h);
-    for (let i = 0; i < img.data.length; i += 4) {
-      const n = (Math.random() - 0.5) * 6;
-      img.data[i]   = Math.max(0, Math.min(255, img.data[i]   + n));
-      img.data[i+1] = Math.max(0, Math.min(255, img.data[i+1] + n));
-      img.data[i+2] = Math.max(0, Math.min(255, img.data[i+2] + n));
-    }
-    ctx.putImageData(img, 0, 0);
-    // Sparse roller stipple — very low alpha
+    noiseFill(ctx, w, h, '#fafaf7', 6);
     for (let i = 0; i < 80; i++) {
       ctx.fillStyle = `rgba(220, 220, 215, ${0.05 + Math.random() * 0.08})`;
       ctx.beginPath();
@@ -105,46 +100,138 @@ export function setupTextures(aniso) {
   CEIL_MAT.emissiveMap = ceilingTex;
   CEIL_MAT.needsUpdate = true;
 
-  // Bathroom/toilet tile — small light grey squares with grout
+  // Bathroom/toilet floor tile — 60x60 light grey with a thin grout line
+  // (canvas = 1.2 x 1.2 m at the tegel cadence).
   const tileTex = makeTexture((ctx, w, h) => {
-    ctx.fillStyle = '#7a7a76';
+    ctx.fillStyle = '#8a8a86';
     ctx.fillRect(0, 0, w, h);
-    const cols = 8, rows = 8;
+    const cols = 2, rows = 2;
     const tw = w / cols, th = h / rows;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const shade = 226 + Math.floor((Math.random() - 0.5) * 18);
-        ctx.fillStyle = `rgb(${shade},${shade - 2},${shade - 8})`;
-        ctx.fillRect(c * tw + 1, r * th + 1, tw - 2, th - 2);
+        const shade = 214 + Math.floor((Math.random() - 0.5) * 12);
+        ctx.fillStyle = `rgb(${shade},${shade - 2},${shade - 7})`;
+        ctx.fillRect(c * tw + 1.5, r * th + 1.5, tw - 3, th - 3);
+        for (let i = 0; i < 40; i++) {
+          ctx.fillStyle = `rgba(90,86,80,${0.03 + Math.random() * 0.06})`;
+          ctx.fillRect(c * tw + Math.random() * tw, r * th + Math.random() * th, 2, 2);
+        }
       }
     }
-  }, 256, 256, 3, 3);
+  }, 256, 256, 1, 1);
   tileTex.anisotropy = aniso;
   TILE_MAT.map = tileTex;
   TILE_MAT.needsUpdate = true;
 
-  // Outdoor stone pavers — larger, darker blocks
+  // Wall tile — 30x60 large format, warm off-white, laid horizontally.
+  // Canvas = 1.2 m wide x 1.2 m high (2 x 4 tiles); builders scale the repeat.
+  const wallTileTex = makeTexture((ctx, w, h) => {
+    ctx.fillStyle = '#b9b6b0';
+    ctx.fillRect(0, 0, w, h);
+    const cols = 2, rows = 4;
+    const tw = w / cols, th = h / rows;
+    for (let r = 0; r < rows; r++) {
+      const off = (r % 2) * tw / 2;       // halfsteensverband
+      for (let c = -1; c < cols; c++) {
+        const shade = 232 + Math.floor((Math.random() - 0.5) * 8);
+        ctx.fillStyle = `rgb(${shade},${shade - 2},${shade - 6})`;
+        ctx.fillRect(c * tw + off + 1.2, r * th + 1.2, tw - 2.4, th - 2.4);
+      }
+    }
+  }, 512, 512, 1, 1);
+  wallTileTex.anisotropy = aniso;
+  WALL_TILE_MAT.map = wallTileTex;
+  WALL_TILE_MAT.needsUpdate = true;
+
+  // Outdoor balkontegels — 50x50 light grey concrete on tegeldragers
   const stoneTileTex = makeTexture((ctx, w, h) => {
-    ctx.fillStyle = '#5a554c';
+    ctx.fillStyle = '#6a6660';
     ctx.fillRect(0, 0, w, h);
     const cols = 3, rows = 3;
     const tw = w / cols, th = h / rows;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const shade = 168 + Math.floor((Math.random() - 0.5) * 28);
-        ctx.fillStyle = `rgb(${shade},${shade - 8},${shade - 18})`;
+        const shade = 176 + Math.floor((Math.random() - 0.5) * 22);
+        ctx.fillStyle = `rgb(${shade},${shade - 4},${shade - 12})`;
         ctx.fillRect(c * tw + 2, r * th + 2, tw - 4, th - 4);
-        // speckle
-        for (let i = 0; i < 24; i++) {
-          ctx.fillStyle = `rgba(40,32,22,${0.05 + Math.random() * 0.18})`;
+        for (let i = 0; i < 30; i++) {
+          ctx.fillStyle = `rgba(40,32,22,${0.05 + Math.random() * 0.16})`;
           ctx.fillRect(c * tw + Math.random() * tw, r * th + Math.random() * th, 2, 2);
         }
       }
     }
-  }, 256, 256, 2, 2);
+  }, 256, 256, 1, 1);
   stoneTileTex.anisotropy = aniso;
   STONE_TILE_MAT.map = stoneTileTex;
   STONE_TILE_MAT.needsUpdate = true;
+
+  // Corridor carpet — gemêleerd lichtgrijs
+  const carpetTex = makeTexture((ctx, w, h) => {
+    noiseFill(ctx, w, h, '#b6b5b0', 46);
+    for (let i = 0; i < 600; i++) {
+      ctx.fillStyle = `rgba(${60 + Math.random() * 60 | 0},${60 + Math.random() * 60 | 0},${60 + Math.random() * 60 | 0},0.18)`;
+      ctx.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 2, 1 + Math.random() * 2);
+    }
+  }, 256, 256, 1, 1);
+  carpetTex.anisotropy = aniso;
+  CARPET_MAT.map = carpetTex;
+  CARPET_MAT.needsUpdate = true;
+
+  // Gevelbekleding: verticale Basralocus delen (onbehandeld, vergrijzend
+  // bruin) met zwart aluminium voegprofiel. Canvas = 1.0 x 1.0 m.
+  const claddingTex = makeTexture((ctx, w, h) => {
+    ctx.fillStyle = '#15130f';
+    ctx.fillRect(0, 0, w, h);
+    const slat = 0.082, gap = 0.012;           // m
+    const n = Math.round(1 / (slat + gap));
+    const pw = w / n;
+    const tones = ['#9d7f60', '#8f7458', '#a88a6a', '#86694d', '#997a5c', '#8b7057'];
+    for (let i = 0; i < n; i++) {
+      ctx.fillStyle = tones[(i * 5) % tones.length];
+      const x0 = i * pw, sw = pw * (slat / (slat + gap));
+      ctx.fillRect(x0, 0, sw, h);
+      for (let g = 0; g < 12; g++) {            // vertical grain streaks
+        ctx.strokeStyle = `rgba(40, 28, 16, ${0.05 + Math.random() * 0.10})`;
+        ctx.lineWidth = 0.6 + Math.random() * 1.2;
+        const gx = x0 + Math.random() * sw;
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx + (Math.random() - 0.5) * 3, h); ctx.stroke();
+      }
+    }
+  }, 512, 512, 1, 1);
+  claddingTex.anisotropy = aniso;
+  CLADDING_MAT.map = claddingTex;
+  CLADDING_MAT.needsUpdate = true;
+
+  // Algemene ruimten: limewash verfsysteem, betonlook
+  const limewashTex = makeTexture((ctx, w, h) => {
+    noiseFill(ctx, w, h, '#b9b5ae', 18);
+    for (let i = 0; i < 90; i++) {
+      ctx.fillStyle = `rgba(${150 + Math.random() * 40 | 0},${146 + Math.random() * 40 | 0},${140 + Math.random() * 36 | 0},${0.06 + Math.random() * 0.10})`;
+      ctx.beginPath();
+      ctx.ellipse(Math.random() * w, Math.random() * h, 40 + Math.random() * 120, 20 + Math.random() * 70,
+                  Math.random() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }, 512, 512, 2, 1);
+  limewashTex.anisotropy = aniso;
+  LIMEWASH_MAT.map = limewashTex;
+  LIMEWASH_MAT.needsUpdate = true;
+
+  // Panelenplafond met houten lamellen (corridor + balkonplafonds): narrow
+  // strips with dark shadow gaps. Canvas = 1.0 x 1.0 m, strips along U.
+  const lamelTex = makeTexture((ctx, w, h) => {
+    ctx.fillStyle = '#1a1612';
+    ctx.fillRect(0, 0, w, h);
+    const n = 14, ph = h / n;
+    const tones = ['#b8916a', '#ad8760', '#c09a72', '#a67f5a'];
+    for (let i = 0; i < n; i++) {
+      ctx.fillStyle = tones[(i * 3) % tones.length];
+      ctx.fillRect(0, i * ph + ph * 0.18, w, ph * 0.64);
+    }
+  }, 512, 512, 1, 1);
+  lamelTex.anisotropy = aniso;
+  LAMEL_CEIL_MAT.map = lamelTex;
+  LAMEL_CEIL_MAT.needsUpdate = true;
 
   // Sky cyclorama — wraps the outside world beyond the balconies
   skyTex = makeTexture((ctx, w, h) => {
@@ -234,13 +321,7 @@ export function makePlankMat(palette, grainRGB, seamRGBA, rough = 0.55) {
 
 export function makeConcreteMat() {
   const tex = makeTexture((ctx, w, h) => {
-    ctx.fillStyle = '#b8b6b1'; ctx.fillRect(0, 0, w, h);
-    const img = ctx.getImageData(0, 0, w, h);
-    for (let i = 0; i < img.data.length; i += 4) {
-      const n = (Math.random() - 0.5) * 26;
-      img.data[i] += n; img.data[i + 1] += n; img.data[i + 2] += n;
-    }
-    ctx.putImageData(img, 0, 0);
+    noiseFill(ctx, w, h, '#b8b6b1', 26);
     for (let i = 0; i < 60; i++) {
       ctx.fillStyle = `rgba(110,108,104,${0.04 + Math.random() * 0.06})`;
       ctx.beginPath();
@@ -253,7 +334,7 @@ export function makeConcreteMat() {
 }
 
 // Built once, after the base textures exist. Reuses FLOOR_MAT / TILE_MAT /
-// STONE_TILE_MAT for the naturel/tile/stone options.
+// STONE_TILE_MAT / CARPET_MAT for the naturel/tile/stone/carpet options.
 export function buildFloorFinishes(aniso) {
   S.texAniso = aniso;
   const diagMat = FLOOR_MAT.clone();
@@ -271,7 +352,8 @@ export function buildFloorFinishes(aniso) {
         ['#cfcabf', '#c3beb3', '#d6d1c7', '#bbb6ab', '#c8c3b8'], '90, 88, 82', 'rgba(70,68,62,0.4)') },
     { id: 'diagonaal',     name: 'Diagonale planken', mat: diagMat },
     { id: 'beton',         name: 'Beton',             mat: makeConcreteMat() },
-    { id: 'tegel',         name: 'Tegel',             mat: TILE_MAT },
-    { id: 'natuursteen',   name: 'Natuursteen',       mat: STONE_TILE_MAT },
+    { id: 'tegel',         name: 'Tegel 60x60',       mat: TILE_MAT },
+    { id: 'natuursteen',   name: 'Balkontegel',       mat: STONE_TILE_MAT },
+    { id: 'tapijt',        name: 'Tapijt',            mat: CARPET_MAT },
   ];
 }
