@@ -45,6 +45,8 @@ KIND_STYLE = {
     "sliding": {"color": "#1c9c4b", "lw": 3.0, "label": "sliding door"},
     "window":  {"color": "#00b8c4", "lw": 3.0, "label": "window"},
     "railing": {"color": "#8b3fc0", "lw": 2.0, "label": "balcony railing"},
+    "screen":  {"color": "#8b3fc0", "lw": 2.0, "label": "privacy screen"},
+    "sidelight": {"color": "#00b8c4", "lw": 3.0, "label": "fixed glass (side light)"},
 }
 
 
@@ -92,7 +94,7 @@ def build_report(segs, edges):
     flagged = []
     checked = 0
     for s in segs:
-        if s["kind"] == "railing":
+        if s["kind"] in ("railing", "screen"):
             continue  # railings are outdoor balcony edges, not interior plan walls
         for (x, z) in ((s["x1"], s["z1"]), (s["x2"], s["z2"])):
             checked += 1

@@ -1,5 +1,7 @@
 /* ===== CONSTANTS ===== */
-export const WALL_HEIGHT = 2.80;
+export const WALL_HEIGHT = 2.80;   // vrije hoogte woonvertrekken (Technische Omschrijving)
+export const CEIL_LOW = 2.55;      // badkamers + verkeersruimten (gang, kasten, corridor)
+export const DOOR_H = 2.315;       // standaard binnendeur (opdek/stomp 2315 mm)
 export const WALL_THICK = 0.20;
 export const PLAYER_H = 1.70;   // eye height for a 1.80 m-tall person (~0.10 m below the crown)
 export const PLAYER_R = 0.26;   // collision radius — small enough to stand right up to a counter
@@ -23,16 +25,17 @@ export const BOB_AMP = 0.018;      // m — head-bob amplitude at full walking s
 export const BOB_FREQ = 9.0;       // rad/s — head-bob frequency at full walking speed
 export const LOOK_SPEED = 0.003;
 
-// Apartment envelope (outermost walkable extent, balconies included).
-// Matches the railings at index.html addRailing(...) calls below.
-export const ENV = { xMin: -1.55, xMax: 10.74, zMin: -1.08, zMax: 17.55 };
+// Walkable envelope: apartment + balconies + the shared corridor outside the
+// voordeur (x -1.96..-0.06). Matches the railings/corridor walls in
+// data/model.json + js/apartment.js. test/smoke.mjs mirrors these numbers.
+export const ENV = { xMin: -2.05, xMax: 10.74, zMin: -1.40, zMax: 18.00 };
 
 // Ceiling height — must stay in sync with apartment.json:levels[0].ceiling_height_m.
 // init() asserts this matches WALL_HEIGHT.
 export const CEILING_FROM_JSON = 2.80;
 
 // Per-room tile cadence + the base material each floor kind starts from.
-export const FLOOR_TILE = { hout: [2.0, 2.5], tegel: [1.2, 1.2], steen: [1.5, 1.5] };
+export const FLOOR_TILE = { hout: [2.0, 2.5], tegel: [1.2, 1.2], steen: [1.5, 1.5], tapijt: [2.0, 2.0] };
 
 // Wall paint palette (named, real-paint-ish). The plaster map is near-white so
 // material.color multiplies into a believable painted-plaster tint.
@@ -52,7 +55,7 @@ export const PAINT_PALETTE = [
 export const DEFAULT_WALL_HEX = 0xf0ece4;
 
 // Default floor finish id per kind (set once FLOOR_FINISHES is built).
-export const KIND_DEFAULT_FINISH = { hout: 'naturel_eiken', tegel: 'tegel', steen: 'natuursteen' };
+export const KIND_DEFAULT_FINISH = { hout: 'naturel_eiken', tegel: 'tegel', steen: 'natuursteen', tapijt: 'tapijt' };
 
 export const WALK_TURN_SPEED = 3.0;   // rad/s auto-turn toward the target
 export const WALK_ARRIVE = 0.25;      // m — close enough, stop

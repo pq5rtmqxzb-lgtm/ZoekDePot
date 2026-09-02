@@ -5,9 +5,9 @@ import { PLAYER_H } from './constants.js';
  * Single mutable namespace for all cross-module top-level state. */
 export const S = {
   camera: null, scene: null, renderer: null, clock: null,
-  // Spawn inside the gang (south part, well clear of every wall).
-  playerPos: new THREE.Vector3(1.90, PLAYER_H, 8.75),
-  yaw: 0, pitch: 0,
+  // Spawn just inside the voordeur, looking east down the gang.
+  playerPos: new THREE.Vector3(1.35, PLAYER_H, 8.50),
+  yaw: -Math.PI / 2, pitch: 0,
   moveF: 0, moveR: 0,
   velX: 0, velZ: 0,     // smoothed world-space walking velocity
   bobPhase: 0,          // head-bob oscillator phase

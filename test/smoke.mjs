@@ -59,7 +59,7 @@ async function awaitBoot(page, diag = {}) {
 
 // World↔minimap mapping (mirrors mapXY in the app: ENV envelope, pad 8,
 // canvas 150x224 CSS px).
-const ENV = { xMin: -1.55, xMax: 10.74, zMin: -1.08, zMax: 17.55 };
+const ENV = { xMin: -2.05, xMax: 10.74, zMin: -1.40, zMax: 18.00 };
 const MAP_SCALE = Math.min(134 / (ENV.xMax - ENV.xMin), 208 / (ENV.zMax - ENV.zMin));
 const mapPoint = (wx, wz) => ({
   x: 8 + (wx - ENV.xMin) * MAP_SCALE,
@@ -127,10 +127,10 @@ check('HUD updates after teleport', /Woonkamer · \d+,\d m²/.test(label1), `lab
 // the eased cull converges (several 0.15 s passes — generous timeout for
 // slow headless frames).
 await page.waitForFunction(
-  () => { const s = window.__state(); return s.activeLights > 0 && s.activeLights < 16; },
+  () => { const s = window.__state(); return s.activeLights > 0 && s.activeLights < s.totalLights - 3; },
   null, { timeout: 180000 });
 check('occlusion culling trims active lights',
-      true, `active=${(await page.evaluate(() => window.__state())).activeLights}/20`);
+      true, `active=${(await page.evaluate(() => window.__state())).activeLights}/${(await page.evaluate(() => window.__state())).totalLights}`);
 
 // Click the minimap padding corner (outside the plan) → must not move
 const beforeNoop = await page.evaluate(() => window.__state());
@@ -202,8 +202,10 @@ await page.close();
 const dpage = await browser.newPage({ viewport: { width: VW, height: VH } });
 const derrors = [];
 dpage.on('pageerror', e => derrors.push(String(e)));
-// Gang corridor at (3.2, 5.9), 0.6 m from the badkamer door, facing east (+X).
-await dpage.goto(BASE + '/index.html?pos=3.2,5.9,-1.5708');
+// Gang corridor at (2.82, 5.55), 1 m from the badkamer door (which swings
+// west, toward us — a leaf never opens into a player inside its sweep, so
+// stand just outside the arc, beside the north jamb), facing east (+X).
+await dpage.goto(BASE + '/index.html?pos=2.82,5.55,-1.5708');
 await awaitBoot(dpage);
 await dpage.waitForFunction(() => window.__state().doorOpen >= 1, null, { timeout: 120000 });
 check('door opens on approach', true);
@@ -323,8 +325,11 @@ const onFur = mapPoint(fur0.x, fur0.z);
 await fpage.mouse.click(fmapBox.x + onFur.x, fmapBox.y + onFur.y);
 await fpage.waitForTimeout(400);
 const fs = await fpage.evaluate(() => window.__state());
-const clearX = Math.abs(fs.x - fur0.x) - (0.60 + 0.26);   // aabb half-w + player r
-const clearZ = Math.abs(fs.z - fur0.z) - (0.30 + 0.26);
+// The item is placed facing the player, so its 120x60 footprint is rotated
+// by fur0.ry: use the rotated AABB half-extents (+ player radius).
+const fc = Math.abs(Math.cos(fur0.ry)), fsn = Math.abs(Math.sin(fur0.ry));
+const clearX = Math.abs(fs.x - fur0.x) - (0.60 * fc + 0.30 * fsn + 0.26);
+const clearZ = Math.abs(fs.z - fur0.z) - (0.60 * fsn + 0.30 * fc + 0.26);
 check('furniture blocks the player (teleport pushed out)',
       clearX > -0.02 || clearZ > -0.02,
       `player=(${fs.x.toFixed(2)}, ${fs.z.toFixed(2)}) fur=(${fur0.x}, ${fur0.z})`);

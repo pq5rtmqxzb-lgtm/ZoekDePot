@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { S } from './state.js';
 import { WALL_HEIGHT } from './constants.js';
+import { roomAt } from './rooms.js';
 
 /* ===== LIGHTING ===== */
 export function setupLights() {
@@ -8,35 +9,42 @@ export function setupLights() {
   S.hemiLight = new THREE.HemisphereLight(0xeff4fa, 0x3a3028, 0.7);
   S.scene.add(S.hemiLight);
 
-  // Per-room ceiling lights. [x, z, color, intensity, range]
+  // Ceiling light points at the positions of the "plafondlichtpunt" symbols
+  // on the sales drawing (the centraaldozen the buyer hangs fixtures on).
+  // [x, z, color, intensity, range]. The height follows the room's ceiling.
   const lights = [
-    [ 3.60,  2.20, 0xfff0d0, 0.85, 6],  // slaapkamer 1
-    [ 0.20,  1.80, 0xeef4ff, 0.55, 3],  // slaapkamer 1 NW tip
-    [ 2.85,  4.55, 0xfff0d0, 0.55, 3],  // slaapkamer 1 entry alcove
-    [ 5.40,  5.65, 0xf4f8ff, 1.10, 6],  // badkamer (groot) — bright
-    [ 5.74,  7.60, 0xeef4ff, 0.50, 3],  // toilet
-    [ 1.30,  6.40, 0xeef4ff, 0.55, 4],  // technische berging
-    [ 3.18,  6.30, 0xfff0d0, 0.70, 5],  // gang (corridor)
-    [ 1.90,  8.70, 0xfff0d0, 0.80, 5],  // gang (south)
-    [ 5.40,  8.85, 0xfff0d0, 0.70, 5],  // gang (east arm)
-    [ 2.20, 13.40, 0xfff0d0, 0.85, 6],  // slaapkamer 2
-    [ 3.50, 10.50, 0xfff0d0, 0.55, 3],  // slaapkamer 2 entry nook
-    [ 1.35, 10.50, 0xeef4ff, 0.55, 3],  // badkamer klein
-    [ 8.00,  2.20, 0xfff0d0, 0.95, 7],  // woonkamer north strip
-    [ 8.50,  6.50, 0xfff0d0, 0.95, 7],  // woonkamer middle (dining)
-    [ 5.60, 12.30, 0xfff0d0, 0.95, 7],  // keuken (deep bay)
-    [ 8.50, 11.50, 0xfff0d0, 0.95, 7],  // woonkamer south (east)
+    [ 2.52,  2.10, 0xfff0d0, 0.90, 6],  // slaapkamer 1 ("2 e")
+    [-0.20,  1.70, 0xfff0d0, 0.40, 3],  // slaapkamer 1 NW tip (fill)
+    [ 2.85,  4.55, 0xfff0d0, 0.40, 3],  // slaapkamer 1 entry alcove (fill)
+    [ 5.40,  5.69, 0xf4f8ff, 1.10, 6],  // badkamer ("2 f")
+    [ 5.80,  7.58, 0xeef4ff, 0.50, 3],  // toilet ("i 3")
+    [ 1.55,  6.50, 0xeef4ff, 0.55, 4],  // technische berging ("3 j")
+    [ 3.19,  6.40, 0xfff0d0, 0.65, 5],  // gang noord ("3 h")
+    [ 1.09,  8.81, 0xfff0d0, 0.65, 5],  // gang bij de voordeur ("3 h")
+    [ 3.19,  8.81, 0xfff0d0, 0.65, 5],  // gang midden ("3")
+    [ 5.34,  8.81, 0xfff0d0, 0.65, 5],  // gang oost ("3 h")
+    [ 2.26, 13.42, 0xfff0d0, 0.90, 6],  // slaapkamer 2 ("4 k")
+    [ 3.50, 10.55, 0xfff0d0, 0.50, 3],  // slaapkamer 2 entry nook ("4 k")
+    [ 1.86, 10.55, 0xeef4ff, 0.60, 3.5],// badkamer klein ("4 L")
+    [ 8.57,  2.15, 0xfff0d0, 0.95, 7],  // woonkamer noord ("1 a")
+    [ 8.57,  6.50, 0xfff0d0, 0.95, 7],  // woonkamer eettafel ("1 a")
+    [ 8.57,  8.91, 0xfff0d0, 0.80, 6],  // woonkamer midden ("1")
+    [ 8.57, 11.68, 0xfff0d0, 0.95, 7],  // woonkamer zuid ("1 b")
+    [-1.00,  7.60, 0xf6f8ff, 0.55, 4],  // corridor (lijnverlichting)
+    [-1.00, 10.90, 0xf6f8ff, 0.55, 4],  // corridor (lijnverlichting)
   ];
   for (const [x, z, color, intensity, range] of lights) {
+    const room = roomAt(x, z);
+    const ceil = (room && room.ceil) || WALL_HEIGHT;
     const pl = new THREE.PointLight(color, intensity, range);
-    pl.position.set(x, WALL_HEIGHT - 0.15, z);
+    pl.position.set(x, ceil - 0.15, z);
     S.scene.add(pl);
     // Small flush-mount disc visual
     const disc = new THREE.Mesh(
       new THREE.CylinderGeometry(0.10, 0.10, 0.02, 16),
       new THREE.MeshBasicMaterial({ color: color })
     );
-    disc.position.set(x, WALL_HEIGHT - 0.01, z);
+    disc.position.set(x, ceil - 0.01, z);
     disc.userData.noMeasure = true;
     S.scene.add(disc);
     S.pointLightInfo.push({ light: pl, baseI: intensity, disc });
@@ -84,8 +92,8 @@ const CULL_INTERVAL = 0.15;   // s between visibility passes
 const CULL_EASE = 0.45;       // per-pass approach factor (~3 passes to settle)
 let cullTimer = 0;
 
-// Does the 2D segment player->light cross a solid wall? Railings (t <= 0.06,
-// glass) don't count. ~85 segs × 20 lights every 0.15 s — negligible.
+// Does the 2D segment player->light cross a solid wall? Railings and glass
+// (t <= 0.06) don't count. ~120 segs × 25 lights every 0.15 s — negligible.
 function sightBlocked(px, pz, lx, lz) {
   const ori = (ax, az, bx, bz, cx, cz) =>
     Math.sign((bx - ax) * (cz - az) - (bz - az) * (cx - ax));
