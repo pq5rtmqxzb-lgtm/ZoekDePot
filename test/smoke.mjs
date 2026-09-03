@@ -140,7 +140,7 @@ const label0 = await page.textContent('#roomLabel');
 check('HUD shows room + m²', /Gang · \d+,\d m²/.test(label0), `label="${label0}"`);
 
 const s0 = await page.evaluate(() => window.__state());
-check('spawn in gang', s0.room === 'gang', JSON.stringify(s0));
+check('spawn in gang', s0.room === 'gang', `pos=(${s0.x}, ${s0.z}) room=${s0.room}`);
 
 // Every room, both balconies and the toilet must be reachable on foot from
 // the voordeur with furniture collision ON (the furniture layout is not
