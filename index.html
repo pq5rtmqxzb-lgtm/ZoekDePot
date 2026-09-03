@@ -214,6 +214,41 @@ body.photo #ui { display: none; }
   padding: 10px 18px; border-radius: 22px; font-size: 14px; font-family: 'Georgia', serif;
 }
 #photoControls #photoExit { padding: 10px 14px; }
+#tourToggle {
+  position: absolute; top: 140px; left: 16px;
+  pointer-events: auto; cursor: pointer;
+  background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.35);
+  padding: 8px 14px; border-radius: 20px; font-size: 13px; font-family: 'Georgia', serif;
+}
+#tourToggle.active { background: rgba(85,200,120,0.5); border-color: #55c878; }
+/* Tour bar: where we are on the route + one big, easy-to-hit Stop button. */
+#tourBar {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  display: none; align-items: center; gap: 12px;
+  background: rgba(20,20,24,0.82); color: #fff; border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 28px; padding: 8px 8px 8px 18px;
+  font-family: 'Georgia', serif; font-size: 15px; white-space: nowrap;
+  max-width: calc(100vw - 24px);
+}
+#tourBar.show { display: flex; }
+#tourText { overflow: hidden; text-overflow: ellipsis; }
+#tourStop {
+  pointer-events: auto; cursor: pointer;
+  background: #d42828; color: #fff; border: none; border-radius: 22px;
+  padding: 10px 22px; font-size: 16px; font-family: 'Georgia', serif; letter-spacing: 0.5px;
+}
+#tourStop:active { background: #a01e1e; }
+@media (hover: none) and (pointer: coarse) {
+  /* keep the tour bar clear of the joystick on phones */
+  #tourBar { bottom: calc(160px + env(safe-area-inset-bottom, 0px)); }
+}
+#tourStartBtn {
+  margin-top: 14px; padding: 12px 28px; font-size: 17px;
+  background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 8px; cursor: pointer; font-family: 'Georgia', serif; letter-spacing: 1px;
+}
+#tourStartBtn:active { background: rgba(255,255,255,0.28); }
 #measureLabel {
   position: absolute; display: none; transform: translate(-50%, -130%);
   background: rgba(20,22,26,0.82); color: #ffd9b8; padding: 3px 10px;
@@ -233,8 +268,10 @@ body.photo #ui { display: none; }
   <p>Wandel alvast door het appartement (Type R3.sp, Ypsilon Park) en krijg een gevoel voor het huis dat nog gebouwd moet worden.</p>
   <p>Probeer verschillende muurkleuren, vloeren en sferen via de knop <b>Inrichten</b> rechtsboven.</p>
   <p style="font-size:14px; opacity:0.7;" class="mobile-controls"><b>Tik op de vloer</b> en je loopt er vanzelf naartoe. Vegen = rondkijken.</p>
-  <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis of Q/E = rondkijken, I = inrichten, M = plattegrond, R = meten</p>
-  <button id="startBtn">Begin de rondleiding</button>
+  <p style="font-size:14px; opacity:0.7;" class="desktop-controls">WASD = lopen, muis of Q/E = rondkijken, T = rondleiding, I = inrichten, M = plattegrond, R = meten</p>
+  <button id="startBtn">Zelf rondlopen</button>
+  <button id="tourStartBtn">Laat me rondleiden</button>
+  <p style="font-size:13px; opacity:0.6; margin-top:10px; max-width:420px;">Liever niet zelf sturen? De rondleiding wandelt rustig door alle kamers en kijkt overal om zich heen. Je kunt altijd op <b>Stop</b> drukken om zelf verder te gaan.</p>
 </div>
 <div id="ui">
   <div id="title">Ons Nieuwe Huis</div>
@@ -248,6 +285,11 @@ body.photo #ui { display: none; }
   <button id="mapToggle" class="mobile-controls" aria-label="Plattegrond">Kaart</button>
   <button id="measureToggle" aria-label="Meetgereedschap">Meet</button>
   <button id="photoToggle" aria-label="Fotomodus">Foto</button>
+  <button id="tourToggle" aria-label="Rondleiding starten">Rondleiding</button>
+  <div id="tourBar" role="status" aria-live="polite">
+    <span id="tourText">Rondleiding</span>
+    <button id="tourStop" aria-label="Rondleiding stoppen">Stop</button>
+  </div>
   <div id="measureLabel"></div>
 </div>
 <div id="photoControls">

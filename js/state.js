@@ -40,6 +40,9 @@ export const S = {
   walkTarget: null,     // { x, z } world-space goal on the floor
   walkMarker: null,     // pulsing floor ring shown while auto-walking
   walkPrevDist: 0, walkStuckT: 0,
+  /* Rondleiding (guided tour) — see tour.js */
+  tour: { on: false, stop: 0, phase: 'idle', done: false, planned: 0, skipped: [], path: null },
+  tourMove: null,       // { vx, vz } world-space walk direction while touring
   minimapOn: false,
   doors: [],            // { pivot, base, seg, angle, target } hinged leaves
   measure: { armed: false, points: [], dist: 0 },
