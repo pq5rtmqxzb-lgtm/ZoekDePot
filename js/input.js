@@ -1,6 +1,6 @@
 import { S } from './state.js';
 import { LOOK_SPEED, JOY_DEADZONE } from './constants.js';
-import { designPanelOpen, toggleDesignPanel } from './panel.js';
+import { designPanelOpen, toggleDesignPanel, toggleFurnitureCollision } from './panel.js';
 import { pickAccentWall } from './paint.js';
 import { setWalkTarget } from './walk.js';
 import { toggleMinimap, minimapTeleport, minimapEl } from './minimap.js';
@@ -28,6 +28,7 @@ export function setupInput() {
     if (e.code === 'KeyI') { e.preventDefault(); toggleDesignPanel(); }
     if (e.code === 'KeyM') { e.preventDefault(); toggleMinimap(); }
     if (e.code === 'KeyR') { e.preventDefault(); toggleMeasure(); }
+    if (e.code === 'KeyF' && !designPanelOpen()) { e.preventDefault(); toggleFurnitureCollision(); }
     if (e.code === 'Escape') {
       if (designPanelOpen()) toggleDesignPanel(false);
       else if (S.measure.armed) toggleMeasure(false);

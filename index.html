@@ -109,6 +109,9 @@ canvas { display: block; width: 100%; height: 100%; }
 }
 #designPanel .dpRoom { font-size: 13px; color: #b9d3c0; margin-bottom: 4px; }
 #designPanel .dpRoom b { color: #fff; }
+#designPanel .dpCheck { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #d7e4da; margin: 6px 0 2px; cursor: pointer; }
+#designPanel .dpCheck input { accent-color: #55c878; width: 16px; height: 16px; margin: 0; }
+#designPanel .dpKey { font: 11px/1 ui-monospace, monospace; color: #b9d3c0; border: 1px solid rgba(255,255,255,0.25); border-radius: 4px; padding: 2px 5px; }
 #designPanel .dpHint { font-size: 11px; color: #9a958c; margin: -2px 0 14px; }
 #designPanel section { margin-bottom: 20px; }
 #designPanel section > h3 {
@@ -255,6 +258,8 @@ body.photo #ui { display: none; }
   <h2>Inrichten <button class="closeBtn" id="dpClose" aria-label="Sluiten">&times;</button></h2>
   <div class="dpRoom">Huidige kamer: <b id="dpRoomName">—</b></div>
   <div class="dpHint">Wijzigingen gelden voor de kamer waar je staat.</div>
+  <label class="dpCheck"><input type="checkbox" id="furCollide" checked>
+    Meubels blokkeren <span class="dpKey">F</span></label>
   <section>
     <h3>Muurverf</h3>
     <div class="swatchRow" id="dpWallSwatches"></div>

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  WALL_HEIGHT, CEILING_FROM_JSON, scaledFov, PLAYER_H,
+  WALL_HEIGHT, WALL_THICK, CEILING_FROM_JSON, scaledFov, PLAYER_H,
   MOVE_SPEED, ACCEL, DECEL, BOB_AMP, BOB_FREQ,
   WALK_TURN_SPEED, WALK_ARRIVE, TOD_FADE,
 } from './constants.js';
@@ -90,6 +90,10 @@ function init() {
     measurePts: S.measure.points.map(p => [p.x, p.y, p.z]),
     furCount: S.customFurn.length,
     fur: S.customFurn.map(i => i.data),
+    furnitureCollision: S.furnitureCollision,
+    // Collision geometry, so tests/tools can rasterise the walkable area.
+    obstacles: S.obstacles.map(o => [o.cx, o.cz, o.hw, o.hd]),
+    wallSegs: S.wallSegs.map(w => [w.x1, w.z1, w.x2, w.z2, w.t || WALL_THICK]),
   });
 
   // Prevent default touch behaviors on the canvas only — leave overlays

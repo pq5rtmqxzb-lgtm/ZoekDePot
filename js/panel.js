@@ -9,6 +9,7 @@ import {
 } from './scheme.js';
 import { toggleMeasure } from './measure.js';
 import { spawnCustom, armMove, rotateCustom, deleteCustom } from './customFurniture.js';
+import { setFurnitureCollision } from './collision.js';
 import { showToast } from './toast.js';
 
 const hex2css = h => '#' + h.toString(16).padStart(6, '0');
@@ -41,6 +42,13 @@ export function toggleDesignPanel(force) {
   // Note: accent-arm intentionally persists across close so the user can shut
   // the panel and then click/look at the wall to paint (desktop ignores canvas
   // clicks while the panel is open).
+}
+
+/* F key + panel checkbox: walk through furniture or not. */
+export function toggleFurnitureCollision(force) {
+  const on = (force === undefined) ? !S.furnitureCollision : !!force;
+  setFurnitureCollision(on);
+  showToast(on ? 'Meubels blokkeren weer' : 'Je loopt nu door meubels heen');
 }
 
 export function buildDesignPanel() {
@@ -118,6 +126,10 @@ export function buildDesignPanel() {
     setTimeOfDayT(+todSlider.value, true);
     refreshPanel();
   });
+
+  const furCollide = document.getElementById('furCollide');
+  furCollide.checked = S.furnitureCollision;
+  furCollide.addEventListener('change', () => toggleFurnitureCollision(furCollide.checked));
 
   // Eigen meubel — spawn a block with your own dimensions in front of you.
   document.getElementById('furPlace').addEventListener('click', () => {

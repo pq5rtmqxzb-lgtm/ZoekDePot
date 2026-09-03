@@ -384,7 +384,8 @@ function addCoatRack(x, z, ry, w = 0.9) {
   part(w, 0.04, 0.34, WARDROBE_MAT, x, z, ry, 0, 0.44, 0.20);
   for (const s of [-1, 1]) part(0.03, 0.42, 0.30, BLACK_METAL_MAT, x, z, ry, s * (w / 2 - 0.05), 0.21, 0.20);
   part(0.26, 0.10, 0.28, CHAIR_MAT, x, z, ry, -0.2, 0.05, 0.20);   // schoenen
-  addRotatedBoxObstacle(x, z, w, 0.38, ry);
+  const [ox, oz] = rot(x, z, 0, 0.19, ry);   // footprint is the bench, in front of the wall
+  addRotatedBoxObstacle(ox, oz, w, 0.38, ry);
 }
 
 function addTechniek() {
@@ -420,14 +421,16 @@ function addTechniek() {
 }
 
 function addOutdoorFurniture() {
-  // Noord balkon (0.9 m diep): twee klapstoelen + bistrotafel, plantenbak
+  // Noord balkon (0.9 m diep): nothing can be passed on a 0.9 m balcony, so
+  // the bistro set sits in the west tip (beyond the slaapk1 pui) where it
+  // blocks no route; the planter stays at the east end.
   const tbl = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.02, 18), BLACK_METAL_MAT);
-  tbl.position.set(3.2, 0.72, -0.62); S.scene.add(tbl);
+  tbl.position.set(1.0, 0.72, -0.72); S.scene.add(tbl);
   const tleg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.70, 8), BLACK_METAL_MAT);
-  tleg.position.set(3.2, 0.36, -0.62); S.scene.add(tleg);
-  addBoxObstacle(3.2, -0.62, 0.56, 0.56);
-  addChair(2.55, -0.62, -Math.PI / 2);
-  addChair(3.85, -0.62, Math.PI / 2);
+  tleg.position.set(1.0, 0.36, -0.72); S.scene.add(tleg);
+  addBoxObstacle(1.0, -0.72, 0.56, 0.56);
+  addChair(0.45, -0.72, Math.PI / 2);
+  addChair(1.55, -0.72, -Math.PI / 2);
   box(1.6, 0.34, 0.28, PLANT_POT_MAT, 8.2, 0.17, -0.90);
   for (let i = 0; i < 5; i++) {
     const g = new THREE.Mesh(new THREE.SphereGeometry(0.16, 6, 5), PLANT_LEAF_MAT);
@@ -435,13 +438,16 @@ function addOutdoorFurniture() {
   }
   addBoxObstacle(8.2, -0.90, 1.6, 0.28);
 
-  // Zuid balkon (3.6 m diep): loungeset voor de woonkamerpui, plantenbakken
-  addSofa(8.6, 14.55, 0, 2.0, 0.85);
-  addCoffeeTable(8.6, 15.55, 0.9, 0.5);
-  addArmchair(7.3, 15.3, Math.PI / 2 + 0.5, LINEN_MAT);
-  addArmchair(9.9, 15.3, -Math.PI / 2 - 0.5, LINEN_MAT);
-  addPlant(10.35, 16.95, 1.9, 0.26);
-  addPlant(2.15, 16.85, 1.5, 0.24);
+  // Zuid balkon (3.6 m diep): the bay in front of the woonkamerpui
+  // (x 6.72..10.25, z 13.99..15.8) is the walkway to the rest of the
+  // balcony, so the loungeset sits in the deep part: sofa along the
+  // privacy screen facing west, coffee table + two chairs in front.
+  addSofa(10.2, 16.68, -Math.PI / 2, 1.65, 0.85);
+  addCoffeeTable(9.05, 16.65, 0.9, 0.5, Math.PI / 2);
+  addArmchair(8.1, 15.8, Math.PI / 2 + 0.6, LINEN_MAT);
+  addArmchair(7.95, 16.95, Math.PI / 2 - 0.4, LINEN_MAT);
+  addPlant(7.0, 17.15, 1.9, 0.26);
+  addPlant(2.0, 17.3, 1.5, 0.24);
   addPlant(6.0, 17.1, 1.2, 0.22);
 }
 
@@ -451,12 +457,14 @@ export function placeFurniture() {
 
   // === Slaapkamer 1 (x 1.92..5.59, z 0.21..4.21; kolom x 5.08..5.59 z 0.71..1.28)
   // Bed with its head against the east wall, just south of the column.
-  addBed(4.59, 2.15, -Math.PI / 2, 1.60, 2.00);
-  addNightstand(5.34, 3.22, -Math.PI / 2);
-  addRug(4.10, 2.15, 2.6, 2.4);
+  // Bed kept 0.71 m clear of the wardrobe so you can walk (and open doors)
+  // between them; the headboard stops just south of the column (z 1.28).
+  addBed(4.59, 2.10, -Math.PI / 2, 1.60, 2.00);
+  addNightstand(5.34, 3.17, -Math.PI / 2);
+  addRug(4.10, 2.10, 2.6, 2.4);
   addWardrobe(4.70, 3.91, Math.PI, 1.60, 0.60);        // south wall, west of the pier
-  addArmchair(0.35, 2.35, -0.75, LINEN_MAT);           // leeshoek in the NW-punt
-  addFloorLamp(-0.15, 2.75);
+  addArmchair(0.45, 2.30, -0.75, LINEN_MAT);           // leeshoek in the NW-punt, back to the chamfer
+  addFloorLamp(1.15, 2.95);                            // beside the chair, inside the room (not in the chamfer wall)
   addPlant(0.95, 0.75, 1.5, 0.20);
   addCurtains(1.58, 5.18, -0.085, 1, false);
 
@@ -491,17 +499,19 @@ export function placeFurniture() {
   addRug(1.9, 13.35, 2.4, 2.6);
   addWardrobe(4.01, 13.10, -Math.PI / 2, 2.00, 0.60);  // against the keuken divider wall
   addPlant(3.90, 14.55, 1.6, 0.22);
-  // Werkplek in the entry nook (the badkamer-klein door swings in from the west)
-  box(1.20, 0.03, 0.60, TABLE_MAT, 4.01, 0.74, 10.55);
-  for (const dz of [-0.55, 0.55]) box(0.56, 0.72, 0.03, BLACK_METAL_MAT, 4.01, 0.36, 10.55 + dz);
-  box(0.34, 0.22, 0.02, SCREEN_MAT, 4.22, 1.02, 10.55);
-  addBoxObstacle(4.01, 10.55, 1.20, 0.60);
-  addChair(3.35, 10.55, -Math.PI / 2);
+  // Werkplek against the divider wall (x 4.31), long side along the wall so
+  // the 1.67 m-wide entry nook stays walkable; south of both door sweeps
+  // (slaapk2 door + badkamer-klein door), chair tucked under the desk.
+  box(0.60, 0.03, 1.20, TABLE_MAT, 4.01, 0.74, 11.15);
+  for (const dx of [-0.55, 0.55]) box(0.03, 0.72, 0.56, BLACK_METAL_MAT, 4.01 + dx, 0.36, 11.15);
+  box(0.02, 0.22, 0.34, SCREEN_MAT, 4.22, 1.02, 11.15);
+  addBoxObstacle(4.01, 11.15, 0.60, 1.20);
+  addChair(3.55, 11.15, Math.PI / 2);
   addCurtains(1.73, 3.40, 15.74, -1, false);
 
   // === Badkamer klein (x 0.19..2.54, z 9.64..11.41): inloopdouche west,
   // dubbele wastafel north, designradiator south.
-  addWalkInShower(0.67, 10.70, 1.15, 10.05, 11.05, 0.67, 9.64, 0, 1);
+  addWalkInShower(0.67, 10.70, 1.15, 10.05, 10.75, 0.67, 9.64, 0, 1);   // screen ends 0.66 m short of the south wall = the entry
   addVanity(1.90, 9.64 + 0.24, 0, 1.20, 2);
   addRadiator(1.92, 11.41 - 0.05, Math.PI, 0.65, 1.5);
 
@@ -515,14 +525,17 @@ export function placeFurniture() {
   addPlant(6.30, 0.75, 1.8, 0.24);
   addCurtains(7.04, 10.53, -0.085, 1, true);
 
-  // === Eethoek tegenover de woonkamerdeur, dressoir tegen het badkamerblok
-  addDiningTable(8.70, 7.00, 1.00, 2.20);
-  addPendant(8.70, 6.50, 1.85);
-  box(1.6, 0.78, 0.45, WARDROBE_MAT, 7.04 + 0.225, 0.39, 5.40);
-  for (let i = 1; i < 3; i++) box(0.008, 0.70, 0.02, CABINET_DARK_MAT, 7.04 + 0.455, 0.39, 5.40 - 0.8 + i * 0.533);
-  addBoxObstacle(7.04 + 0.225, 5.40, 0.45, 1.6);
+  // === Eethoek tegenover de woonkamerdeur. The strip is 3.48 m wide: table
+  // (1.00) + pushed-back chairs (2 x 0.53) leaves 0.71 m on either side, so
+  // nothing else may stand beside the chairs — dressoir and bookshelf go
+  // north of the table zone (z < 5.37), against the badkamerblok / east wall.
+  addDiningTable(8.78, 7.00, 1.00, 2.20);
+  addPendant(8.78, 6.50, 1.85);
+  box(1.2, 0.78, 0.45, WARDROBE_MAT, 7.04 + 0.225, 0.39, 4.85);
+  for (let i = 1; i < 3; i++) box(0.008, 0.70, 0.02, CABINET_DARK_MAT, 7.04 + 0.455, 0.39, 4.85 - 0.6 + i * 0.4);
+  addBoxObstacle(7.04 + 0.225, 4.85, 0.45, 1.2);
   box(0.30, 0.34, 0.30, CERAMIC_MAT, 7.27, 0.95, 4.85);
-  addBookshelf(10.52 - 0.16, 5.90, -Math.PI / 2, 1.8, 2.1);
+  addBookshelf(10.52 - 0.16, 4.65, -Math.PI / 2, 1.8, 2.1);   // east wall, between sofa and eethoek
 
   // === Keuken + kookeiland (keukenopstelling D)
   addKitchen();
@@ -534,8 +547,10 @@ export function placeFurniture() {
   addSideTable(9.0, 11.35);
   addFloorLamp(10.15, 11.55);
   addPlant(10.0, 13.35, 1.5, 0.22);
-  addArmchair(4.95, 15.05, Math.PI, LINEN_MAT);        // leesstoel in de keukenbaai
-  addPlant(6.12, 14.25, 1.7, 0.24);
+  // Keukenbaai: the strip east of the column (0.94 m) is the way to the
+  // keuken-pui, the strip west of it (0.67 m) a dead end — a plant lives
+  // there; a chair does not fit anywhere without blocking the balcony door.
+  addPlant(4.70, 15.20, 1.7, 0.24);
   addCurtains(6.77, 10.19, 13.9, -1, true);
 
   // === Balkons

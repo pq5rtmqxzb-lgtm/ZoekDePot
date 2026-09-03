@@ -1,5 +1,5 @@
 import { S } from './state.js';
-import { WALL_THICK, PLAYER_R, ENV } from './constants.js';
+import { WALL_THICK, PLAYER_R, FURN_R, ENV } from './constants.js';
 
 /* Axis-aligned obstacle that blocks the player. Reuses resolveCollision() via
  * the shared `obstacles` list. Returns the obstacle so movable furniture can
@@ -22,6 +22,15 @@ export function addRotatedBoxObstacle(cx, cz, w, d, ry) {
   return addBoxObstacle(cx, cz, aabbW, aabbD);
 }
 
+/* Furniture collision on/off. Off lets you walk straight through every
+ * piece (built-in and your own) — handy when a layout pins you in; walls,
+ * railings and glass keep blocking either way. */
+export function setFurnitureCollision(on) {
+  S.furnitureCollision = !!on;
+  const cb = document.getElementById('furCollide');
+  if (cb) cb.checked = S.furnitureCollision;
+}
+
 export function removeObstacle(o) {
   const i = S.obstacles.indexOf(o);
   if (i >= 0) S.obstacles.splice(i, 1);
@@ -33,7 +42,9 @@ export function removeObstacle(o) {
  * AABB it overlaps. Unlike a boolean veto, this slides smoothly along diagonal
  * walls and recovers a player who somehow ended up inside a wall band. */
 export function resolveCollision(px, pz) {
-  for (let iter = 0; iter < 3; iter++) {
+  // 5 passes: a minimap teleport onto a dining set can need a few pushes
+  // (table -> chair -> free floor) before nothing overlaps any more.
+  for (let iter = 0; iter < 5; iter++) {
     let pushed = false;
     for (const w of S.wallSegs) {
       const dx = w.x2 - w.x1, dz = w.z2 - w.z1, L = w.len;
@@ -52,15 +63,18 @@ export function resolveCollision(px, pz) {
         pushed = true;
       }
     }
-    // Axis-aligned obstacles (benches etc.). AABB inflated by PLAYER_R;
-    // push out along the axis of least penetration.
-    for (const o of S.obstacles) {
-      const overX = o.hw + PLAYER_R - Math.abs(px - o.cx);
-      const overZ = o.hd + PLAYER_R - Math.abs(pz - o.cz);
-      if (overX > 0 && overZ > 0) {
-        if (overX < overZ) px += Math.sign(px - o.cx || 1) * overX;
-        else               pz += Math.sign(pz - o.cz || 1) * overZ;
-        pushed = true;
+    // Axis-aligned obstacles (furniture). AABB inflated by FURN_R; push out
+    // along the axis of least penetration. Skipped entirely when the user
+    // switched furniture collision off ("door meubels lopen").
+    if (S.furnitureCollision) {
+      for (const o of S.obstacles) {
+        const overX = o.hw + FURN_R - Math.abs(px - o.cx);
+        const overZ = o.hd + FURN_R - Math.abs(pz - o.cz);
+        if (overX > 0 && overZ > 0) {
+          if (overX < overZ) px += Math.sign(px - o.cx || 1) * overX;
+          else               pz += Math.sign(pz - o.cz || 1) * overZ;
+          pushed = true;
+        }
       }
     }
     // Bounds — apartment + balconies (matches railings at ENV extents). Inside
