@@ -29,6 +29,7 @@ buildstap (zie `netlify.toml`).
 | Meten | **R** of knop "Meet" — twee klikken/tikken | idem |
 | Foto | knop "Foto" → "Bewaar foto" (PNG) | idem |
 | Inricht-paneel | **I** | knop "Inrichten" |
+| Door meubels lopen | **F** (aan/uit) | vinkje "Meubels blokkeren" in het inricht-paneel |
 
 Deuren zwaaien vanzelf open als je dichterbij komt — naar de kant die de
 verkooptekening aangeeft (een deur zwaait nooit dwars door je heen; sta je in
@@ -38,6 +39,13 @@ lichtsfeer (dag→avond→nacht, met schuifje voor elk moment ertussen). Onder
 "Eigen meubel" zet je een blok met je eigen maten neer (verplaats/draai/
 verwijder) om te zien of je spullen passen. "Bewaar & deel" zet alles in de
 URL; "Bewaar als" bewaart genoemde schema's in je browser.
+
+Meubels blokkeren je net als muren, maar met wat minder marge (je schuift langs
+een stoel of leunt over een tafel; `FURN_R` in `js/constants.js`). Zit je toch
+klem, of wil je even vrij rondkijken: **F** (of het vinkje bovenin het
+inricht-paneel) zet de meubelbotsing uit — muren, balustrades en glas blijven
+altijd dicht. De smoke-test controleert dat elke kamer, beide balkons en het
+toilet vanaf de voordeur bereikbaar blijven met de botsing áán.
 
 ## Mappen
 

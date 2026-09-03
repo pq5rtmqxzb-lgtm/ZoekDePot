@@ -60,6 +60,61 @@ async function awaitBoot(page, diag = {}) {
 // World↔minimap mapping (mirrors mapXY in the app: ENV envelope, pad 8,
 // canvas 150x224 CSS px).
 const ENV = { xMin: -2.05, xMax: 10.74, zMin: -1.40, zMax: 18.00 };
+// Mirrors js/constants.js: wall clearance vs furniture clearance.
+const PLAYER_R = 0.26, FURN_R = 0.18;
+
+/* Walkability oracle — the same maths as resolveCollision() on a grid:
+ * a cell is blocked when the player circle overlaps a wall capsule or a
+ * furniture AABB (inflated by FURN_R). Flood-fills from the spawn point and
+ * reports which of the given spots are reachable, so a furniture layout
+ * that walls off a room or a balcony fails the test instead of the tour. */
+function walkable(geom, spawn, targets, res = 0.04) {
+  const nx = Math.round((ENV.xMax - ENV.xMin) / res) + 1;
+  const nz = Math.round((ENV.zMax - ENV.zMin) / res) + 1;
+  const blocked = new Uint8Array(nx * nz);
+  for (let i = 0; i < nx; i++) {
+    const px = ENV.xMin + i * res;
+    for (let j = 0; j < nz; j++) {
+      const pz = ENV.zMin + j * res;
+      let b = px < ENV.xMin + PLAYER_R || px > ENV.xMax - PLAYER_R ||
+              pz < ENV.zMin + PLAYER_R || pz > ENV.zMax - PLAYER_R;
+      for (let k = 0; !b && k < geom.wallSegs.length; k++) {
+        const [x1, z1, x2, z2, t] = geom.wallSegs[k];
+        const dx = x2 - x1, dz = z2 - z1, L2 = dx * dx + dz * dz;
+        if (L2 < 1e-9) continue;
+        const tt = Math.max(0, Math.min(1, ((px - x1) * dx + (pz - z1) * dz) / L2));
+        if (Math.hypot(px - (x1 + tt * dx), pz - (z1 + tt * dz)) < t / 2 + PLAYER_R) b = true;
+      }
+      for (let k = 0; !b && k < geom.obstacles.length; k++) {
+        const [cx, cz, hw, hd] = geom.obstacles[k];
+        if (Math.abs(px - cx) < hw + FURN_R && Math.abs(pz - cz) < hd + FURN_R) b = true;
+      }
+      blocked[i * nz + j] = b ? 1 : 0;
+    }
+  }
+  const idx = (x, z) => [Math.round((x - ENV.xMin) / res), Math.round((z - ENV.zMin) / res)];
+  const seen = new Uint8Array(nx * nz);
+  const [si, sj] = idx(spawn[0], spawn[1]);
+  const q = [si * nz + sj]; seen[si * nz + sj] = 1;
+  while (q.length) {
+    const c = q.pop(), i = (c / nz) | 0, j = c % nz;
+    for (const [a, b] of [[i + 1, j], [i - 1, j], [i, j + 1], [i, j - 1]]) {
+      if (a < 0 || b < 0 || a >= nx || b >= nz) continue;
+      const n = a * nz + b;
+      if (!blocked[n] && !seen[n]) { seen[n] = 1; q.push(n); }
+    }
+  }
+  const out = {};
+  for (const [name, [x, z]] of Object.entries(targets)) {
+    const [ci, cj] = idx(x, z);
+    let ok = false;
+    for (let a = ci - 3; a <= ci + 3 && !ok; a++)
+      for (let b = cj - 3; b <= cj + 3 && !ok; b++)
+        if (a >= 0 && b >= 0 && a < nx && b < nz && seen[a * nz + b]) ok = true;
+    out[name] = ok;
+  }
+  return out;
+}
 const MAP_SCALE = Math.min(134 / (ENV.xMax - ENV.xMin), 208 / (ENV.zMax - ENV.zMin));
 const mapPoint = (wx, wz) => ({
   x: 8 + (wx - ENV.xMin) * MAP_SCALE,
@@ -85,7 +140,26 @@ const label0 = await page.textContent('#roomLabel');
 check('HUD shows room + m²', /Gang · \d+,\d m²/.test(label0), `label="${label0}"`);
 
 const s0 = await page.evaluate(() => window.__state());
-check('spawn in gang', s0.room === 'gang', JSON.stringify(s0));
+check('spawn in gang', s0.room === 'gang', `pos=(${s0.x}, ${s0.z}) room=${s0.room}`);
+
+// Every room, both balconies and the toilet must be reachable on foot from
+// the voordeur with furniture collision ON (the furniture layout is not
+// allowed to wall anything off).
+const SPOTS = {
+  'slaapkamer 1': [3.0, 2.5], 'slaapkamer 1 NW-punt': [0.4, 1.6], 'slaapkamer 1 tussen bed en kast': [4.6, 3.3],
+  'badkamer': [4.5, 5.8], 'badkamer douche': [6.5, 5.0], 'toilet': [5.5, 7.8], 'berging': [4.3, 7.6],
+  'technische berging': [1.6, 6.5], 'woonkamer zithoek': [8.5, 3.3], 'eettafel west': [7.5, 7.0],
+  'eettafel oost': [10.0, 7.0], 'woonkamer zuid': [9.0, 13.2], 'keuken werkstrook': [5.9, 10.7],
+  'keuken west van eiland': [4.9, 12.5], 'keukenbaai voor pui': [6.0, 15.2], 'slaapkamer 2 nis': [3.2, 10.4],
+  'slaapkamer 2': [2.8, 13.3], 'slaapkamer 2 bij pui': [2.5, 15.2], 'badkamer klein': [1.9, 10.7],
+  'badkamer klein douche': [0.6, 11.1], 'noord balkon west van de pui': [2.2, -0.65], 'noord balkon oost': [9.0, -0.6],
+  'zuid balkon west': [2.0, 16.6], 'zuid balkon oost': [9.5, 16.5], 'zuid balkon voor woonkamerpui': [8.5, 14.3],
+  'corridor': [-1.0, 9.0],
+};
+const walk = walkable({ obstacles: s0.obstacles, wallSegs: s0.wallSegs }, [s0.x, s0.z], SPOTS);
+const unreachable = Object.keys(walk).filter(k => !walk[k]);
+check('every room + balcony reachable on foot (furniture collision on)',
+      unreachable.length === 0, unreachable.length ? 'blocked: ' + unreachable.join(', ') : `${Object.keys(SPOTS).length} spots`);
 
 // WASD forward in the open corridor
 await page.keyboard.down('w');
@@ -104,7 +178,8 @@ const sTurn = await page.evaluate(() => window.__state());
 check('Q turns the camera', sTurn.yaw > sWalk.yaw + 0.02,
       `yaw ${sWalk.yaw.toFixed(2)} -> ${sTurn.yaw.toFixed(2)}`);
 
-// Minimap: open with M, click woonkamer centre (world 8.5, 6.5) → teleport
+// Minimap: open with M, click the open woonkamer floor south of the
+// eettafel (world 8.5, 10.5) → teleport
 await page.keyboard.press('m');
 await page.waitForTimeout(300);
 check('minimap opens with M', await page.isVisible('#minimap'));
@@ -113,7 +188,7 @@ const mapBox = await page.evaluate(() => {
   const b = document.getElementById('minimap').getBoundingClientRect();
   return { x: b.left, y: b.top };
 });
-const wk = mapPoint(8.5, 6.5);
+const wk = mapPoint(8.5, 10.5);
 await page.mouse.click(mapBox.x + wk.x, mapBox.y + wk.y);
 await page.waitForTimeout(400);
 const s1 = await page.evaluate(() => window.__state());
@@ -326,13 +401,31 @@ await fpage.mouse.click(fmapBox.x + onFur.x, fmapBox.y + onFur.y);
 await fpage.waitForTimeout(400);
 const fs = await fpage.evaluate(() => window.__state());
 // The item is placed facing the player, so its 120x60 footprint is rotated
-// by fur0.ry: use the rotated AABB half-extents (+ player radius).
+// by fur0.ry: use the rotated AABB half-extents (+ furniture clearance).
 const fc = Math.abs(Math.cos(fur0.ry)), fsn = Math.abs(Math.sin(fur0.ry));
-const clearX = Math.abs(fs.x - fur0.x) - (0.60 * fc + 0.30 * fsn + 0.26);
-const clearZ = Math.abs(fs.z - fur0.z) - (0.60 * fsn + 0.30 * fc + 0.26);
+const furClear = st => [
+  Math.abs(st.x - fur0.x) - (0.60 * fc + 0.30 * fsn + FURN_R),
+  Math.abs(st.z - fur0.z) - (0.60 * fsn + 0.30 * fc + FURN_R)];
+const [clearX, clearZ] = furClear(fs);
 check('furniture blocks the player (teleport pushed out)',
       clearX > -0.02 || clearZ > -0.02,
       `player=(${fs.x.toFixed(2)}, ${fs.z.toFixed(2)}) fur=(${fur0.x}, ${fur0.z})`);
+
+// F switches furniture collision off: the same teleport now lands inside
+// the footprint. F again restores it (and the panel checkbox follows).
+await fpage.keyboard.press('f');
+await fpage.waitForFunction(() => window.__state().furnitureCollision === false, null, { timeout: 90000 });
+await fpage.mouse.click(fmapBox.x + onFur.x, fmapBox.y + onFur.y);
+await fpage.waitForTimeout(400);
+const fsOff = await fpage.evaluate(() => window.__state());
+const [offX, offZ] = furClear(fsOff);
+check('F lets you walk through furniture (teleport lands inside)',
+      offX < -0.02 && offZ < -0.02,
+      `player=(${fsOff.x.toFixed(2)}, ${fsOff.z.toFixed(2)}) fur=(${fur0.x}, ${fur0.z})`);
+await fpage.keyboard.press('f');
+await fpage.waitForFunction(() => window.__state().furnitureCollision === true, null, { timeout: 90000 });
+check('F again restores furniture collision (checkbox in sync)',
+      await fpage.evaluate(() => document.getElementById('furCollide').checked));
 
 // Rotate 45°, then share + reload: the item must survive the round-trip.
 await fpage.keyboard.press('i');

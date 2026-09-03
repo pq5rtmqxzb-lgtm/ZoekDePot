@@ -5,6 +5,10 @@ export const DOOR_H = 2.315;       // standaard binnendeur (opdek/stomp 2315 mm)
 export const WALL_THICK = 0.20;
 export const PLAYER_H = 1.70;   // eye height for a 1.80 m-tall person (~0.10 m below the crown)
 export const PLAYER_R = 0.26;   // collision radius — small enough to stand right up to a counter
+// Clearance kept from furniture. Smaller than PLAYER_R: you brush past a
+// chair or lean over a table in a way you never do with a wall, and the
+// camera near plane (0.1 m) still clears a wardrobe front at this distance.
+export const FURN_R = 0.18;
 
 // Camera field of view. A wide FOV makes rooms/furniture look much smaller
 // than real life (the screen only fills ~40° of your visual field, so a 100°+

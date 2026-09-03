@@ -21,6 +21,7 @@ export const S = {
   wallSegs: [],
   wallMeshes: [],       // { mesh, seg, index } for every solid wall
   obstacles: [],
+  furnitureCollision: true,   // false = walk straight through furniture (F key / panel)
   currentRoom: null,    // room the player is standing in (design target)
   lastRoom: null,       // most recent room we were inside (edit fallback)
   accentArm: false,     // accent-wall pick mode active
