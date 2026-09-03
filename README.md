@@ -30,6 +30,25 @@ buildstap (zie `netlify.toml`).
 | Foto | knop "Foto" → "Bewaar foto" (PNG) | idem |
 | Inricht-paneel | **I** | knop "Inrichten" |
 | Door meubels lopen | **F** (aan/uit) | vinkje "Meubels blokkeren" in het inricht-paneel |
+| Rondleiding | **T** of knop "Rondleiding" | knop "Rondleiding" (of "Laat me rondleiden" op het startscherm) |
+
+### Rondleiding
+
+Voor wie liever niet zelf stuurt (of dat lastig vindt): de **rondleiding**
+wandelt in een rustig tempo een vaste route door het hele huis — gang,
+slaapkamer 1, noordbalkon, badkamer, toilet, woonkamer, eettafel, keuken,
+zuidbalkon, slaapkamer 2, kleine badkamer en terug naar de voordeur. Onderweg
+kijkt de camera steeds links en rechts, en op elke stop draait hij langzaam
+rond (met een lichte blik omhoog en omlaag) zodat je de hele ruimte ziet. Een
+balk onderin toont waar je bent op de route, met een grote **Stop**-knop.
+
+Elke eigen beweging (toets, joystick, tik op de vloer, sprong via de kaart)
+stopt de rondleiding; zelf rondkijken met muis of vinger mag gewoon, de
+rondleiding neemt daarna weer rustig over. Opnieuw op "Rondleiding" drukken
+gaat verder bij de stop waar je was. De route zelf staat in `js/tour.js`
+(`STOPS`); het pad tussen twee stops wordt live gezocht over hetzelfde
+botsingsmodel als het lopen, dus verplaatste meubels worden omzeild en een
+onbereikbare stop wordt overgeslagen met een melding.
 
 Deuren zwaaien vanzelf open als je dichterbij komt — naar de kant die de
 verkooptekening aangeeft (een deur zwaait nooit dwars door je heen; sta je in

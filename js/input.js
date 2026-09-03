@@ -8,6 +8,7 @@ import { toggleMeasure, measureTap } from './measure.js';
 import { moveCustomAt } from './customFurniture.js';
 import { enterPhotoMode, exitPhotoMode, capturePhoto, photoModeOn } from './photo.js';
 import { showToast } from './toast.js';
+import { startTour, stopTour, toggleTour, tourOn } from './tour.js';
 
 /* Touch state */
 let lookTouchId = null, lookLastX = 0, lookLastY = 0;
@@ -29,10 +30,12 @@ export function setupInput() {
     if (e.code === 'KeyM') { e.preventDefault(); toggleMinimap(); }
     if (e.code === 'KeyR') { e.preventDefault(); toggleMeasure(); }
     if (e.code === 'KeyF' && !designPanelOpen()) { e.preventDefault(); toggleFurnitureCollision(); }
+    if (e.code === 'KeyT' && !designPanelOpen()) { e.preventDefault(); toggleTour(); }
     if (e.code === 'Escape') {
       if (designPanelOpen()) toggleDesignPanel(false);
       else if (S.measure.armed) toggleMeasure(false);
       else if (photoModeOn()) exitPhotoMode();
+      else if (tourOn()) stopTour('Rondleiding gestopt');
     }
   });
   addEventListener('keyup', e => { S.keys[e.code] = false; });
@@ -109,7 +112,11 @@ export function setupInput() {
         if (S.measure.armed) measureTap(t.clientX, t.clientY);
         else if (S.moveArm && moveCustomAt(t.clientX, t.clientY)) { /* placed */ }
         else if (S.accentArm) pickAccentWall(t.clientX, t.clientY);
-        else setWalkTarget(t.clientX, t.clientY);
+        else {
+          // A tap on the floor means "I'll walk myself": the tour lets go.
+          if (tourOn()) stopTour('Rondleiding gestopt — je loopt zelf');
+          setWalkTarget(t.clientX, t.clientY);
+        }
       }
       delete touchStarts[t.identifier];
       if (t.identifier === lookTouchId) lookTouchId = null;
@@ -164,14 +171,28 @@ export function setupInput() {
   document.getElementById('photoToggle').addEventListener('click', enterPhotoMode);
   document.getElementById('photoShot').addEventListener('click', capturePhoto);
   document.getElementById('photoExit').addEventListener('click', exitPhotoMode);
-  // Tap/click on the open minimap = teleport to that spot
-  minimapEl.addEventListener('click', minimapTeleport);
+  // Rondleiding: HUD toggle + the Stop button on the tour bar
+  document.getElementById('tourToggle').addEventListener('click', toggleTour);
+  document.getElementById('tourStop').addEventListener('click', () => stopTour('Rondleiding gestopt'));
+  // Tap/click on the open minimap = teleport to that spot (ends the tour:
+  // jumping somewhere else is the user taking over)
+  minimapEl.addEventListener('click', e => {
+    if (tourOn()) stopTour('Rondleiding gestopt');
+    minimapTeleport(e);
+  });
 
-  // Start button — begin the walkthrough
-  document.getElementById('startBtn').addEventListener('click', () => {
+  // Start buttons — begin the walkthrough, by hand or as a guided tour
+  const begin = () => {
     S.gameStarted = true;
     document.getElementById('introOverlay').style.display = 'none';
+  };
+  document.getElementById('startBtn').addEventListener('click', () => {
+    begin();
     if (S.isMobile) showToast('Tik op de vloer om er naartoe te lopen');
+  });
+  document.getElementById('tourStartBtn').addEventListener('click', () => {
+    begin();
+    startTour();
   });
 
   // Viewpoint hook: ?pos=x,z,yaw[,pitch] places the camera (handy for sharing

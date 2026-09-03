@@ -20,6 +20,7 @@ import { cancelWalkTarget } from './walk.js';
 import { drawMinimap } from './minimap.js';
 import { updateDoors } from './doors.js';
 import { updateMeasureLabel } from './measure.js';
+import { updateTour, stopTour, tourState } from './tour.js';
 
 await loadModel();
 
@@ -91,6 +92,7 @@ function init() {
     furCount: S.customFurn.length,
     fur: S.customFurn.map(i => i.data),
     furnitureCollision: S.furnitureCollision,
+    tour: tourState(),
     // Collision geometry, so tests/tools can rasterise the walkable area.
     obstacles: S.obstacles.map(o => [o.cx, o.cz, o.hw, o.hd]),
     wallSegs: S.wallSegs.map(w => [w.x1, w.z1, w.x2, w.z2, w.t || WALL_THICK]),
@@ -134,8 +136,21 @@ function animate() {
   let fwd = joystickActive ? S.moveF : kf;
   let rgt = joystickActive ? S.moveR : kr;
 
-  // Manual input always wins; it cancels any pending tap-to-walk target.
+  // Manual input always wins; it cancels any pending tap-to-walk target
+  // and hands control back from the guided tour.
   if (S.walkTarget && (joystickActive || kf || kr)) cancelWalkTarget();
+  if (S.tour.on && (joystickActive || kf || kr)) stopTour('Rondleiding gestopt — je loopt zelf');
+
+  // Rondleiding: drives the camera's yaw/pitch itself and asks for a
+  // world-space walk direction, which we express in the camera frame below.
+  updateTour(dt);
+  if (S.tourMove) {
+    const { vx, vz } = S.tourMove;
+    const sy0 = Math.sin(S.yaw), cy0 = Math.cos(S.yaw);
+    // Inverse of the camera-frame → world mapping used further down.
+    fwd = -(sy0 * vx + cy0 * vz);
+    rgt =   cy0 * vx - sy0 * vz;
+  }
 
   // Tap-to-walk: turn toward the target, then walk up to it.
   let autoWalking = false;
@@ -157,9 +172,10 @@ function animate() {
     }
   }
 
-  // Normalise so W+D diagonals aren't sqrt(2) x faster than straight ahead.
+  // Normalise so W+D diagonals aren't sqrt(2) x faster than straight ahead
+  // (the tour's direction is already scaled to its own, slower pace).
   const mag = Math.hypot(fwd, rgt);
-  if (mag > 1) { fwd /= mag; rgt /= mag; }
+  if (mag > 1 && !S.tourMove) { fwd /= mag; rgt /= mag; }
 
   const sy = Math.sin(S.yaw), cy = Math.cos(S.yaw);
   // Camera right vector at yaw is (cos yaw, 0, -sin yaw); camera forward is

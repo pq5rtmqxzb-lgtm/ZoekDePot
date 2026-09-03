@@ -525,6 +525,54 @@ check('exiting photo mode restores the HUD', await ppage.isVisible('#roomLabel')
 check('no page errors (photo)', perrors.length === 0, perrors.join(' | '));
 await ppage.close();
 
+/* ---------- Rondleiding (guided tour) ---------- */
+const tpage = await browser.newPage({ viewport: { width: VW, height: VH } });
+const terrors = [];
+tpage.on('pageerror', e => terrors.push(String(e)));
+await tpage.goto(BASE + '/index.html');
+await awaitBoot(tpage);
+await tpage.click('#tourStartBtn');   // intro button: start walking + touring
+await tpage.waitForTimeout(400);
+const t0 = await tpage.evaluate(() => window.__state());
+check('tour starts from the intro button', t0.tour.on && t0.tour.total >= 10,
+      JSON.stringify(t0.tour));
+// Every leg of the route must be plannable over the current furniture
+// layout — the same guard as the reachability check, for the tour's stops.
+check('tour: every stop on the route is reachable',
+      t0.tour.planned === t0.tour.total,
+      `${t0.tour.planned}/${t0.tour.total} legs${t0.tour.skipped.length ? ' skipped: ' + t0.tour.skipped.join(', ') : ''}`);
+check('tour bar + Stop button visible', await tpage.isVisible('#tourStop'));
+
+// Stop 0 is a short look-around by the front door, then the walk to
+// slaapkamer 1 begins: the camera must have turned and the player moved.
+await tpage.waitForFunction(() => window.__state().tour.stop >= 1, null, { timeout: 180000 });
+const t1 = await tpage.evaluate(() => window.__state());
+check('tour looks around at the first stop', Math.abs(t1.yaw - t0.yaw) > 0.5,
+      `yaw ${t0.yaw.toFixed(2)} -> ${t1.yaw.toFixed(2)}`);
+await tpage.waitForFunction(
+  s => { const st = window.__state(); return Math.hypot(st.x - s.x, st.z - s.z) > 0.4; },
+  { x: t1.x, z: t1.z }, { timeout: 180000 });
+const t2 = await tpage.evaluate(() => window.__state());
+check('tour walks toward the next stop', t2.tour.phase === 'walk' && t2.tour.stopName === 'Slaapkamer 1',
+      `moved ${Math.hypot(t2.x - t1.x, t2.z - t1.z).toFixed(2)} m, phase=${t2.tour.phase}`);
+await tpage.screenshot({ path: ARTIFACTS + 'tour.png' });
+
+// Manual movement hands control back; the HUD button resumes at the same stop.
+await tpage.keyboard.down('w');
+await tpage.waitForFunction(() => !window.__state().tour.on, null, { timeout: 90000 });
+await tpage.keyboard.up('w');
+check('WASD stops the tour', true);
+await tpage.click('#tourToggle');
+await tpage.waitForTimeout(300);
+const t3 = await tpage.evaluate(() => window.__state());
+check('Rondleiding button resumes at the same stop', t3.tour.on && t3.tour.stop === 1,
+      `stop=${t3.tour.stop} phase=${t3.tour.phase}`);
+await tpage.click('#tourStop');
+await tpage.waitForTimeout(300);
+check('Stop button ends the tour', !(await tpage.evaluate(() => window.__state().tour.on)));
+check('no page errors (tour)', terrors.length === 0, terrors.join(' | '));
+await tpage.close();
+
 /* ---------- Mobile emulation ---------- */
 const mob = await browser.newContext({
   viewport: { width: 390, height: 844 },
