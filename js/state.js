@@ -44,7 +44,6 @@ export const S = {
   tour: { on: false, stop: 0, phase: 'idle', done: false, planned: 0, skipped: [], path: null },
   tourMove: null,       // { vx, vz } world-space walk direction while touring
   minimapOn: false,
-  doors: [],            // { pivot, base, seg, angle, target } hinged leaves
   measure: { armed: false, points: [], dist: 0 },
   customFurn: [],       // { mesh, obstacle, data } placed own furniture
   moveArm: null,        // item awaiting a floor tap in move mode

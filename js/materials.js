@@ -22,8 +22,6 @@ export const BASEBOARD_MAT = new THREE.MeshStandardMaterial({ color: 0xf4f2ec, r
 export const DOORFRAME_MAT = new THREE.MeshStandardMaterial({ color: 0xf2f0ea, roughness: 0.5, metalness: 0.02 });
 // Buitenkozijnen + schuifpuien: Red Grandis, transparant gelakt met kleurbeits.
 export const WINDOW_FRAME_MAT = new THREE.MeshStandardMaterial({ color: 0x7a5236, roughness: 0.55, metalness: 0.02 });
-// Binnendeuren: vlakke stompe deur, fabrieksmatig gelakt (wit).
-export const DOOR_LEAF_MAT = new THREE.MeshStandardMaterial({ color: 0xf6f4ee, roughness: 0.45, metalness: 0.02 });
 // Woningentreedeur: vlakke deur met hardhoutfineer, transparant gelakt.
 export const ENTRANCE_LEAF_MAT = new THREE.MeshStandardMaterial({ color: 0x8a5e3c, roughness: 0.5, metalness: 0.02 });
 // Kunststeen binnendorpel (badkamer/toilet), antraciet.

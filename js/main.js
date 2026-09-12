@@ -18,7 +18,6 @@ import { roomAt } from './rooms.js';
 import { resolveCollision } from './collision.js';
 import { cancelWalkTarget } from './walk.js';
 import { drawMinimap } from './minimap.js';
-import { updateDoors } from './doors.js';
 import { updateMeasureLabel } from './measure.js';
 import { updateTour, stopTour, tourState } from './tour.js';
 
@@ -81,8 +80,6 @@ function init() {
     x: S.playerPos.x, z: S.playerPos.z, camY: S.camera.position.y,
     yaw: S.yaw, pitch: S.pitch, tod: S.scheme.tod, todFading: !!S.todAnim,
     room: S.currentRoom && S.currentRoom.id,
-    doorOpen: S.doors.filter(d => Math.abs(d.angle) > 1).length,
-    doorAngles: S.doors.map(d => [d.seg.note.split(" ")[0], +d.angle.toFixed(2)]),
     exposure: S.renderer.toneMappingExposure,
     activeLights: S.pointLightInfo.filter(p => p.light.visible).length,
     totalLights: S.pointLightInfo.length,
@@ -221,7 +218,6 @@ function animate() {
   S.camera.rotation.x = S.pitch;
   S.camera.rotation.y = S.yaw;
 
-  updateDoors(dt);
   updateLightCulling(dt);
 
   // Track which room we're standing in for the HUD + design-panel target.
