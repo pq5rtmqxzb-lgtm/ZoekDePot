@@ -14,7 +14,6 @@ import {
 } from './builders.js';
 import { segOnRectEdge, segOnPolyEdge, roomAt } from './rooms.js';
 import { skyTex, makeTexture } from './textures.js';
-import { buildDoorLeaf } from './doors.js';
 
 const OUTSIDE = new Set(['balkon_n', 'balkon_z', 'corridor']);
 const WET = new Set(['badkamer', 'badkklein', 'toilet']);
@@ -68,7 +67,7 @@ export function buildApartment() {
       .concat(room.polys.map(p => addRoomFloorPoly(p, base, tw, td, ceilH, ceilMat)));
   }
 
-  // Walls, doors, sliding-door visuals, windows and railings — model.json geom.
+  // Walls, door frames, sliding-door visuals, windows and railings — model.json geom.
   S.geom.forEach((g, i) => {
     const t = g.t || WALL_THICK;
     let mesh = null;
@@ -80,7 +79,6 @@ export function buildApartment() {
         const si = sideInfo(g);
         g.dorpel = !!((si.rp && WET.has(si.rp.id)) || (si.rm && WET.has(si.rm.id)));
         addDoorFrame(g.x1, g.z1, g.x2, g.z2, t, g);
-        buildDoorLeaf(g);
         break;
       }
       case 'sidelight': addSidelight(g.x1, g.z1, g.x2, g.z2, t); break;

@@ -50,10 +50,9 @@ gaat verder bij de stop waar je was. De route zelf staat in `js/tour.js`
 botsingsmodel als het lopen, dus verplaatste meubels worden omzeild en een
 onbereikbare stop wordt overgeslagen met een melding.
 
-Deuren zwaaien vanzelf open als je dichterbij komt — naar de kant die de
-verkooptekening aangeeft (een deur zwaait nooit dwars door je heen; sta je in
-de draaicirkel, dan wacht hij tot je een stap terug doet). Het inricht-paneel kiest
-per kamer muurverf, accentmuur (tik een muur aan), vloerafwerking en de
+De deuropeningen zijn open kozijnen zonder deurblad, zodat je overal vrij
+doorheen loopt en de zichtlijnen tussen de kamers open blijven. Het
+inricht-paneel kiest per kamer muurverf, accentmuur (tik een muur aan), vloerafwerking en de
 lichtsfeer (dag→avond→nacht, met schuifje voor elk moment ertussen). Onder
 "Eigen meubel" zet je een blok met je eigen maten neer (verplaats/draai/
 verwijder) om te zien of je spullen passen. "Bewaar & deel" zet alles in de
@@ -72,7 +71,7 @@ toilet vanaf de voordeur bereikbaar blijven met de botsing áán.
 |---|---|
 | `index.html` | De HTML-schil: CSS, DOM en de import map. |
 | `js/` | De app als native ES-modules (`main.js` is het startpunt; gedeelde staat leeft in `state.js`). |
-| `data/model.json` | Muur-hartlijnen, deuren (met draairichting), kamerdefinities + plafondhoogtes — gedeelde bron voor app én tools. |
+| `data/model.json` | Muur-hartlijnen, deuropeningen (met draairichting uit de tekening, voor de tools), kamerdefinities + plafondhoogtes — gedeelde bron voor app én tools. |
 | `vendor/three/` | Gevendorde Three.js r160. |
 | `test/` | Playwright-rooktest (`npm test`, zie ook `.github/workflows/smoke.yml`). |
 | `compare.html` | Dev-viewer: PDF, gegenereerde SVG en model-overlay naast elkaar. |
@@ -106,7 +105,8 @@ de geometrie.
   en-suite vanuit de nis van slaapkamer 2; de woonkamerdeur heeft een vast
   zijlicht.
 - **Afwerking** — uit de Technische Omschrijving (15-12-2025): plafond 2,80 m,
-  badkamers en gang 2,55 m; witte nestelkozijnen met stompe deuren; houten
+  badkamers en gang 2,55 m; witte nestelkozijnen (in het model zonder
+  deurblad); houten
   hef-schuifpuien (Red Grandis) met één vast en één schuivend deel; gevel in
   verticale Basralocus delen met zwart voegprofiel; balkonhek van glas met
   hardhouten handrail; betegelde badkamers met elektrische designradiator;

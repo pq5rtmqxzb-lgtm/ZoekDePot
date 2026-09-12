@@ -10,8 +10,9 @@ import { WALL_HEIGHT } from './constants.js';
 // (verified with tools/compare-to-pdf.py). Rows may carry `t` (wall thickness;
 // facade/structural default WALL_THICK 0.20 m, interior partitions 0.10 m).
 // `kind` chooses the builder: wall = solid wall (adds collision segment),
-// door = nestelkozijn + hinged leaf (no collision in span; x1,z1 is the hinge
-// jamb, `open_to` the point the leaf swings toward), sidelight = fixed glass
+// door = open nestelkozijn without a leaf (no collision in span; x1,z1 and
+// `open_to` document the hinge jamb and swing side from the sales drawing,
+// kept for the Python verification tools), sidelight = fixed glass
 // beside a door (collision), sliding = hef-schuifpui (fixed pane collides, the
 // open sliding pane is the walkable gap), window = fixed glazing with sill
 // (collision), railing = balcony balustrade (collision), screen = privacy

@@ -273,20 +273,17 @@ await page.screenshot({ path: ARTIFACTS + 'desktop.png' });
 check('no page errors (desktop)', errors.length === 0, errors.join(' | '));
 await page.close();
 
-/* ---------- Doors (fresh page, spawn next to the badkamer door) ---------- */
+/* ---------- Doorways (fresh page, spawn next to the badkamer door) ---------- */
 const dpage = await browser.newPage({ viewport: { width: VW, height: VH } });
 const derrors = [];
 dpage.on('pageerror', e => derrors.push(String(e)));
-// Gang corridor at (2.82, 5.55), 1 m from the badkamer door (which swings
-// west, toward us — a leaf never opens into a player inside its sweep, so
-// stand just outside the arc, beside the north jamb), facing east (+X).
+// Gang corridor at (2.82, 5.55), 1 m west of the badkamer doorway, facing
+// east (+X). Doors have no leaves, so the frame must read as an open gap.
 await dpage.goto(BASE + '/index.html?pos=2.82,5.55,-1.5708');
 await awaitBoot(dpage);
-await dpage.waitForFunction(() => window.__state().doorOpen >= 1, null, { timeout: 120000 });
-check('door opens on approach', true);
 
-// Walk east through the open doorway into the badkamer — the span must stay
-// walkable (door leaves have no collision).
+// Walk east through the doorway into the badkamer — the span must stay
+// walkable (door openings have no collision).
 await dpage.keyboard.down('w');
 try {
   await dpage.waitForFunction(() => window.__state().room === 'badkamer', null, { timeout: 120000 });
@@ -296,19 +293,7 @@ try {
   check('doorway stays walkable (entered badkamer)', false, JSON.stringify(st));
 }
 await dpage.keyboard.up('w');
-
-// Teleport to the south balcony (far from every door) → all doors close.
-await dpage.keyboard.press('m');
-await dpage.waitForTimeout(300);
-const dmapBox = await dpage.evaluate(() => {
-  const b = document.getElementById('minimap').getBoundingClientRect();
-  return { x: b.left, y: b.top };
-});
-const bz = mapPoint(8.0, 16.5);
-await dpage.mouse.click(dmapBox.x + bz.x, dmapBox.y + bz.y);
-await dpage.waitForFunction(() => window.__state().doorOpen === 0, null, { timeout: 120000 });
-check('doors close when far away', true);
-check('no page errors (doors)', derrors.length === 0, derrors.join(' | '));
+check('no page errors (doorways)', derrors.length === 0, derrors.join(' | '));
 await dpage.close();
 
 /* ---------- Measure tool (fresh page, in the gang corridor) ---------- */
