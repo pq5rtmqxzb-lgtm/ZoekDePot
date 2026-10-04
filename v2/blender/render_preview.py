@@ -27,7 +27,7 @@ OUT = ROOT / "v2" / "docs" / "renders"
 # Sun per mood: azimuth clockwise from north, elevation, strength, colour;
 # sky strength. Day ≈ 15:30 in late April; evening ≈ 20:45 (sunset WNW).
 MOODS = {
-    "day":     dict(az=225.0, el=36.0, sun=4.0, color=(1.0, 0.95, 0.88), sky=0.35, exposure=1.0),
+    "day":     dict(az=225.0, el=36.0, sun=4.0, color=(1.0, 0.95, 0.88), sky=1.0, exposure=1.3),
     "evening": dict(az=292.0, el=3.0, sun=1.2, color=(1.0, 0.62, 0.38), sky=0.08, exposure=1.4),
 }
 
@@ -40,7 +40,7 @@ VIEWS = {
     "keuken":    dict(eye=(8.60, 1.70, 4.20), target=(5.4, 1.15, 14.5)),
     "eiland":    dict(eye=(9.60, 1.70, 12.80), target=(5.2, 1.00, 10.9)),
     "slaapk1":   dict(eye=(2.30, 1.70, 3.85), target=(5.4, 0.80, 1.2)),
-    "slaapk2":   dict(eye=(3.90, 1.70, 11.90), target=(1.2, 1.10, 15.5)),
+    "slaapk2":   dict(eye=(3.20, 1.70, 11.75), target=(1.0, 0.90, 14.6)),
     "badkamer":  dict(eye=(4.20, 1.70, 6.35), target=(6.6, 0.90, 4.5), lamps={"badkamer"}),
     "gang":      dict(eye=(0.70, 1.70, 8.75), target=(6.8, 1.35, 8.80), lamps={"gang"}),
     "avond":     dict(eye=(9.25, 1.70, 13.45), target=(6.9, 1.25, 2.0), lamps="*", mood="evening"),
