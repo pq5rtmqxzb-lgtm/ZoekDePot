@@ -117,11 +117,15 @@ function setMood(m: Mood): void {
     b.setAttribute("aria-pressed", String(b.dataset.mood === m));
   }
 }
+// only the moods that were baked (a bake can be run per mood: --moods day)
+const baked = (Object.keys(MOOD_LOOK) as Mood[]).filter((m) => manifest.maps[m]);
 for (const b of document.querySelectorAll<HTMLButtonElement>("#moods button")) {
+  if (!baked.includes(b.dataset.mood as Mood)) { b.remove(); continue; }
   b.addEventListener("click", (e) => { e.stopPropagation(); setMood(b.dataset.mood as Mood); });
 }
+if (baked.length < 2) document.getElementById("moods")!.style.display = "none";
 const startMood = params.get("mood") as Mood | null;
-setMood(startMood && startMood in MOOD_LOOK ? startMood : "day");
+setMood(startMood && baked.includes(startMood) ? startMood : baked[0] ?? "day");
 
 // ---- loop --------------------------------------------------------------
 const vel = { x: 0, z: 0 };
