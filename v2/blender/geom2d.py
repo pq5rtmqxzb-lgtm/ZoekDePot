@@ -19,6 +19,23 @@ def seg_point(g, a, o):
     return (x + u[0] * a + n[0] * o, z + u[1] * a + n[1] * o)
 
 
+# hef-schuifpui (build_shell.build_sliding): frame jamb width, and how far the
+# opened sliding pane still reaches past the middle into the opening (share of a pane)
+PUI_JAMB = 0.08
+PUI_OVERLAP = 0.15
+
+
+def pui_closed_span(g):
+    """(a0, a1) along a schuifpui where its panes stand: the fixed pane plus
+    the sliding pane slid open over it. The rest is the open, walkable part.
+    slide "x1": the panes stack on the x2 half, so the opening is at x1."""
+    _, _, _, L = seg_frame(g)
+    pw = (L - 2 * PUI_JAMB) / 2
+    if g.get("slide") == "x1":
+        return L / 2 - PUI_OVERLAP * pw, L
+    return 0.0, L / 2 + PUI_OVERLAP * pw
+
+
 def seg_local(g, px, pz):
     """(along, offset) of a plan point in the segment frame."""
     (x, z), u, n, _ = seg_frame(g)

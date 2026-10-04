@@ -8,7 +8,8 @@ is 2D boxes (centre, size, rotation), rooms are the floor rects/polys (for
 so the viewer collides with exactly what the checks verify.
 
 Walls: every solid segment except door openings; a schuifpui collides only
-on its fixed half (the open half is the way out, as in v1); side lights,
+where its panes stand (fixed pane + the sliding pane slid open over it, as
+build_shell.build_sliding draws them), so the open part is the way out; side lights,
 railings, privacy screens and the corridor walls collide; the shower glass
 and the kitchen (tall cabinet wall + island) are added as boxes/segments.
 """
@@ -20,6 +21,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 from check_furniture import as_footprint  # noqa: E402
+from geom2d import pui_closed_span, seg_point  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT = ROOT / "v2" / "build" / "collision.json"
@@ -38,10 +40,9 @@ def main():
         if k == "door":
             continue
         x1, z1, x2, z2 = g["x1"], g["z1"], g["x2"], g["z2"]
-        if k == "sliding":                       # only the fixed half collides
-            f0, f1 = (0.0, 0.5) if g.get("slide") == "x1" else (0.5, 1.0)
-            x1, z1, x2, z2 = x1 + (g["x2"] - g["x1"]) * f0, z1 + (g["z2"] - g["z1"]) * f0, \
-                x1 + (g["x2"] - g["x1"]) * f1, z1 + (g["z2"] - g["z1"]) * f1
+        if k == "sliding":                       # only where the panes stand collides
+            a0, a1 = pui_closed_span(g)
+            (x1, z1), (x2, z2) = seg_point(g, a0, 0.0), seg_point(g, a1, 0.0)
             t = 0.06
         elif k in ("railing", "screen"):
             t = 0.05

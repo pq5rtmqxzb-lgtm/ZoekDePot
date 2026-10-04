@@ -178,10 +178,25 @@ is a build output (~40 MB of model and lightmaps): rebuild it with
 - **Walking:** click to look around (mouse), WASD / arrows to walk, Shift to
   go faster, Q/E to turn. Touch: drag the left half to walk, the right half to
   look. Collision against the same walls and furniture footprints that
-  `check_furniture.py` verifies (`export_collision.py`); schuifpuien are open
-  on their sliding half, as in v1. Eye height 1.68 m.
-- **Wide view:** `V` or the *Breed* button switches from 78° to 100°
-  horizontally. A screen shows far less than the eye takes in (at 78° on a
+  `check_furniture.py` verifies (`export_collision.py`); a schuifpui collides
+  only where its panes stand (the fixed pane with the sliding pane slid over
+  it, as `build_shell.py` draws them), so you step out through the open part.
+  Eye height 1.68 m.
+- **Guided tour (Rondleiding):** for visitors who find steering through a 3D
+  world hard. The start screen offers *Start de rondleiding*; afterwards the
+  *Rondleiding* button (bottom right) starts it again, and `?tour=1` starts it
+  straight away (a link to send). The camera walks by itself through the hal,
+  both bathrooms, both bedrooms, the woonkamer, eethoek and keuken to the
+  south balcony, stops in each room, looks slowly left and right and shows a
+  short caption. Big buttons: *Vorige*, *Pauze*, *Volgende*, *Stoppen*
+  (keyboard: Space pauses, Esc stops). Only the stops are written by hand
+  (`STOPS` in `src/tour.ts`: where to stand, where to look, the text); the
+  walks between them are found on the collision data (A* on an 8 cm grid
+  that keeps to the middle of doors and corridors, then straightened and
+  rounded), so they follow a changed furniture layout. `npm test` checks
+  that every walk is found and stays clear of walls and furniture.
+- **Wide view:** always 100° horizontally (instead of a usual 78°). A
+  screen shows far less than the eye takes in (at 78° on a
   16:9 screen the floor only enters the picture ~3.7 m ahead), so rooms feel
   smaller than they are; the wide view brings floor and ceiling into view.
 - **Moods:** Dag / Avond / Nacht buttons switch the lightmap set live.
@@ -193,7 +208,7 @@ is a build output (~40 MB of model and lightmaps): rebuild it with
   a navmesh adds a dependency without changing how walking feels.
 - **URL:** `?pos=x,z,yaw,pitch&mood=evening` (yaw/pitch in degrees; three.js
   rotation: yaw 0 looks north) — used by the smoke test. `&hud=0` hides the
-  help panel, `&view=wide` starts in the wide view.
+  start screen, `&tour=1` starts the guided tour.
 - **Quality tiers:** `full` on desktops (textures up to 2K, full lightmaps,
   4x MSAA + a light bloom on lamp bulbs and sun patches), `lite` on touch
   devices such as the iPad (textures up to 1K, lightmaps at half size, about

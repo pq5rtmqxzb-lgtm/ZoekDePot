@@ -11,9 +11,10 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { resolve, roomAt, type CollisionData } from "./collision";
 import { Lightmaps, MOOD_LOOK, type Manifest, type Mood } from "./lightmaps";
 import { Walker } from "./controls";
+import { Tour, planTour, clearance } from "./tour";
 
 const ASSETS = `${import.meta.env.BASE_URL}assets`;
-const EYE = 1.68, RADIUS = 0.25, SPEED = 1.4, HFOV = 78, HFOV_WIDE = 100;
+const EYE = 1.68, RADIUS = 0.25, SPEED = 1.4, HFOV = 100;
 
 // quality tier: full on desktops (2K textures, full lightmaps, bloom),
 // lite on touch devices (1K textures, half-size lightmaps, no post-processing);
@@ -21,9 +22,6 @@ const EYE = 1.68, RADIUS = 0.25, SPEED = 1.4, HFOV = 78, HFOV_WIDE = 100;
 const query = new URLSearchParams(location.search);
 const tier = query.get("quality") ?? (matchMedia("(pointer: coarse)").matches ? "lite" : "full");
 const lite = tier === "lite";
-// wide view (V key, "Breed" button, ?view=wide): 100° instead of 78°, so more
-// floor and ceiling are in view and a room reads closer to its real size
-let wide = query.get("view") === "wide";
 
 const canvas = document.getElementById("view") as HTMLCanvasElement;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
@@ -56,24 +54,15 @@ function resize(): void {
   composer?.setPixelRatio(renderer.getPixelRatio());
   composer?.setSize(w, h);
   camera.aspect = w / h;
-  // hold ~78° horizontally like the Blender previews (and v1), clamp on portrait screens
-  const hfov = wide ? HFOV_WIDE : HFOV;
-  const v = 2 * Math.atan(Math.tan((hfov * Math.PI) / 360) / camera.aspect) * (180 / Math.PI);
-  camera.fov = Math.max(45, Math.min(wide ? 100 : 80, v));
+  // a wide 100° horizontally: a screen shows far less than the eye takes in, so
+  // at a normal 78° rooms feel small; the wide view brings floor and ceiling
+  // into view (vertical fov clamped on portrait screens)
+  const v = 2 * Math.atan(Math.tan((HFOV * Math.PI) / 360) / camera.aspect) * (180 / Math.PI);
+  camera.fov = Math.max(45, Math.min(100, v));
   camera.updateProjectionMatrix();
 }
 addEventListener("resize", resize);
 resize();
-
-const wideBtn = document.getElementById("wide")!;
-function setWide(w: boolean): void {
-  wide = w;
-  wideBtn.setAttribute("aria-pressed", String(w));
-  resize();
-}
-setWide(wide);
-wideBtn.addEventListener("click", (e) => { e.stopPropagation(); setWide(!wide); });
-addEventListener("keydown", (e) => { if (e.code === "KeyV" && !e.repeat) setWide(!wide); });
 
 const loadBar = document.getElementById("load")!;
 const loadText = document.getElementById("loadtext")!;
@@ -104,13 +93,13 @@ gltf.scene.traverse((o) => { if (o.name.startsWith("slab")) o.visible = false; }
 lightmaps.apply(gltf.scene);
 scene.add(gltf.scene);
 loadBar.style.opacity = "0";
-loadText.textContent = "Klik of tik om te beginnen";
+loadText.hidden = true;
+document.getElementById("start")!.hidden = false;
 
 // ---- state -------------------------------------------------------------
 const walker = new Walker(canvas, document.getElementById("stick")!);
-walker.onFirstInput = () => help.classList.add("hidden");
+walker.onFirstInput = () => hideHelp();
 const params = new URLSearchParams(location.search);
-if (params.get("hud") === "0") help.classList.add("hidden");
 const pos = { x: collision.spawn.x, z: collision.spawn.z };
 walker.yaw = (collision.spawn.yaw * Math.PI) / 180;
 const p = params.get("pos")?.split(",").map(Number);
@@ -141,6 +130,85 @@ if (baked.length < 2) document.getElementById("moods")!.style.display = "none";
 const startMood = params.get("mood") as Mood | null;
 setMood(startMood && baked.includes(startMood) ? startMood : baked[0] ?? "day");
 
+// ---- guided tour ("Rondleiding") ----------------------------------------
+// for visitors who find steering hard: the camera walks itself from room to
+// room (see tour.ts); big buttons to pause, skip or stop
+const tour = new Tour(collision);
+const tourEl = document.getElementById("tour")!;
+const tourBtn = document.getElementById("tourbtn")!;
+const fade = document.getElementById("fade")!;
+const $ = (id: string) => document.getElementById(id)!;
+let tourEnded = false;                               // the panel stays up with "Nog een keer"
+
+function hideHelp(): void {
+  help.classList.add("hidden");
+  renderTour();
+}
+
+function fadeTo(fn: () => void): void {
+  fade.style.opacity = "1";
+  setTimeout(() => { fn(); fade.style.opacity = "0"; }, 300);
+}
+
+function renderTour(): void {
+  const on = tour.active || tourEnded;
+  tourEl.hidden = !on;
+  document.body.classList.toggle("touring", on);
+  tourBtn.hidden = on || !help.classList.contains("hidden");
+  if (!on) return;
+  const n = tour.stops.length, st = tour.stops[tour.index];
+  $("tourstep").textContent = tourEnded ? "Einde van de rondleiding"
+    : `Stap ${tour.index + 1} van ${n}${tour.phase === "walk" ? " · onderweg" : ""}${tour.paused ? " · gepauzeerd" : ""}`;
+  $("tourtitle").textContent = st.title;
+  $("tourtext").textContent = st.text;
+  $("tourprev").hidden = tourEnded;
+  $("tournext").hidden = tourEnded;
+  ($("tourprev") as HTMLButtonElement).disabled = tour.index === 0;
+  ($("tournext") as HTMLButtonElement).disabled = tour.index === n - 1;
+  $("tourpause").textContent = tourEnded ? "↺ Nog een keer" : tour.paused ? "▶\uFE0E Verder" : "❚❚ Pauze";
+  $("tourstop").textContent = tourEnded ? "Zelf rondlopen" : "✕ Stoppen";
+}
+tour.onChange = renderTour;
+tour.onEnd = () => { tourEnded = true; walker.enabled = true; renderTour(); };
+
+function startTour(): void {
+  hideHelp();
+  tourEnded = false;
+  walker.enabled = false;
+  document.exitPointerLock?.();
+  tour.start({ x: pos.x, z: pos.z, yaw: walker.yaw, pitch: walker.pitch });
+  const [sx, sz] = tour.stops[0].at;
+  // from the entrance the first stop is right here: just turn; elsewhere fade over
+  if (Math.hypot(pos.x - sx, pos.z - sz) < 0.6) tour.jump(0, false); else fadeTo(() => tour.jump(0));
+}
+
+function stopTour(): void {
+  tour.stop();
+  tourEnded = false;
+  walker.enabled = true;
+  renderTour();
+}
+
+const press = (id: string, fn: () => void) =>
+  $(id).addEventListener("click", (e) => { e.stopPropagation(); fn(); });
+press("starttour", startTour);
+press("startfree", hideHelp);
+press("tourbtn", startTour);
+press("tourpause", () => (tourEnded ? startTour() : tour.setPaused(!tour.paused)));
+press("tourstop", stopTour);
+press("tourprev", () => fadeTo(() => tour.jump(tour.index - 1)));      // walking: back to the room just left
+press("tournext", () => fadeTo(() => tour.jump(tour.index + (tour.phase === "walk" ? 0 : 1))));   // walking: arrive now
+addEventListener("keydown", (e) => {
+  if (!tour.active || e.repeat) return;
+  if (e.code === "Space") { e.preventDefault(); tour.setPaused(!tour.paused); }
+  if (e.code === "Escape") stopTour();
+});
+// work out the walking paths now, so the tour starts without a pause
+setTimeout(() => tour.prepare(), 300);
+
+if (params.get("hud") === "0") hideHelp();
+if (params.get("tour") === "1") startTour();
+
 // ---- loop --------------------------------------------------------------
 const vel = { x: 0, z: 0 };
 let last = performance.now();
@@ -161,7 +229,14 @@ function frame(now: number): void {
   frameMs += (now - last - frameMs) * 0.05;
   let dt = Math.min(0.5, (now - last) / 1000);
   last = now;
-  while (dt > 1e-4) { const h = Math.min(dt, 1 / 120); step(h); dt -= h; }
+  if (tour.active) {
+    const t = tour.update(dt);
+    pos.x = t.x; pos.z = t.z;
+    walker.yaw = t.yaw; walker.pitch = t.pitch;
+    vel.x = vel.z = 0;
+  } else {
+    while (dt > 1e-4) { const h = Math.min(dt, 1 / 120); step(h); dt -= h; }
+  }
   camera.position.set(pos.x, EYE, pos.z);
   camera.rotation.set(walker.pitch, walker.yaw, 0);
   const room = roomAt(collision.rooms, pos.x, pos.z)?.name ?? "";
@@ -174,11 +249,27 @@ requestAnimationFrame(frame);
 // test hooks (smoke test / screenshots)
 Object.assign(window, {
   __viewer: {
-    state: () => ({ x: pos.x, z: pos.z, yaw: walker.yaw, room: lastRoom, mood, tier, wide, fov: camera.fov,
+    state: () => ({ x: pos.x, z: pos.z, yaw: walker.yaw, room: lastRoom, mood, tier, fov: camera.fov,
+      tour: { active: tour.active, ended: tourEnded, index: tour.index, phase: tour.phase, paused: tour.paused },
       baked: lightmaps.bakedMaterialCount, info: renderer.info.render,
       fps: 1000 / frameMs, textures: renderer.info.memory.textures }),
     setMood,
     scene,
+    tour,
+    /** Every walk between tour stops found, and its closest approach to a wall or piece (m). */
+    tourCheck: () => {
+      const { legs, found } = planTour(collision);
+      let min = Infinity;
+      for (const l of legs) {
+        for (let i = 1; i < l.length; i++) {
+          for (let t = 0; t <= 1; t += 0.05) {
+            min = Math.min(min, clearance(collision, l[i - 1][0] + (l[i][0] - l[i - 1][0]) * t,
+              l[i - 1][1] + (l[i][1] - l[i - 1][1]) * t));
+          }
+        }
+      }
+      return { found, minClearance: min, stops: tour.stops.map((s) => roomAt(collision.rooms, ...s.at)?.name ?? "") };
+    },
     ready: true,
   },
 });
