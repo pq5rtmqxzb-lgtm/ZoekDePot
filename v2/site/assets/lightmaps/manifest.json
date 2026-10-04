@@ -235,6 +235,7 @@
     "furn.loungechair.soft",
     "furn.niche_bk",
     "furn.nightstand1",
+    "furn.nightstand1b",
     "furn.nightstand2a",
     "furn.nightstand2b",
     "furn.pendant_dining_a",
@@ -394,17 +395,17 @@
   "day": {
    "shell": {
     "file": "day_shell.webp",
-    "scale": 2.263,
+    "scale": 1.9247,
     "lite": "day_shell-lite.webp"
    },
    "furniture": {
     "file": "day_furniture.webp",
-    "scale": 1.2746,
+    "scale": 1.3135,
     "lite": "day_furniture-lite.webp"
    },
    "exterior": {
     "file": "day_exterior.webp",
-    "scale": 4.7223,
+    "scale": 4.7304,
     "lite": "day_exterior-lite.webp"
    }
   }

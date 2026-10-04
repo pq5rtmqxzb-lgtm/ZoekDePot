@@ -18,6 +18,9 @@
     #moods button { border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; color: var(--ink);
       background: transparent; cursor: pointer; }
     #moods button[aria-pressed="true"] { background: rgba(244, 241, 234, .18); }
+    #wide { bottom: 16px; right: 16px; border: 0; border-radius: 12px; padding: 14px 16px; font: inherit;
+      color: var(--ink); background: var(--glass); backdrop-filter: blur(6px); cursor: pointer; pointer-events: auto; }
+    #wide[aria-pressed="true"] { background: rgba(244, 241, 234, .30); }
     #help { top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 18px 22px;
       border-radius: 12px; background: var(--glass); backdrop-filter: blur(6px); max-width: 340px; }
     #help h1 { font-size: 20px; margin: 0 0 6px; }
@@ -29,7 +32,7 @@
     @media (pointer: coarse) { #help .desk { display: none; } }
     @media (pointer: fine) { #help .touch { display: none; } }
   </style>
-  <script type="module" crossorigin src="./assets/index-B_JhZSP3.js"></script>
+  <script type="module" crossorigin src="./assets/index-Bsld3CkC.js"></script>
 </head>
 <body>
   <canvas id="view"></canvas>
@@ -37,8 +40,8 @@
   <div id="room" class="hud">…</div>
   <div id="help" class="hud">
     <h1>Ons Nieuwe Huis</h1>
-    <p class="desk">Klik om rond te kijken · <b>WASD</b> of pijltjes om te lopen · <b>Esc</b> om los te laten</p>
-    <p class="touch">Sleep links om te lopen, rechts om rond te kijken</p>
+    <p class="desk">Klik om rond te kijken · <b>WASD</b> of pijltjes om te lopen · <b>V</b> voor breed beeld · <b>Esc</b> om los te laten</p>
+    <p class="touch">Sleep links om te lopen, rechts om rond te kijken · <b>Breed</b> voor meer overzicht</p>
     <p id="loadtext">Laden…</p>
   </div>
   <div id="stick" class="hud"></div>
@@ -47,5 +50,6 @@
     <button data-mood="evening" aria-pressed="false">Avond</button>
     <button data-mood="night" aria-pressed="false">Nacht</button>
   </div>
+  <button id="wide" class="hud" aria-pressed="false" title="Breed beeld (V)">Breed</button>
 </body>
 </html>
