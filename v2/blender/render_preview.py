@@ -1,12 +1,15 @@
-"""Path-traced preview stills of the shell (Cycles), for review and for
-comparing against v1 from the same spots.
+"""Path-traced preview stills (Cycles), for review and for comparing
+against v1 from the same spots.
 
-    python v2/blender/render_preview.py [--samples 96] [--width 1280] [--views woonkamer,gang]
+    python v2/blender/render_preview.py [--samples 128] [--width 1280] [--views woonkamer,gang]
 
-Reads v2/build/shell.blend, writes v2/docs/renders/<view>.png. Lighting is a
-physical sky + sun for Den Haag (52.08 N) on a spring afternoon. Plan north
-(model -Z) is taken as true north, as in the sales drawing. On a CPU this is
-a draft; the final-quality bake/renders run on a GPU (see v2/README.md).
+Reads v2/build/scene.blend (furnished; falls back to shell.blend) and writes
+v2/docs/renders/<view>.png. Day views: physical sky + sun for Den Haag
+(52.08 N) at 15:30 in late April; lamps only where a view says so (the
+windowless gang, the bathroom). Evening views: low sun in the west-north-
+west and every lamp on. Plan north (model -Z) is taken as true north, as in
+the sales drawing. On a CPU this is a draft; final-quality renders and bakes
+run on a GPU (see v2/README.md).
 """
 import math
 import os
@@ -21,24 +24,33 @@ from common import BUILD_DIR, ROOT, P, script_args  # noqa: E402
 
 OUT = ROOT / "v2" / "docs" / "renders"
 
-# Sun: azimuth clockwise from north, elevation (≈ 15:30 in late April).
-SUN_AZIMUTH, SUN_ELEVATION = 225.0, 36.0
+# Sun per mood: azimuth clockwise from north, elevation, strength, colour;
+# sky strength. Day ≈ 15:30 in late April; evening ≈ 20:45 (sunset WNW).
+MOODS = {
+    "day":     dict(az=225.0, el=36.0, sun=4.0, color=(1.0, 0.95, 0.88), sky=0.35, exposure=1.0),
+    "evening": dict(az=292.0, el=3.0, sun=1.2, color=(1.0, 0.62, 0.38), sky=0.08, exposure=1.4),
+}
 
-# name: (eye, target) in MODEL coordinates (x east, y up, z south), eye at
-# v1's standing eye height of 1.70 m unless it is an overview.
+# name: eye, target in MODEL coordinates (x east, y up, z south; eye at v1's
+# standing eye height of 1.70 m unless an overview), lamps = rooms whose
+# lamps are on ("*" = all), mood.
 VIEWS = {
-    "woonkamer": ((9.75, 1.70, 13.30), (6.6, 1.25, 2.0)),
-    "keuken":    ((8.60, 1.70, 4.20), (5.4, 1.15, 14.5)),
-    "slaapk1":   ((5.00, 1.70, 3.90), (0.6, 1.20, 0.6)),
-    "gang":      ((0.70, 1.70, 8.75), (6.8, 1.35, 8.80)),   # no windows: off by default until the Phase 2 lamps
-    "slaapk2":   ((3.90, 1.70, 11.90), (1.2, 1.10, 15.5)),
-    "dollhouse": ((1.0, 24.0, 22.0), (4.9, 0.0, 7.4)),
+    "woonkamer": dict(eye=(9.25, 1.70, 13.45), target=(6.9, 1.25, 2.0)),
+    "eettafel":  dict(eye=(10.25, 1.70, 9.90), target=(7.4, 0.85, 5.0)),
+    "keuken":    dict(eye=(8.60, 1.70, 4.20), target=(5.4, 1.15, 14.5)),
+    "eiland":    dict(eye=(9.60, 1.70, 12.80), target=(5.2, 1.00, 10.9)),
+    "slaapk1":   dict(eye=(2.30, 1.70, 3.85), target=(5.4, 0.80, 1.2)),
+    "slaapk2":   dict(eye=(3.90, 1.70, 11.90), target=(1.2, 1.10, 15.5)),
+    "badkamer":  dict(eye=(4.20, 1.70, 6.35), target=(6.6, 0.90, 4.5), lamps={"badkamer"}),
+    "gang":      dict(eye=(0.70, 1.70, 8.75), target=(6.8, 1.35, 8.80), lamps={"gang"}),
+    "avond":     dict(eye=(9.25, 1.70, 13.45), target=(6.9, 1.25, 2.0), lamps="*", mood="evening"),
+    "dollhouse": dict(eye=(1.0, 24.0, 22.0), target=(4.9, 0.0, 7.4), overview=True),
 }
 
 
 def parse():
     a = script_args()
-    opts = {"samples": 96, "width": 1280, "views": ",".join(v for v in VIEWS if v != "gang")}
+    opts = {"samples": 128, "width": 1280, "views": ",".join(VIEWS)}
     for i in range(0, len(a) - 1, 2):
         opts[a[i].lstrip("-")] = a[i + 1]
     return int(opts["samples"]), int(opts["width"]), opts["views"].split(",")
@@ -51,23 +63,27 @@ def setup_world(scene):
     nt = w.node_tree
     sky = nt.nodes.new("ShaderNodeTexSky")
     sky.sky_type = "NISHITA"
-    sky.sun_disc = False                      # the sun lamp below is the sun
-    sky.sun_elevation = math.radians(SUN_ELEVATION)
-    sky.sun_rotation = math.radians(SUN_AZIMUTH)   # verified: = compass azimuth (north = Blender +Y)
+    sky.sun_disc = False                      # the sun lamp is the sun
     sky.altitude = 30.0
-    bg = nt.nodes["Background"]
-    bg.inputs["Strength"].default_value = 0.35
-    nt.links.new(sky.outputs[0], bg.inputs[0])
-
-    a, e = math.radians(SUN_AZIMUTH), math.radians(SUN_ELEVATION)
-    to_sun = Vector((math.sin(a) * math.cos(e), math.cos(a) * math.cos(e), math.sin(e)))
+    nt.links.new(sky.outputs[0], nt.nodes["Background"].inputs[0])
     sun = bpy.data.lights.new("sun", "SUN")
-    sun.energy = 4.0
     sun.angle = math.radians(0.53)
-    sun.color = (1.0, 0.95, 0.88)
     ob = bpy.data.objects.new("sun", sun)
-    ob.rotation_euler = (-to_sun).to_track_quat("-Z", "Y").to_euler()
     scene.collection.objects.link(ob)
+    return sky, nt.nodes["Background"], ob
+
+
+def set_mood(world, mood):
+    sky, bg, sun = world
+    m = MOODS[mood]
+    sky.sun_elevation = math.radians(m["el"])
+    sky.sun_rotation = math.radians(m["az"])   # verified: = compass azimuth (north = Blender +Y)
+    bg.inputs["Strength"].default_value = m["sky"]
+    a, e = math.radians(m["az"]), math.radians(m["el"])
+    to_sun = Vector((math.sin(a) * math.cos(e), math.cos(a) * math.cos(e), math.sin(e)))
+    sun.data.energy, sun.data.color = m["sun"], m["color"]
+    sun.rotation_euler = (-to_sun).to_track_quat("-Z", "Y").to_euler()
+    return m
 
 
 def setup_render(scene, samples, width):
@@ -105,14 +121,23 @@ def camera(scene, eye, target, overview):
 
 def main():
     samples, width, views = parse()
-    bpy.ops.wm.open_mainfile(filepath=str(BUILD_DIR / "shell.blend"))
+    blend = BUILD_DIR / "scene.blend"
+    bpy.ops.wm.open_mainfile(filepath=str(blend if blend.exists() else BUILD_DIR / "shell.blend"))
     scene = bpy.context.scene
-    setup_world(scene)
+    world = setup_world(scene)
     setup_render(scene, samples, width)
+    lamps = [o for o in bpy.data.objects if o.get("part") == "light"]
+    bulbs = bpy.data.materials.get("M_bulb")
     OUT.mkdir(parents=True, exist_ok=True)
     for name in views:
-        eye, target = VIEWS[name]
-        overview = name == "dollhouse"
+        v = VIEWS[name]
+        eye, target, overview = v["eye"], v["target"], v.get("overview", False)
+        m = set_mood(world, v.get("mood", "day"))
+        on = v.get("lamps", set())
+        for o in lamps:
+            o.hide_render = not (on == "*" or o.get("room") in on)
+        if bulbs:   # glowing bulbs only when some lamp is on
+            bulbs.node_tree.nodes["Principled BSDF"].inputs["Emission Strength"].default_value = 6.0 if on else 0.0
         # Dollhouse: lift the lid — no ceilings, no storey above.
         hide = [o for o in bpy.data.objects if overview and (
             o.name.startswith(("ceil.", "slab.upper")) or o.name in ("building.mass", "ground"))]
@@ -120,7 +145,7 @@ def main():
             o.hide_render = True
         scene.render.film_transparent = overview
         # Interiors are lit through windows; the overview sees direct sun.
-        scene.view_settings.exposure = -0.5 if overview else 1.0
+        scene.view_settings.exposure = -0.5 if overview else m["exposure"]
         cam = camera(scene, eye, target, overview)
         scene.render.filepath = str(OUT / f"{name}.png")
         bpy.ops.render.render(write_still=True)

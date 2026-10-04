@@ -12,7 +12,6 @@ Python tools use. All builders below take MODEL coordinates and convert with
 `P()` at the last moment.
 """
 import json
-import math
 import pathlib
 import sys
 
@@ -71,51 +70,7 @@ def load_model():
 
 # ---------------------------------------------------------------- 2D helpers
 
-def seg_frame(g):
-    """Origin, unit along-vector, right-hand normal (dz, -dx)/L, length."""
-    dx, dz = g["x2"] - g["x1"], g["z2"] - g["z1"]
-    L = math.hypot(dx, dz)
-    u = (dx / L, dz / L)
-    n = (dz / L, -dx / L)
-    return (g["x1"], g["z1"]), u, n, L
-
-
-def seg_point(g, a, o):
-    """Plan point at distance a along the segment and o along its normal."""
-    (x, z), u, n, _ = seg_frame(g)
-    return (x + u[0] * a + n[0] * o, z + u[1] * a + n[1] * o)
-
-
-def seg_local(g, px, pz):
-    """(along, offset) of a plan point in the segment frame."""
-    (x, z), u, n, _ = seg_frame(g)
-    dx, dz = px - x, pz - z
-    return dx * u[0] + dz * u[1], dx * n[0] + dz * n[1]
-
-
-def point_in_poly(px, pz, pts):
-    inside = False
-    j = len(pts) - 1
-    for i in range(len(pts)):
-        xi, zi = pts[i]
-        xj, zj = pts[j]
-        if (zi > pz) != (zj > pz) and px < (xj - xi) * (pz - zi) / (zj - zi) + xi:
-            inside = not inside
-        j = i
-    return inside
-
-
-def room_at(rooms, px, pz):
-    """First room containing the point. model.json lists enclosed rooms
-    (toilet, bergingen, kasten) before their container, as v1 relies on."""
-    for r in rooms:
-        for rc in r["rects"]:
-            if rc["x1"] <= px <= rc["x2"] and rc["z1"] <= pz <= rc["z2"]:
-                return r
-        for poly in r["polys"]:
-            if point_in_poly(px, pz, poly):
-                return r
-    return None
+from geom2d import room_at, seg_frame, seg_point  # noqa: E402  (re-exported)
 
 
 def side_rooms(rooms, g, probe=0.22):
@@ -171,6 +126,45 @@ MATERIALS = {
     "frosted":      dict(color=0xEEF2F2, rough=0.60, alpha=0.70),
     "facade_mass":  dict(color=0x5E5045, rough=0.85),
     "ground":       dict(color=0x5D6B42, rough=1.00),
+    "wall_tile":    dict(color=0xDCD8D1, rough=0.25),
+    "plinth":       dict(color=0xF1F0EC, rough=0.35),
+    # furniture
+    "oak":          dict(color=0xC79E70, rough=0.50),
+    "oak_dark":     dict(color=0x6E4C34, rough=0.50),
+    "lacquer":      dict(color=0xF0EFEA, rough=0.30),
+    "linen":        dict(color=0xB9B2A6, rough=1.00),
+    "linen_oat":    dict(color=0xD9D0C1, rough=1.00),
+    "boucle":       dict(color=0xEAE5DB, rough=1.00),
+    "outdoor":      dict(color=0x8D877C, rough=0.95),
+    "headboard":    dict(color=0x8A8F86, rough=1.00),
+    "bedding":      dict(color=0xF4F2ED, rough=0.95),
+    "duvet":        dict(color=0xE6E0D5, rough=0.95),
+    "rug_oat":      dict(color=0xD3CAB9, rough=1.00),
+    "rug_stone":    dict(color=0xA9A398, rough=1.00),
+    "rug_taupe":    dict(color=0x8A7F72, rough=1.00),
+    "black":        dict(color=0x1F2022, rough=0.45, metal=0.7),
+    "chrome":       dict(color=0xD2D4D6, rough=0.12, metal=1.0),
+    "stone_light":  dict(color=0xD8D0C3, rough=0.35),
+    "stone_dark":   dict(color=0x2C2C2E, rough=0.30),
+    "ceramic":      dict(color=0xF6F6F4, rough=0.08),
+    "mirror":       dict(color=0xE9EDEF, rough=0.02, metal=1.0),
+    "screen":       dict(color=0x0B0C0E, rough=0.12),
+    "appliance":    dict(color=0xE8E8E6, rough=0.30),
+    "leaf":         dict(color=0x3E5A34, rough=0.55),
+    "leaf_light":   dict(color=0x5B7841, rough=0.55),
+    "soil":         dict(color=0x2E241C, rough=1.00),
+    "terracotta":   dict(color=0xB06E4C, rough=0.85),
+    "pot_concrete": dict(color=0xA7A39C, rough=0.90),
+    "lampshade":    dict(color=0xEDE6D8, rough=0.90),
+    "bulb":         dict(color=0xFFE9C4, rough=0.50, emit=6.0),
+    "book_red":     dict(color=0xA9432F, rough=0.70),
+    "book_blue":    dict(color=0x2F4A6B, rough=0.70),
+    "book_ochre":   dict(color=0xC9A24A, rough=0.70),
+    "book_green":   dict(color=0x3F5E4A, rough=0.70),
+    "book_cream":   dict(color=0xE6DCC8, rough=0.70),
+    "book_plum":    dict(color=0x6B3B5A, rough=0.70),
+    "book_black":   dict(color=0x232323, rough=0.70),
+    "sheer":        dict(color=0xF3F0E9, rough=1.00, alpha=0.55),
 }
 FLOOR_MAT = {"hout": "floor_hout", "tegel": "floor_tegel", "steen": "floor_steen", "tapijt": "floor_tapijt"}
 
@@ -184,6 +178,9 @@ def make_materials():
         bsdf.inputs["Base Color"].default_value = srgb(spec["color"])
         bsdf.inputs["Roughness"].default_value = spec["rough"]
         bsdf.inputs["Metallic"].default_value = spec.get("metal", 0.0)
+        if "emit" in spec:
+            bsdf.inputs["Emission Color"].default_value = srgb(spec["color"])
+            bsdf.inputs["Emission Strength"].default_value = spec["emit"]
         if "alpha" in spec:
             # Alpha (not transmission): Cycles lets sun/shadow rays through a
             # transparent BSDF, and glTF exports it as alphaMode BLEND.
@@ -216,12 +213,13 @@ class MeshSet:
             it["mats"].append(mat)
         return it["mats"].index(mat)
 
-    def prism(self, name, coll, mat, base, y0, y1, props=None):
-        """Vertical prism over a plan polygon `base` [(x, z), ...]."""
+    def prism(self, name, coll, mat, base, y0, y1, props=None, top=None):
+        """Vertical prism over a plan polygon `base` [(x, z), ...]. With
+        `top` (same vertex count) the top ring differs: a tapered solid."""
         it = self._get(name, coll, props)
         bm, mi = it["bm"], self._mat_index(it, mat)
         bot = [bm.verts.new(P(x, y0, z)) for x, z in base]
-        top = [bm.verts.new(P(x, y1, z)) for x, z in base]
+        top = [bm.verts.new(P(x, y1, z)) for x, z in (top or base)]
         faces = [bm.faces.new(bot[::-1]), bm.faces.new(top)]
         n = len(base)
         for i in range(n):
@@ -230,6 +228,36 @@ class MeshSet:
         for f in faces:
             f.material_index = mi
         return faces
+
+    def hollow_top(self, name, faces, inset, depth, mat=None):
+        """Sink the top face of a solid made by prism(): inset its rim by
+        `inset` and push the middle down by `depth` (bath, basin, bowl)."""
+        it = self.items[name]
+        bm = it["bm"]
+        top = faces[1]
+        bm.normal_update()
+        if top.normal.z < 0:
+            top.normal_flip()
+        res = bmesh.ops.inset_region(bm, faces=[top], thickness=inset, depth=0.0, use_even_offset=True)
+        bmesh.ops.translate(bm, verts=list(top.verts), vec=(0, 0, -depth))
+        if mat is not None:
+            top.material_index = self._mat_index(it, mat)
+        return res
+
+    def blob(self, name, coll, mat, cx, cy, cz, rx, ry, rz, subdiv=2, props=None):
+        """Ellipsoid (icosphere) centred on model (cx, cy, cz)."""
+        it = self._get(name, coll, props)
+        bm, mi = it["bm"], self._mat_index(it, mat)
+        res = bmesh.ops.create_icosphere(bm, subdivisions=subdiv, radius=1.0)
+        vs = res["verts"]
+        for v in vs:
+            x, y, z = v.co                              # Blender local: z up
+            v.co = P(cx + x * rx, cy + z * ry, cz + y * rz)
+        faces = {f for v in vs for f in v.link_faces}
+        for f in faces:
+            f.material_index = mi
+            f.smooth = True
+        return list(faces)
 
     def seg_box(self, name, coll, mat, g, a0, a1, o0, o1, y0, y1, props=None):
         """Box in a segment's frame: along a0..a1, normal offset o0..o1."""

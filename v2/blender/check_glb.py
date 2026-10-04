@@ -24,9 +24,10 @@ import bmesh  # noqa: E402
 from mathutils import Vector  # noqa: E402
 from mathutils.bvhtree import BVHTree  # noqa: E402
 
+from geom2d import seg_local  # noqa: E402
 from common import (  # noqa: E402
     BUILD_DIR, CORRIDOR_WALLS, DOOR_H, JAMB, ROOT, SLIDE_HEAD, SLIDE_TOP, SOLID_KINDS, WALL_THICK,
-    P, load_model, reset_scene, script_args, seg_frame, seg_local, seg_point,
+    P, load_model, reset_scene, script_args, seg_frame, seg_point,
 )
 
 TOL = 0.01

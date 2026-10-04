@@ -13,23 +13,61 @@ v1 stays untouched and live until v2 is better.
 |---|---|---|
 | 0 | Freeze v1 | ✅ `v1` = `main` @ `620add7` (create the `v1` tag on GitHub: Releases → new tag on that commit) |
 | 1 | Shell generated in Blender | ✅ walls with real openings, floors/ceilings per room, frames, schuifpuien, railings — checked against `model.json` |
-| 2 | Materials, furniture, baked light | next |
+| 2a | Furniture, kitchen, sanitary ware, lamps, wall tiles, plinths | ✅ from `v2/data/furniture.json`, checked against the walls |
+| 2b | Photoreal PBR textures | waiting on network access to Poly Haven / ambientCG (see below) |
+| 2c | Baked lighting (day / evening / night) for the viewer | next |
 | 3–6 | Viewer, features, deploy, extras | — |
 
-## Preview (Phase 1: geometry + placeholder materials, CPU draft)
+## Preview (Phase 2a: furnished, flat placeholder colours, CPU draft)
 
 | | |
 |---|---|
-| ![Dollhouse](docs/renders/dollhouse.png) | ![Woonkamer](docs/renders/woonkamer.png) |
-| ![Keuken](docs/renders/keuken.png) | ![Slaapkamer 1](docs/renders/slaapk1.png) |
-| ![Slaapkamer 2](docs/renders/slaapk2.png) | ![Plan section over the PDF](docs/plan-section.png) |
+| ![Woonkamer](docs/renders/woonkamer.png) | ![Avond](docs/renders/avond.png) |
+| ![Eettafel](docs/renders/eettafel.png) | ![Keuken](docs/renders/keuken.png) |
+| ![Kookeiland](docs/renders/eiland.png) | ![Slaapkamer 1](docs/renders/slaapk1.png) |
+| ![Slaapkamer 2](docs/renders/slaapk2.png) | ![Badkamer](docs/renders/badkamer.png) |
+| ![Gang](docs/renders/gang.png) | ![Dollhouse](docs/renders/dollhouse.png) |
 
-Lighting is daylight only (sky + sun for Den Haag, 15:30 in late April), so
-windowless spaces such as the gang stay dark until Phase 2 adds the lamps.
-Materials are flat placeholders. Known open points for Phase 2:
-hairline shadow gaps at the slaapkamer 2 alcove pier and the slanted SW
-wall (room outline and wall face more than 5 cm apart in `model.json`);
-plinths, wall tiles, kitchen and sanitary ware are not in the shell yet.
+Day views: sky + sun for Den Haag at 15:30 in late April, lamps off except
+in the windowless gang and the bathroom. `avond`: sunset in the west-north-
+west with every lamp on. Surfaces are still flat colours: the tiles, oak,
+linen and stone get real scanned textures in Phase 2b. Known open point:
+hairline shadow gaps at the slaapkamer 2 alcove pier and the slanted SW wall
+(room outline and wall face more than 5 cm apart in `model.json`).
+
+## Furniture
+
+`v2/data/furniture.json` is the layout: one entry per piece with its
+position, rotation and size, in the same frame as `model.json`. Pieces marked
+`"own": true` are the owners' real ones (both beds 140x200, the dining table
+260x100); everything else is a suggestion. Positions come from v1's
+walk-tested layout. Edit sizes or positions there, then run
+`check_furniture.py`: it fails when a piece hits a wall, door opening or
+another piece, or leaves its room.
+
+| Room | Pieces |
+|---|---|
+| Woonkamer, zithoek | 3-zitsbank 240x95 (linnen), bouclé fauteuil, salontafel 120x60 eiken, tv-meubel 180 + 65" tv, boekenkast 180x210, vloerkleed 300x250, vloerlamp, plant |
+| Woonkamer, eethoek | **eigen tafel 260x100**, 8 eiken stoelen met linnen zitkussen, 2 hanglampen, dressoir 120x45 met tafellamp |
+| Keuken | keukenopstelling D (wandopstelling + stenen kookeiland met spoelbak en inductie), 3 barkrukken, 2 hanglampen |
+| Woonkamer, zuid | 2 linnen fauteuils + bijzettafel bij de grote pui, vloerkleed, vloerlamp, planten, vitrage |
+| Slaapkamer 1 | **eigen bed 140x200** met gestoffeerd hoofdbord, nachtkastje + lamp, kledingkast 160x60x230, leesstoel + lamp in de NW-punt, verduisterend linnen |
+| Slaapkamer 2 | **eigen bed 140x200**, 2 nachtkastjes, kledingkast 200x60x230, bureau 120x60 met stoel in de nis |
+| Badkamers, toilet | vrijstaand bad, inloopdouches, hangtoiletten op voorzetwanden, wastafelmeubels (1 en 2 kommen), designradiatoren, fontein |
+| Gang, berging | kapstok + schoenenbank, loper, inbouwspots; WTW, boiler, verdeler, wasmachine + droger |
+| Balkons | noord: bistroset + plantenbak; zuid: loungebank, 2 stoelen, tafel, planten |
+
+Furniture objects are `furn.<id>` (hard parts, 4 mm bevel), `furn.<id>.soft`
+(upholstery and bedding, rounded), `furn.<id>.blob` (foliage, bulbs) and
+`furn.<id>.curtain`; lamps add real light sources `light.<id>` with their
+room as a property.
+
+## Textures (Phase 2b) need network access
+
+The cloud environment can reach GitHub, PyPI and npm, but not the free CC0
+texture libraries. Add these under **Network access → Custom → Allowed
+domains** in the environment settings (keep the default package managers):
+`polyhaven.com`, `api.polyhaven.com`, `dl.polyhaven.org`, `ambientcg.com`.
 
 ## Running it
 
@@ -41,10 +79,13 @@ laptop results match. Two ways to run the same scripts:
 pip install -r v2/blender/requirements.txt
 python v2/blender/build_shell.py        # -> v2/build/shell.blend + shell.glb
 python v2/blender/check_glb.py          # verifies the glb, writes v2/docs/plan-section.png
+python v2/blender/check_furniture.py    # furniture.json vs walls/rooms/each other (no Blender needed)
+python v2/blender/build_furniture.py    # -> v2/build/scene.blend + furniture.glb
 python v2/blender/render_preview.py     # Cycles stills -> v2/docs/renders/
 
 # B) An installed Blender (the laptop; use the GPU for renders/bakes)
 blender -b -P v2/blender/build_shell.py
+blender -b -P v2/blender/build_furniture.py
 blender -b -P v2/blender/render_preview.py -- --samples 512 --width 1920
 ```
 
@@ -70,6 +111,10 @@ NW corner of the north facade. The `.glb` lands in exactly that frame (see
 | `glass.*` | All glazing (alpha-blended) | `part=glass` |
 | `slab.upper` / `slab.lower` | Structural slabs that seal the voids; never visible | `bake=false` |
 | `building.*`, `ground` | Storeys above/below, neighbours' balconies, forest floor | |
+| `plinth.<room>` | 7 cm white plinth along the painted walls | `room` |
+
+Wet rooms: badkamers are tiled to the ceiling, the toilet behind the pan
+(Technische Omschrijving); those wall objects carry `finish=tile`.
 
 How the walls are made: each solid segment of `model.json` becomes a box
 (slab to slab, corners closed), all boxes are merged with Blender's exact
@@ -78,7 +123,7 @@ schuifpuien (2.58 m) are cut out, and the result is split per room and
 per segment by looking at which room each face points into.
 
 Materials are named placeholders (`M_plaster`, `M_floor_hout`, …).
-Phase 2 swaps them for textured PBR materials without touching the geometry.
+Phase 2b swaps them for textured PBR materials without touching the geometry.
 
 ## Checks
 
@@ -94,5 +139,9 @@ Phase 2 swaps them for textured PBR materials without touching the geometry.
 so the `.glb` matches the sales drawing too. `v2/docs/plan-section.png` shows it:
 a cut through the exported walls at 1.2 m (red) over the drawing.
 
-CI (`.github/workflows/v2-shell.yml`) runs the build + check on every change
-to `data/model.json` or `v2/blender/`.
+`check_furniture.py` checks `v2/data/furniture.json`: every piece clear of
+the walls, door openings, sliding doors and railings, inside its own room,
+and clear of the other pieces.
+
+CI (`.github/workflows/v2-shell.yml`) runs the builds and all checks on every
+change to `data/model.json`, `v2/blender/` or `v2/data/`.

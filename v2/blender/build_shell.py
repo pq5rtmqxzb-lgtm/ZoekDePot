@@ -27,11 +27,12 @@ import bpy  # noqa: E402
 import bmesh  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
+from geom2d import seg_local  # noqa: E402
 from common import (  # noqa: E402
     BALCONY_CEIL, BUILD_DIR, CEIL_LOW, CORRIDOR_WALLS, DOOR_H, FLOOR_MAT, JAMB, MASS_Y0, MASS_Y1,
     OUTSIDE, SLIDE_HEAD, SLIDE_TOP, SOLID_KINDS, WALL_HEIGHT, WALL_THICK, WET, MeshSet,
     ensure_collections, load_model, make_materials, outdoor_sign, reset_scene, room_at,
-    seg_frame, seg_local, seg_point, side_rooms, world_uv,
+    seg_frame, seg_point, side_rooms, world_uv,
 )
 
 COLLS = ["walls", "floors", "ceilings", "frames", "glazing", "railings", "exterior"]
@@ -209,6 +210,12 @@ def classify_mass(me, solid, model, colls, mats):
             name, mat, props = f"wall.corridor.{tag}", "limewash", {"part": "wall", "room": "corridor"}
         else:
             name, mat, props = f"wall.{cls}.{tag}", "plaster", {"part": "wall", "room": cls}
+            # Technische Omschrijving: badkamers tiled to the ceiling; in
+            # the toilet only the wall behind the pan (east) is tiled.
+            b2.faces.ensure_lookup_table()
+            nx = sum(f.normal.x for f in b2.faces) / max(1, len(b2.faces))
+            if cls in ("badkamer", "badkklein") or (cls == "toilet" and nx < -0.9):
+                mat, props["finish"] = "wall_tile", "tile"
         if gi is not None and gi < 900:
             props["geom"] = gi
         me2 = bpy.data.meshes.new(name)
@@ -356,6 +363,32 @@ def build_thresholds(ms, model):
 
 # ------------------------------------------------------------ elements
 
+def build_plinths(ms, walls):
+    """7 cm white plinth along the foot of every painted room wall (not in
+    the tiled wet rooms, not in the corridor). Wall faces end at the door
+    reveals, so the plinths stop at every opening by themselves."""
+    for ob in walls:
+        room = ob.get("room")
+        if ob.get("part") != "wall" or room in (None, "corridor") or ob.get("finish") == "tile" \
+                or room in WET:
+            continue
+        me = ob.data
+        for poly in me.polygons:
+            n = poly.normal
+            if abs(n.z) > 0.1:
+                continue
+            for ek in poly.edge_keys:
+                a, b = me.vertices[ek[0]].co, me.vertices[ek[1]].co
+                if abs(a.z) > 1e-4 or abs(b.z) > 1e-4 or (a - b).length < 0.02:
+                    continue
+                # model plan coords of the edge + offset along the face normal
+                pa, pb = (a.x, -a.y), (b.x, -b.y)
+                ox, oz = n.x * 0.012, -n.y * 0.012
+                base = [pa, pb, (pb[0] + ox, pb[1] + oz), (pa[0] + ox, pa[1] + oz)]
+                ms.prism(f"plinth.{room}", "walls", "plinth", base, 0.0, 0.07,
+                         {"part": "plinth", "room": room})
+
+
 def build_door_frame(ms, g):
     _, _, _, L = seg_frame(g)
     t = g.get("t", WALL_THICK)
@@ -494,6 +527,7 @@ def main():
     walls = classify_mass(me, solid, model, colls, mats)
 
     ms = MeshSet(mats)
+    build_plinths(ms, walls)
     build_rooms(ms, model)
     build_thresholds(ms, model)
     for g in model["geom"]:

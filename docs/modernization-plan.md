@@ -168,6 +168,11 @@ cloud machine has 4 CPU cores and no GPU, so:
 - **Done when:** the glb loads and every wall is within 0.12 m of the PDF.
 
 ### Phase 2 — Photoreal materials, furniture and lighting
+- **2a ✅ (2026-10-04):** furniture from `v2/data/furniture.json` (own beds 140x200 and dining
+  table 260x100, suggestions for the rest), kitchen D, sanitary ware, lamps with real light
+  sources, wall tiles and plinths. `check_furniture.py` guards the layout.
+- **2b:** scanned CC0 textures — needs network access to Poly Haven / ambientCG.
+- **2c:** lightmap bake (draft in the cloud, final on the laptop GPU).
 - PBR materials, mostly CC0 from Poly Haven and ambientCG, matched to the
   Technische Omschrijving: oak lamella floor, wall and floor tiles, plaster, Red Grandis
   frames, Basralocus cladding, glass.
