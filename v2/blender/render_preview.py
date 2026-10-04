@@ -39,6 +39,7 @@ VIEWS = {
     "eettafel":  dict(eye=(10.25, 1.70, 9.90), target=(7.4, 0.85, 5.0)),
     "keuken":    dict(eye=(8.60, 1.70, 4.20), target=(5.4, 1.15, 14.5)),
     "eiland":    dict(eye=(9.60, 1.70, 12.80), target=(5.2, 1.00, 10.9)),
+    "slx":       dict(eye=(4.62, 1.55, 13.75), target=(5.75, 0.70, 11.2)),
     "slaapk1":   dict(eye=(2.30, 1.70, 3.85), target=(5.4, 0.80, 1.2)),
     "slaapk2":   dict(eye=(3.20, 1.70, 11.75), target=(1.0, 0.90, 14.6)),
     "badkamer":  dict(eye=(4.20, 1.70, 6.35), target=(6.6, 0.90, 4.5), lamps={"badkamer"}),

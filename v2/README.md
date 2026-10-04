@@ -24,7 +24,8 @@ v1 stays untouched and live until v2 is better.
 |---|---|
 | ![Woonkamer](docs/renders/woonkamer.png) | ![Avond](docs/renders/avond.png) |
 | ![Eettafel](docs/renders/eettafel.png) | ![Keuken](docs/renders/keuken.png) |
-| ![Kookeiland](docs/renders/eiland.png) | ![Slaapkamer 1](docs/renders/slaapk1.png) |
+| ![Kookeiland](docs/renders/eiland.png) | ![SieMatic SLX](docs/renders/slx.png) |
+| ![Slaapkamer 1](docs/renders/slaapk1.png) | |
 | ![Slaapkamer 2](docs/renders/slaapk2.png) | ![Badkamer](docs/renders/badkamer.png) |
 | ![Gang](docs/renders/gang.png) | ![Dollhouse](docs/renders/dollhouse.png) |
 
@@ -48,7 +49,7 @@ another piece, or leaves its room.
 |---|---|
 | Woonkamer, zithoek | 3-zitsbank 240x95 (linnen), bouclé fauteuil, salontafel 120x60 eiken, tv-meubel 180 + 65" tv, boekenkast 180x210, vloerkleed 300x250, vloerlamp, plant |
 | Woonkamer, eethoek | **eigen tafel 260x100**, 8 eiken stoelen met linnen zitkussen, 2 hanglampen, dressoir 120x45 met tafellamp |
-| Keuken | keukenopstelling D (wandopstelling + stenen kookeiland met spoelbak en inductie), 3 barkrukken, 2 hanglampen |
+| Keuken | **eigen keuken: SieMatic SLX** (greeploos, mat gelakte fronten in licht greige, bronskleurige greeplijsten onder het werkblad en tussen de laden), werkblad + achterwand **Caesarstone 4230 Shitake**; opstelling D: wandopstelling + kookeiland met spoelbak en inductie; 3 barkrukken, 2 hanglampen |
 | Woonkamer, zuid | 2 linnen fauteuils + bijzettafel bij de grote pui, vloerkleed, vloerlamp, planten, vitrage |
 | Slaapkamer 1 | **eigen bed 140x200** met gestoffeerd hoofdbord, nachtkastje + lamp, kledingkast 160x60x230, leesstoel + lamp in de NW-punt, verduisterend linnen |
 | Slaapkamer 2 | **eigen bed 140x200**, 2 nachtkastjes, kledingkast 200x60x230, bureau 120x60 met stoel in de nis |
@@ -76,6 +77,7 @@ not committed) and writes the final maps to `v2/build/textures/`.
 | Linnen, bouclé, jute, wol | `rough_linen`, `curly_teddy_natural`, `hessian_230`, `poly_wool_herringbone`, each recoloured |
 | Kozijnen (Red Grandis), gevel (Basralocus) | `sapele_veneer`, `wood_planks_grey` |
 | Meubels | light oak (`oak_veneer_03`), dark oak (`oak_veneer_01`) |
+| Keuken | SLX fronts `#BDB7AE` matt, grip rails bronze metal `#6B5A49`, worktop Shitake `#A89B8A` on `plastered_wall_04` (fine sandy grain); colours read from the owners' sample photo |
 
 Change a colour, plank width or tile size in `materials.json`, then run
 `textures.py` (add `--only floor_hout` to redo one) and the build scripts.

@@ -44,6 +44,8 @@
     "rug_taupe":    { "kind": "scan", "source": "hessian_230", "tint": "#8A7F72", "detail": 1.0 },
     "rug_stone":    { "kind": "scan", "source": "poly_wool_herringbone", "tint": "#A9A398", "detail": 1.0, "note": "Woonkamerkleed: wol visgraat" },
     "stone_light":  { "kind": "scan", "source": "white_stucco", "tint": "#D8D0C3", "detail": 0.6, "roughness": 0.35, "note": "Kookeiland + wastafelbladen: composiet" },
+    "kitchen_front": { "kind": "scan", "source": "white_stucco", "tint": "#BDB7AE", "detail": 0.12, "roughness": 0.55, "note": "Keuken: SieMatic SLX fronten, mat gelakt, licht greige (kleur afgelezen van het monster)" },
+    "worktop":      { "kind": "scan", "source": "plastered_wall_04", "tint": "#A89B8A", "detail": 0.9, "roughness": 0.55, "note": "Werkblad + achterwand: Caesarstone 4230 Shitake (warm greige, fijn zandkorrelig)" },
     "stone_dark":   { "kind": "scan", "source": "plastered_wall_05", "tint": "#2C2C2E", "detail": 0.5, "roughness": 0.30, "note": "Werkblad wandopstelling" }
   }
 }

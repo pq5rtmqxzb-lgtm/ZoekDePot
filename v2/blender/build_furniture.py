@@ -70,7 +70,7 @@ def main():
     if data.get("version") != 1:
         raise SystemExit("furniture.json: expected version 1")
     ms, lights = build_items(mats, data["items"], model["rooms"])
-    objs = ms.build(colls)
+    objs = ms.build(colls, weld=False)
     for o in objs:
         finish(o)
     lamp_objs = [make_light(s, colls["lights"]) for s in lights]

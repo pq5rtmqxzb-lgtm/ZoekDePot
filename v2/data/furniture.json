@@ -35,7 +35,7 @@
     { "id": "dresser", "type": "dresser", "room": "woonkamer", "x": 7.265, "z": 4.85, "rot": 90, "w": 1.20, "d": 0.45, "h": 0.78, "note": "Dressoir 120x45 tegen het badkamerblok" },
     { "id": "bookshelf", "type": "bookshelf", "room": "woonkamer", "x": 10.36, "z": 4.65, "rot": -90, "w": 1.80, "d": 0.32, "h": 2.10, "note": "Boekenkast 180x210 tegen de oostwand" },
 
-    { "id": "kitchen", "type": "kitchen_d", "room": "woonkamer", "x": 0, "z": 0, "rot": 0, "note": "Keukenopstelling D uit de verkooptekening: wandopstelling + kookeiland (vast)" },
+    { "id": "kitchen", "type": "kitchen_d", "room": "woonkamer", "x": 0, "z": 0, "rot": 0, "own": true, "note": "SieMatic SLX (greeploos, mat gelakte fronten licht greige, bronskleurige greeplijsten), werkblad + achterwand Caesarstone 4230 Shitake. Opstelling D uit de verkooptekening: wandopstelling + kookeiland met spoelbak en inductie" },
     { "id": "stool1", "type": "bar_stool", "room": "woonkamer", "x": 6.78, "z": 12.05, "rot": -90 },
     { "id": "stool2", "type": "bar_stool", "room": "woonkamer", "x": 6.78, "z": 12.65, "rot": -90 },
     { "id": "stool3", "type": "bar_stool", "room": "woonkamer", "x": 6.78, "z": 13.25, "rot": -90 },

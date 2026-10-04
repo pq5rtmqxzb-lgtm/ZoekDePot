@@ -166,6 +166,10 @@ MATERIALS = {
     "book_plum":    dict(color=0x6B3B5A, rough=0.70),
     "book_black":   dict(color=0x232323, rough=0.70),
     "sheer":        dict(color=0xF3F0E9, rough=1.00, alpha=0.55),
+    # kitchen: SieMatic SLX (owners' choice), Caesarstone 4230 Shitake
+    "kitchen_front": dict(color=0xBDB7AE, rough=0.55),
+    "kitchen_grip":  dict(color=0x6B5A49, rough=0.38, metal=1.0),
+    "worktop":       dict(color=0xA89B8A, rough=0.55),
 }
 FLOOR_MAT = {"hout": "floor_hout", "tegel": "floor_tegel", "steen": "floor_steen", "tapijt": "floor_tapijt"}
 
@@ -296,8 +300,11 @@ class MeshSet:
             top.normal_flip()
         res = bmesh.ops.inset_region(bm, faces=[top], thickness=inset, depth=0.0, use_even_offset=True)
         bmesh.ops.translate(bm, verts=list(top.verts), vec=(0, 0, -depth))
-        if mat is not None:
-            top.material_index = self._mat_index(it, mat)
+        if mat is not None:   # basin floor and walls (the inset ring, now slanted down)
+            mi = self._mat_index(it, mat)
+            top.material_index = mi
+            for f in res["faces"]:
+                f.material_index = mi
         return res
 
     def blob(self, name, coll, mat, cx, cy, cz, rx, ry, rz, subdiv=2, props=None):
@@ -348,11 +355,15 @@ class MeshSet:
         f.material_index = mi
         return [f]
 
-    def build(self, collections, recalc_normals=True):
+    def build(self, collections, recalc_normals=True, weld=True):
+        """weld=False keeps touching primitives separate: furniture parts
+        are closed solids each, and welding the corners of two boxes that
+        touch makes non-manifold edges that flip normals."""
         objs = []
         for name, it in self.items.items():
             bm = it["bm"]
-            bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+            if weld:
+                bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
             if recalc_normals and it["props"].get("closed", True):
                 bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
             world_uv(bm)
