@@ -12,7 +12,8 @@ degrees about the vertical, local -z is the back (against the wall).
 import math
 import random
 
-from common import MeshSet, WALL_HEIGHT
+from common import P, MeshSet, WALL_HEIGHT
+from mathutils import Vector  # after common: the pip bpy module must load first
 
 COLL = "furniture"
 BOOKS = ["book_red", "book_blue", "book_ochre", "book_green", "book_cream", "book_plum", "book_black"]
@@ -217,6 +218,18 @@ def bar_stool(f, it):
     f.cyl(0.17, 0.64, 0.68, "oak", n=32)
 
 
+def counter_stool(f, it):
+    """Square counter stool for a 95 cm counter: oak frame, footrest, linen seat."""
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            f.box(0.03, 0.64, 0.03, "oak", sx * 0.17, 0.32, sz * 0.17)
+    for y in (0.24, 0.60):
+        for sx in (-1, 1):
+            f.box(0.03, 0.025, 0.31, "oak", sx * 0.17, y, 0)
+            f.box(0.31, 0.025, 0.03, "oak", 0, y, sx * 0.17)
+    f.box(0.40, 0.06, 0.40, "linen_oat", 0, 0.67, 0, soft=True)
+
+
 def rug(f, it):
     f.box(it.get("w", 2.0), 0.012, it.get("d", 2.4), RUG.get(it.get("color", "oat"), "rug_oat"), 0, 0.006, 0)
 
@@ -380,24 +393,36 @@ def planter(f, it):
 
 # ------------------------------------------------ kitchen (keukenopstelling D)
 #
-# SieMatic SLX (owners' choice): handleless, matt lacquered fronts in a light
-# greige, recessed bronze grip channels under the worktop and between the
-# drawers (vertical on the tall unit); worktop + backsplash Caesarstone 4230
-# Shitake, 2 cm. Layout as the sales drawing (v1): a wall run along the gang
-# wall and a free-standing island with sink and hob.
+# The owners' SieMatic SLX kitchen (supplier drawings, 2026-10): handleless,
+# matt lacquered fronts in a light greige, recessed bronze grip channels;
+# worktop Caesarstone 4230 Shitake, 2 cm.
+# - Tall cabinet wall along the gang wall (north), 2.57 m wide, raised to
+#   the 2.80 m ceiling with an extra row of cabinets: four ~63 cm columns,
+#   two black Siemens ovens side by side in columns 2 and 3, the integrated
+#   Siemens fridge behind the doors of column 4 (vertical grip channel
+#   before it), and a door instead of the niche in column 1.
+# - Island 2574 x 1000 x 950 mm: Siemens 80 cm induction hob with central
+#   downdraft at the north end (near the tall wall), Franke Maris undermount
+#   sink + Lina XL tap, both "Coffee", at the south end, integrated
+#   dishwasher beside the sink. Cooking side west with SLX drawers; on the
+#   living-room side shallow cabinets at both ends and the knee space for
+#   the stools in the middle.
 
-TOP = 0.90              # worktop surface
 SLAB = 0.02             # Caesarstone thickness
-PLINTH = 0.10
+PLINTH = 0.11
 GRIP = 0.045            # height of a horizontal grip channel
 RECESS = 0.025          # how far the channel sits behind the front face
 GAP = 0.003             # gap between fronts
 
 
-def slx_base_run(f, a0, a1, face, depth, normal_sign, axis="x", drawers=(0.46,), worktop=True):
+def slx_base_run(f, a0, a1, face, depth, normal_sign, axis="x", drawers=(0.50,), top=0.95, full=(), low=()):
     """Base cabinets between a0..a1 along `axis`, front face at `face`
     (model z for axis x, model x for axis z), cabinets extending `depth`
-    behind it (away from normal_sign). Drawer splits at the given heights."""
+    behind it (away from normal_sign), worktop surface at `top` (the slab
+    itself is added by the caller). Drawer splits at the given heights;
+    `full` = (u0, u1) ranges with one full-height front (dishwasher);
+    `low` = (u0, u1, y) ranges where the carcass stops at y (room for an
+    undermount sink)."""
     def box(u0, u1, n0, n1, y0, y1, mat):
         """Box in run coordinates: u along the run, n along the front normal."""
         if axis == "x":
@@ -409,80 +434,147 @@ def slx_base_run(f, a0, a1, face, depth, normal_sign, axis="x", drawers=(0.46,),
     back = face - s * depth
     carcass_front = face - s * RECESS
     clo, chi = min(back, carcass_front), max(back, carcass_front)
-    top_front = TOP - SLAB - GRIP                       # fronts end below the channel
-    box(a0, a1, clo, chi, PLINTH, TOP - SLAB, "kitchen_front")             # carcass
+    top_front = top - SLAB - GRIP                       # fronts end below the channel
+    cuts = sorted({a0, a1} | {v for g in low for v in g[:2]})
+    for c0, c1 in zip(cuts, cuts[1:]):                                       # carcass
+        y1 = next((g[2] for g in low if g[0] <= c0 + 1e-6 and c1 <= g[1] + 1e-6), top - SLAB)
+        box(c0, c1, clo, chi, PLINTH, y1, "kitchen_front")
     plinth_front = face - s * 0.06                     # plinth set back 6 cm
-    box(a0 + 0.01, a1 - 0.01, min(back, plinth_front), max(back, plinth_front), 0.0, PLINTH, "oak_dark")
+    box(a0 + 0.01, a1 - 0.01, min(back, plinth_front), max(back, plinth_front), 0.0, PLINTH, "kitchen_grip")
     # bronze channel lining in the recess (under the worktop + between drawers)
     rail_lo, rail_hi = min(carcass_front, carcass_front + s * 0.002), max(carcass_front, carcass_front + s * 0.002)
-    box(a0, a1, rail_lo, rail_hi, top_front, TOP - SLAB, "kitchen_grip")
-    for y in drawers:
-        box(a0, a1, rail_lo, rail_hi, y, y + GRIP, "kitchen_grip")
-    # fronts: modules of ~60 cm, split at the drawer channels
-    n = max(1, round((a1 - a0) / 0.6))
-    w = (a1 - a0) / n
+    box(a0, a1, rail_lo, rail_hi, top_front, top - SLAB, "kitchen_grip")
     f0, f1 = min(carcass_front, face), max(carcass_front, face)
-    bands = []
-    y = PLINTH
-    for d in sorted(drawers):
-        bands.append((y, d))
-        y = d + GRIP
-    bands.append((y, top_front))
-    for i in range(n):
-        u0, u1 = a0 + i * w + GAP / 2, a0 + (i + 1) * w - GAP / 2
-        for b0, b1 in bands:
-            box(u0, u1, f0, f1, b0 + GAP / 2, b1 - GAP / 2, "kitchen_front")
-    if worktop:   # 2 cm overhang over the fronts
-        wlo, whi = min(back, face + s * 0.02), max(back, face + s * 0.02)
-        box(a0, a1, wlo, whi, TOP - SLAB, TOP, "worktop")
+
+    def bands(split):
+        out, y = [], PLINTH
+        for d in sorted(split):
+            out.append((y, d))
+            y = d + GRIP
+        out.append((y, top_front))
+        return out
+
+    def in_full(u0, u1):
+        return any(u0 >= g0 - 1e-6 and u1 <= g1 + 1e-6 for g0, g1 in full)
+
+    # modules of ~60 cm (full-height ranges are their own modules)
+    edges = sorted({a0, a1} | {v for g in full for v in g})
+    for e0, e1 in zip(edges, edges[1:]):
+        n = max(1, round((e1 - e0) / 0.6))
+        w = (e1 - e0) / n
+        for i in range(n):
+            u0, u1 = e0 + i * w, e0 + (i + 1) * w
+            split = () if in_full(u0, u1) else drawers
+            for y0, y1 in bands(split):
+                box(u0 + GAP / 2, u1 - GAP / 2, f0, f1, y0 + GAP / 2, y1 - GAP / 2, "kitchen_front")
+            if not in_full(u0, u1):
+                for y in drawers:
+                    box(u0, u1, rail_lo, rail_hi, y, y + GRIP, "kitchen_grip")
+
+
+def tall_wall(f, x0, z0, depth=0.60, ceil=WALL_HEIGHT):
+    """The tall cabinet wall: side panels, four columns, bronze vertical
+    channel before the fridge column, ovens in columns 2 + 3."""
+    cols = [0.627, 0.627, 0.624, None, 0.627]          # None = grip channel (42 mm)
+    rows = [PLINTH, 0.93, 1.555, 2.23, ceil - 0.002]
+    zf = z0 + depth                                     # carcass front
+    side = 0.02
+    xs, x = [], x0 + side
+    for w in cols:
+        xs.append((x, x + (w or 0.042), w is None))
+        x += w or 0.042
+    x1 = x
+    top = rows[-1]
+    for px in (x0, x1):                                 # side panels, full depth
+        f.box(side, top, depth + 0.02, "kitchen_front", px + side / 2, top / 2, z0 + (depth + 0.02) / 2)
+    f.box(x1 - x0 - 2 * side, top - PLINTH, depth, "kitchen_front", (x0 + x1) / 2, (PLINTH + top) / 2, z0 + depth / 2)
+    f.box(x1 - x0 - 2 * side, PLINTH, depth - 0.06, "kitchen_grip", (x0 + x1) / 2, PLINTH / 2, z0 + (depth - 0.06) / 2)
+    for c, (a, b, channel) in enumerate(xs):
+        cx, w = (a + b) / 2, b - a
+        if channel:                                    # recessed bronze channel, full height
+            f.box(w, top - PLINTH, 0.002, "kitchen_grip", cx, (PLINTH + top) / 2, zf + 0.001)
+            continue
+
+        def door(y0, y1):
+            f.box(w - GAP, y1 - y0 - GAP, 0.02, "kitchen_front", cx, (y0 + y1) / 2, zf + 0.01)
+
+        if c in (1, 2):                                # oven columns
+            door(rows[0], rows[1])
+            oy0, oy1 = rows[1] + 0.01, rows[2] - 0.04
+            f.box(w - GAP, rows[2] - oy1 - GAP, 0.02, "kitchen_front", cx, (oy1 + rows[2]) / 2, zf + 0.01)
+            f.box(0.595, oy1 - oy0, 0.022, "screen", cx, (oy0 + oy1) / 2, zf + 0.011)          # black glass
+            f.box(0.52, 0.018, 0.03, "kitchen_grip", cx, oy1 - 0.07, zf + 0.03)               # handle bar
+            f.box(0.10, 0.03, 0.002, "bulb", cx, oy1 - 0.025, zf + 0.023)                      # display
+            door(rows[2], rows[3])
+            door(rows[3], rows[4])
+        elif c == 4:                                   # fridge column: low door, tall fridge door, top
+            door(rows[0], rows[1])
+            door(rows[1], rows[3])
+            door(rows[3], rows[4])
+        else:                                          # column 1: four doors (no niche)
+            for r in range(4):
+                door(rows[r], rows[r + 1])
+
+
+def tube(f, pts, r, mat, n=12):
+    """Swept tube through model points [(x, y, z), ...] (open ends)."""
+    it = f.ms._get(f.name(False), COLL, f.props)
+    bm, mi = it["bm"], f.ms._mat_index(it, mat)
+    V = [Vector(P(*p)) for p in pts]
+    rings = []
+    for i, v in enumerate(V):
+        t = (V[min(i + 1, len(V) - 1)] - V[max(i - 1, 0)]).normalized()
+        a = Vector((0, 0, 1)) if abs(t.z) < 0.9 else Vector((1, 0, 0))
+        u = t.cross(a).normalized()
+        w = t.cross(u).normalized()
+        rings.append([bm.verts.new(v + (u * math.cos(2 * math.pi * k / n) + w * math.sin(2 * math.pi * k / n)) * r)
+                      for k in range(n)])
+    for ra, rb in zip(rings, rings[1:]):
+        for k in range(n):
+            fc = bm.faces.new((ra[k], ra[(k + 1) % n], rb[(k + 1) % n], rb[k]))
+            fc.material_index = mi
 
 
 def kitchen_d(f, it):
-    """Wall run along the gang wall (x 4.44..6.94, z 9.64..10.26) + island
-    x 5.42..6.40, z 11.24..13.85 with sink north, hob south (as v1)."""
-    z0, dep = 9.64, 0.62
-    xa, xb, xt = 4.44, 6.34, 6.94
-    cx = (xa + xb) / 2
-    # wall run: base cabinets (two drawers), backsplash, wall cabinets
-    slx_base_run(f, xa, xb, z0 + dep, dep, +1, axis="x", drawers=(0.46,))
-    f.box(xb - xa, 1.45 - TOP, 0.015, "worktop", cx, (TOP + 1.45) / 2, z0 + 0.0075)     # backsplash
-    f.box(xb - xa, 0.75, 0.34, "kitchen_front", cx, 1.825, z0 + 0.17)                    # wall units
-    n = round((xb - xa) / 0.6)
-    for i in range(n):
-        x0, x1 = xa + i * (xb - xa) / n + GAP / 2, xa + (i + 1) * (xb - xa) / n - GAP / 2
-        f.box(x1 - x0, 0.75 - GAP, 0.02, "kitchen_front", (x0 + x1) / 2, 1.825, z0 + 0.35)
-    f.box(xb - xa, 0.012, 0.30, "kitchen_grip", cx, 1.444, z0 + 0.17)                   # bronze lip under the units
-    f.box(xb - xa - 0.1, 0.01, 0.05, "bulb", cx, 1.437, z0 + 0.30)                       # LED line
-    # tall unit with oven, vertical grip channel on its left edge
-    tw = xt - xb
-    f.box(tw, 2.20, dep - RECESS, "kitchen_front", (xb + xt) / 2, PLINTH + 1.10, z0 + (dep - RECESS) / 2)
-    f.box(tw - 0.04, PLINTH, dep - 0.08, "oak_dark", (xb + xt) / 2, PLINTH / 2, z0 + (dep - 0.08) / 2)
-    f.box(0.04, 2.20, 0.002, "kitchen_grip", xb + 0.02, PLINTH + 1.10, z0 + dep - RECESS + 0.001)
-    for y0, y1 in ((PLINTH, 0.98), (1.62, PLINTH + 2.20)):
-        f.box(tw - 0.04 - GAP, y1 - y0 - GAP, 0.02, "kitchen_front", xb + 0.04 + (tw - 0.04) / 2, (y0 + y1) / 2,
-              z0 + dep - 0.01)
-    f.box(tw - 0.06, 0.62, 0.02, "screen", xb + 0.04 + (tw - 0.04) / 2, 1.30, z0 + dep - 0.01)   # oven
-    f.box(tw - 0.10, 0.012, 0.012, "kitchen_grip", xb + 0.04 + (tw - 0.04) / 2, 1.585, z0 + dep + 0.002)
-    f.cyl(0.09, TOP, TOP + 0.22, "appliance", ox=4.78, oz=z0 + 0.30, r_top=0.08)          # kettle
-    f.box(0.30, 0.02, 0.22, "oak", 5.55, TOP + 0.01, z0 + 0.36)                           # board
-    # island: SLX fronts with grip channels on the cooking (west) side,
-    # flat lacquered panels on the other faces, Shitake top
-    # (cabinets sit inside 2 cm side panels; nothing may share a face with
-    # anything else, or Cycles' shadow rays hit the twin face and go black)
-    ix0, ix1, iz0, iz1 = 5.42, 6.40, 11.24, 13.85
+    tall_wall(f, 4.40, 9.64)
+    # island
+    TOP = 0.95
+    ix0, ix1 = 5.41, 6.41                    # cooking side west, living-room side east
+    iz0, iz1 = 11.258, 13.832                # 2574 mm, centred where the sales drawing has it
     P2 = 0.02
-    slx_base_run(f, iz0 + P2, iz1 - P2, ix0, ix1 - ix0 - P2, -1, axis="z", drawers=(0.46,), worktop=False)
-    side_h = TOP - SLAB
-    f.box(P2, side_h, iz1 - iz0, "kitchen_front", ix1 - P2 / 2, side_h / 2, (iz0 + iz1) / 2)       # stool side
-    for zz in (iz0 + P2 / 2, iz1 - P2 / 2):                                                        # ends
-        f.box(ix1 - ix0 - P2, side_h, P2, "kitchen_front", (ix0 + ix1 - P2) / 2, side_h / 2, zz)
-    f.box(ix1 - ix0 + 0.02, SLAB, iz1 - iz0 + 0.02, "worktop", (ix0 + ix1) / 2 - 0.01, TOP - SLAB / 2, (iz0 + iz1) / 2)
-    sink = f.box(0.50, 0.004, 0.40, "worktop", 5.66, TOP + 0.002, 11.78)
-    f.ms.hollow_top(f.name(False), sink, 0.012, 0.20, mat="alu")
-    f.cyl(0.016, TOP, TOP + 0.34, "kitchen_grip", ox=5.94, oz=11.78, n=12)               # tap, bronze
-    f.box(0.24, 0.018, 0.018, "kitchen_grip", 5.82, TOP + 0.33, 11.78)
-    f.box(0.52, 0.006, 0.86, "screen", 5.72, TOP + 0.003, 13.12)                           # induction
-    f.box(0.06, 0.006, 0.86, "kitchen_grip", 6.02, TOP + 0.003, 13.12)                    # downdraft
+    knee0, knee1 = 11.895, 13.195            # stools' knee space, centred
+    sink_z, hob_z = 13.36, 11.80
+    # cooking side: SLX drawers, dishwasher (one full front) beside the sink
+    sx0, sx1, sz0, sz1 = 5.46, 5.90, sink_z - 0.26, sink_z + 0.26        # sink cut-out (44 x 52)
+    basin = 0.19
+    slx_base_run(f, iz0 + P2, iz1 - P2, ix0, 0.60, -1, axis="z", drawers=(0.50,), top=TOP,
+                 full=((12.66, sz0 - 0.005),), low=((sz0, sz1, TOP - SLAB - basin - 0.01),))
+    # living-room side: shallow cabinets at both ends, knee space in between
+    for a, b in ((iz0 + P2, knee0), (knee1, iz1 - P2)):
+        slx_base_run(f, a, b, ix1, 0.38, +1, axis="z", drawers=(), top=TOP)
+    f.box(0.02, TOP - SLAB, knee1 - knee0, "kitchen_front", ix0 + 0.61, (TOP - SLAB) / 2, (knee0 + knee1) / 2)
+    for zz in (iz0 + P2 / 2, iz1 - P2 / 2):                                   # end panels
+        f.box(ix1 - ix0, TOP - SLAB, P2, "kitchen_front", (ix0 + ix1) / 2, (TOP - SLAB) / 2, zz)
+    # worktop in four pieces around the sink cut-out (no booleans needed)
+    xa, xb, za, zb = ix0 - 0.01, ix1 + 0.01, iz0 - 0.01, iz1 + 0.01
+    ys = TOP - SLAB / 2
+    for (x0_, x1_, z0_, z1_) in ((xa, xb, za, sz0), (xa, xb, sz1, zb), (xa, sx0, sz0, sz1), (sx1, xb, sz0, sz1)):
+        f.box(x1_ - x0_, SLAB, z1_ - z0_, "worktop", (x0_ + x1_) / 2, ys, (z0_ + z1_) / 2)
+    # Franke Maris undermount sink (hangs under the cut-out) + Lina XL tap, Coffee
+    sink = f.box(sx1 - sx0, basin, sz1 - sz0, "franke_coffee", (sx0 + sx1) / 2, TOP - SLAB - basin / 2,
+                 (sz0 + sz1) / 2)
+    f.ms.hollow_top(f.name(False), sink, 0.004, basin - 0.012)
+    f.cyl(0.03, TOP + 0.004, TOP + 0.03, "franke_coffee", ox=5.96, oz=sink_z, n=16)
+    pts = [(5.96, TOP + 0.03, sink_z), (5.96, TOP + 0.30, sink_z)]
+    for k in range(1, 13):                                                   # gooseneck arc
+        a = math.pi * k / 12
+        pts.append((5.835 + 0.125 * math.cos(a), TOP + 0.30 + 0.125 * math.sin(a), sink_z))
+    pts.append((5.71, TOP + 0.25, sink_z))
+    tube(f, pts, 0.014, "franke_coffee")
+    f.box(0.012, 0.012, 0.09, "franke_coffee", 5.96, TOP + 0.17, sink_z + 0.06)        # lever
+    # Siemens 80 cm induction with central downdraft
+    f.box(0.52, 0.006, 0.82, "screen", 5.715, TOP + 0.003, hob_z)
+    f.box(0.32, 0.007, 0.06, "black", 5.715, TOP + 0.0035, hob_z)
 
 
 # ------------------------------------------------------------- sanitary ware
@@ -639,6 +731,7 @@ BUILDERS = {
     "kitchen_d": kitchen_d, "bath": bath, "walkin_shower": walkin_shower, "voorzetwand": voorzetwand,
     "wall_toilet": wall_toilet, "vanity": vanity, "fontein": fontein, "radiator": radiator,
     "techniek": techniek, "tiled_bench": tiled_bench, "niche_wall": niche_wall,
+    "counter_stool": counter_stool,
 }
 
 

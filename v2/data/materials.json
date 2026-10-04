@@ -347,8 +347,8 @@
             3.7,
             5.1
           ],
-          "material": "bath_stone",
-          "note": "toiletgedeelte"
+          "material": "plaster",
+          "note": "muur boven het toiletreservoir: wit gestuukt"
         },
         {
           "wall": "south",
@@ -360,7 +360,8 @@
           "note": "douche, achter het bankje"
         }
       ],
-      "default": "plaster"
+      "default": "plaster",
+      "_note": "Alleen de deurwand (west) en de muur boven het toiletreservoir zijn wit gestuukt; het reservoir zelf (voorzetwand) is betegeld"
     }
   }
 }

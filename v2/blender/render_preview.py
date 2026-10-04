@@ -21,15 +21,9 @@ import bpy  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
 from common import BUILD_DIR, ROOT, P, script_args  # noqa: E402
+from lighting import set_mood, setup_world  # noqa: E402
 
 OUT = ROOT / "v2" / "docs" / "renders"
-
-# Sun per mood: azimuth clockwise from north, elevation, strength, colour;
-# sky strength. Day ≈ 15:30 in late April; evening ≈ 20:45 (sunset WNW).
-MOODS = {
-    "day":     dict(az=225.0, el=36.0, sun=4.0, color=(1.0, 0.95, 0.88), sky=1.0, exposure=1.3),
-    "evening": dict(az=292.0, el=3.0, sun=1.2, color=(1.0, 0.62, 0.38), sky=0.08, exposure=1.4),
-}
 
 # name: eye, target in MODEL coordinates (x east, y up, z south; eye at v1's
 # standing eye height of 1.70 m unless an overview), lamps = rooms whose
@@ -56,36 +50,6 @@ def parse():
     for i in range(0, len(a) - 1, 2):
         opts[a[i].lstrip("-")] = a[i + 1]
     return int(opts["samples"]), int(opts["width"]), opts["views"].split(",")
-
-
-def setup_world(scene):
-    w = bpy.data.worlds.new("sky")
-    scene.world = w
-    w.use_nodes = True
-    nt = w.node_tree
-    sky = nt.nodes.new("ShaderNodeTexSky")
-    sky.sky_type = "NISHITA"
-    sky.sun_disc = False                      # the sun lamp is the sun
-    sky.altitude = 30.0
-    nt.links.new(sky.outputs[0], nt.nodes["Background"].inputs[0])
-    sun = bpy.data.lights.new("sun", "SUN")
-    sun.angle = math.radians(0.53)
-    ob = bpy.data.objects.new("sun", sun)
-    scene.collection.objects.link(ob)
-    return sky, nt.nodes["Background"], ob
-
-
-def set_mood(world, mood):
-    sky, bg, sun = world
-    m = MOODS[mood]
-    sky.sun_elevation = math.radians(m["el"])
-    sky.sun_rotation = math.radians(m["az"])   # verified: = compass azimuth (north = Blender +Y)
-    bg.inputs["Strength"].default_value = m["sky"]
-    a, e = math.radians(m["az"]), math.radians(m["el"])
-    to_sun = Vector((math.sin(a) * math.cos(e), math.cos(a) * math.cos(e), math.sin(e)))
-    sun.data.energy, sun.data.color = m["sun"], m["color"]
-    sun.rotation_euler = (-to_sun).to_track_quat("-Z", "Y").to_euler()
-    return m
 
 
 def setup_render(scene, samples, width):
@@ -128,18 +92,11 @@ def main():
     scene = bpy.context.scene
     world = setup_world(scene)
     setup_render(scene, samples, width)
-    lamps = [o for o in bpy.data.objects if o.get("part") == "light"]
-    bulbs = bpy.data.materials.get("M_bulb")
     OUT.mkdir(parents=True, exist_ok=True)
     for name in views:
         v = VIEWS[name]
         eye, target, overview = v["eye"], v["target"], v.get("overview", False)
-        m = set_mood(world, v.get("mood", "day"))
-        on = v.get("lamps", set())
-        for o in lamps:
-            o.hide_render = not (on == "*" or o.get("room") in on)
-        if bulbs:   # glowing bulbs only when some lamp is on
-            bulbs.node_tree.nodes["Principled BSDF"].inputs["Emission Strength"].default_value = 6.0 if on else 0.0
+        m = set_mood(world, v.get("mood", "day"), lamps=v.get("lamps", set()))
         # Dollhouse: lift the lid — no ceilings, no storey above.
         hide = [o for o in bpy.data.objects if overview and (
             o.name.startswith(("ceil.", "slab.upper")) or o.name in ("building.mass", "ground"))]

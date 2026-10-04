@@ -33,6 +33,7 @@ FOOTPRINT = {
     "tv_unit":      lambda it: (it.get("w", 1.8), 0.42, 0.0),
     "side_table":   lambda it: (0.50, 0.50, 0.0),
     "bar_stool":    lambda it: (0.36, 0.36, 0.0),
+    "counter_stool": lambda it: (0.40, 0.40, 0.0),
     "floor_lamp":   lambda it: (0.30, 0.30, 0.0),
     "plant":        lambda it: (0.30, 0.30, 0.0),
     "bath":         lambda it: (it.get("w", 1.8), it.get("d", 0.72), 0.0),

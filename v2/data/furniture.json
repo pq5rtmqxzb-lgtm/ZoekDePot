@@ -35,11 +35,10 @@
     { "id": "dresser", "type": "dresser", "room": "woonkamer", "x": 7.265, "z": 4.85, "rot": 90, "w": 1.20, "d": 0.45, "h": 0.78, "note": "Dressoir 120x45 tegen het badkamerblok" },
     { "id": "bookshelf", "type": "bookshelf", "room": "woonkamer", "x": 10.36, "z": 4.65, "rot": -90, "w": 1.80, "d": 0.32, "h": 2.10, "note": "Boekenkast 180x210 tegen de oostwand" },
 
-    { "id": "kitchen", "type": "kitchen_d", "room": "woonkamer", "x": 0, "z": 0, "rot": 0, "own": true, "note": "SieMatic SLX (greeploos, mat gelakte fronten licht greige, bronskleurige greeplijsten), werkblad + achterwand Caesarstone 4230 Shitake. Opstelling D uit de verkooptekening: wandopstelling + kookeiland met spoelbak en inductie" },
-    { "id": "stool1", "type": "bar_stool", "room": "woonkamer", "x": 6.78, "z": 12.05, "rot": -90 },
-    { "id": "stool2", "type": "bar_stool", "room": "woonkamer", "x": 6.78, "z": 12.65, "rot": -90 },
-    { "id": "stool3", "type": "bar_stool", "room": "woonkamer", "x": 6.78, "z": 13.25, "rot": -90 },
-    { "id": "pendant_island_a", "type": "pendant", "room": "woonkamer", "x": 5.91, "z": 11.95, "y": 1.95 },
+    { "id": "kitchen", "type": "kitchen_d", "room": "woonkamer", "x": 0, "z": 0, "rot": 0, "own": true, "note": "SieMatic SLX volgens de keukentekeningen: hoge kastenwand 2,57 m breed tot aan het plafond (2,80 m, extra rij kasten), twee zwarte Siemens-ovens naast elkaar, Siemens inbouwkoelkast, kastdeur i.p.v. nis; kookeiland 2574 x 1000 x 950 mm met Siemens inductie + afzuiging (noord), Franke Maris spoelbak + Lina XL kraan in Coffee (zuid), vaatwasser bij de spoelbak, beenruimte voor de krukken in het midden. Werkblad Caesarstone 4230 Shitake" },
+    { "id": "stool1", "type": "counter_stool", "room": "woonkamer", "x": 6.52, "z": 12.245, "rot": -90, "own": true, "note": "Krukken in het midden van het kookeiland (woonkamerzijde)" },
+    { "id": "stool2", "type": "counter_stool", "room": "woonkamer", "x": 6.52, "z": 12.845, "rot": -90, "own": true },
+    { "id": "pendant_island_a", "type": "pendant", "room": "woonkamer", "x": 5.91, "z": 12.00, "y": 1.95 },
     { "id": "pendant_island_b", "type": "pendant", "room": "woonkamer", "x": 5.91, "z": 13.10, "y": 1.95 },
 
     { "id": "chair_s1", "type": "armchair", "room": "woonkamer", "x": 8.45, "z": 12.15, "rot": 160, "fabric": "linen", "note": "Twee fauteuils bij de grote zuidpui" },

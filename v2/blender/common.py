@@ -170,6 +170,7 @@ MATERIALS = {
     "kitchen_front": dict(color=0xBDB7AE, rough=0.55),
     "kitchen_grip":  dict(color=0x6B5A49, rough=0.38, metal=1.0),
     "worktop":       dict(color=0xA89B8A, rough=0.55),
+    "franke_coffee": dict(color=0xC6B49C, rough=0.45),   # Franke Maris sink + Lina XL tap, "Coffee"
     # main bathroom (owners' choice, 2026-10)
     "bath_stone":    dict(color=0xD6CCBF, rough=0.55),
     "bath_relief":   dict(color=0xDAD5CC, rough=0.50),
@@ -257,7 +258,8 @@ def add_textures(nt, bsdf, name, info):
     `rot` (scale is applied before rotation, hence the swap at 90°)."""
     sx, sy = info["size"]
     rot = info.get("rot", 0) % 180
-    tc = nt.nodes.new("ShaderNodeTexCoord")
+    tc = nt.nodes.new("ShaderNodeUVMap")       # explicit: baking switches the active UV map
+    tc.uv_map = "UVMap"
     mp = nt.nodes.new("ShaderNodeMapping")
     mp.inputs["Scale"].default_value = (1 / sy, 1 / sx, 1) if rot == 90 else (1 / sx, 1 / sy, 1)
     mp.inputs["Rotation"].default_value = (0, 0, math.radians(rot))
@@ -282,6 +284,7 @@ def add_textures(nt, bsdf, name, info):
     n = image("normal", "Non-Color")
     if n:
         nm = nt.nodes.new("ShaderNodeNormalMap")
+        nm.uv_map = "UVMap"
         nt.links.new(n.outputs["Color"], nm.inputs["Color"])
         nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
 
