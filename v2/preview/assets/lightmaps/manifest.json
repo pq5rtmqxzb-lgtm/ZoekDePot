@@ -1,12 +1,12 @@
 {
  "version": 1,
- "quality": "draft",
+ "quality": "final",
  "uv": "Lightmap (glTF TEXCOORD_1)",
  "encoding": "srgb",
  "how": "colour = albedo x lightmap x scale (lightmap in sRGB)",
  "groups": {
   "shell": {
-   "size": 2048,
+   "size": 4096,
    "objects": [
     "ceil.badkamer",
     "ceil.badkklein",
@@ -184,7 +184,7 @@
    ]
   },
   "furniture": {
-   "size": 2048,
+   "size": 4096,
    "objects": [
     "furn.bed1",
     "furn.bed1.soft",
@@ -295,7 +295,7 @@
    ]
   },
   "exterior": {
-   "size": 1024,
+   "size": 2048,
    "objects": [
     "ceil.balkon_n",
     "ceil.balkon_z",
@@ -394,52 +394,18 @@
   "day": {
    "shell": {
     "file": "day_shell.webp",
-    "scale": 1.9367,
+    "scale": 2.263,
     "lite": "day_shell-lite.webp"
    },
    "furniture": {
     "file": "day_furniture.webp",
-    "scale": 1.3402,
+    "scale": 1.2746,
     "lite": "day_furniture-lite.webp"
    },
    "exterior": {
     "file": "day_exterior.webp",
-    "scale": 4.7304,
+    "scale": 4.7223,
     "lite": "day_exterior-lite.webp"
-   }
-  },
-  "evening": {
-   "shell": {
-    "file": "evening_shell.webp",
-    "scale": 0.8221,
-    "lite": "evening_shell-lite.webp"
-   },
-   "furniture": {
-    "file": "evening_furniture.webp",
-    "scale": 1.9223,
-    "lite": "evening_furniture-lite.webp"
-   },
-   "exterior": {
-    "file": "evening_exterior.webp",
-    "scale": 0.6015,
-    "lite": "evening_exterior-lite.webp"
-   }
-  },
-  "night": {
-   "shell": {
-    "file": "night_shell.webp",
-    "scale": 0.8267,
-    "lite": "night_shell-lite.webp"
-   },
-   "furniture": {
-    "file": "night_furniture.webp",
-    "scale": 1.9217,
-    "lite": "night_furniture-lite.webp"
-   },
-   "exterior": {
-    "file": "night_exterior.webp",
-    "scale": 0.0604,
-    "lite": "night_exterior-lite.webp"
    }
   }
  }
