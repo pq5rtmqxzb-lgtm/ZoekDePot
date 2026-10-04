@@ -62,8 +62,7 @@ Meubels blokkeren je net als muren, maar met wat minder marge (je schuift langs
 een stoel of leunt over een tafel; `FURN_R` in `js/constants.js`). Zit je toch
 klem, of wil je even vrij rondkijken: **F** (of het vinkje bovenin het
 inricht-paneel) zet de meubelbotsing uit — muren, balustrades en glas blijven
-altijd dicht. De smoke-test controleert dat elke kamer, beide balkons en het
-toilet vanaf de voordeur bereikbaar blijven met de botsing áán.
+altijd dicht.
 
 ## Mappen
 
@@ -73,7 +72,6 @@ toilet vanaf de voordeur bereikbaar blijven met de botsing áán.
 | `js/` | De app als native ES-modules (`main.js` is het startpunt; gedeelde staat leeft in `state.js`). |
 | `data/model.json` | Muur-hartlijnen, deuropeningen (met draairichting uit de tekening, voor de tools), kamerdefinities + plafondhoogtes — gedeelde bron voor app én tools. |
 | `vendor/three/` | Gevendorde Three.js r160. |
-| `test/` | Playwright-rooktest (`npm test`, zie ook `.github/workflows/smoke.yml`). |
 | `compare.html` | Dev-viewer: PDF, gegenereerde SVG en model-overlay naast elkaar. |
 | `plans/` | Bronbestanden: de verkooptekening (`YP_bouwnummer_25.pdf`) en de technische omschrijving. |
 | `floorplan/` | `apartment.json` (maatvoering als data) + gegenereerde SVG/PNG-overlays. |
