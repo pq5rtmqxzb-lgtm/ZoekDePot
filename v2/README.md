@@ -150,7 +150,14 @@ npm install
 npm run assets   # v2/build -> public/assets (meshopt + WebP model per tier, WebP lightmaps)
 npm run dev      # http://localhost:5173
 npm test         # headless smoke test + screenshots in v2/docs/renders/web_*.png
+npm run site     # build the viewer + assets into v2/preview/ (committed, for previews)
 ```
+
+**Preview online:** Netlify publishes the repository root as it is (v1),
+so a committed `v2/preview/` is served at `/v2/preview/` — on every pull
+request's deploy preview too. It is a build output (~40 MB of model and
+lightmaps): rebuild it with `npm run site` after a new bake. For the real
+deploy (Phase 5) the large files move to a release asset.
 
 - **Walking:** click to look around (mouse), WASD / arrows to walk, Shift to
   go faster, Q/E to turn. Touch: drag the left half to walk, the right half to
