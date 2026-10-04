@@ -29,11 +29,13 @@ and the reasoning behind the choices are in
 
 | | Desktop | iPad / touch |
 |---|---|---|
+| Guided tour | *Start de rondleiding* on the start screen, or the *Rondleiding* button: walks through every room by itself | same |
 | Walk | WASD / arrow keys (Shift: faster) | drag on the left half |
 | Look around | mouse (click for pointer lock), Q/E | drag on the right half |
 | Light | Dag / Avond / Nacht buttons (the baked moods) | same |
 
-URL options: `?mood=evening`, `?quality=lite` (the iPad tier on a desktop),
+URL options: `?tour=1` (start the guided tour at once — a link to send),
+`?mood=evening`, `?quality=lite` (the iPad tier on a desktop),
 `?pos=x,z,yaw,pitch` (start position, degrees).
 
 ## Folders

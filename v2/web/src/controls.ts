@@ -5,6 +5,7 @@
 export class Walker {
   yaw = 0;          // radians, three.js rotation.y (0 = looking north, -z)
   pitch = 0;
+  enabled = true;   // false while the guided tour steers the camera
   private keys = new Set<string>();
   private stick = { id: -1, x0: 0, y0: 0, dx: 0, dy: 0 };
   private look = { id: -1, x: 0, y: 0 };
@@ -15,7 +16,7 @@ export class Walker {
     addEventListener("keyup", (e) => this.keys.delete(e.code));
     addEventListener("blur", () => this.keys.clear());
     el.addEventListener("click", () => {
-      if (matchMedia("(pointer: fine)").matches) el.requestPointerLock?.();
+      if (this.enabled && matchMedia("(pointer: fine)").matches) el.requestPointerLock?.();
       this.onFirstInput();
     });
     addEventListener("mousemove", (e) => {
@@ -29,12 +30,13 @@ export class Walker {
   }
 
   private turn(dx: number, dy: number): void {
+    if (!this.enabled) return;
     this.yaw -= dx;
     this.pitch = Math.max(-1.3, Math.min(1.3, this.pitch - dy));
   }
 
   private down(e: PointerEvent): void {
-    if (e.pointerType === "mouse") return;
+    if (e.pointerType === "mouse" || !this.enabled) return;
     this.onFirstInput();
     if (e.clientX < innerWidth / 2 && this.stick.id < 0) {
       this.stick = { id: e.pointerId, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0 };
@@ -62,6 +64,7 @@ export class Walker {
 
   /** Desired walking direction in the plan frame (x east, z south), length 0..1. */
   intent(): [number, number] {
+    if (!this.enabled) return [0, 0];
     const k = this.keys;
     let f = (k.has("KeyW") || k.has("ArrowUp") ? 1 : 0) - (k.has("KeyS") || k.has("ArrowDown") ? 1 : 0);
     let s = (k.has("KeyD") || k.has("ArrowRight") ? 1 : 0) - (k.has("KeyA") || k.has("ArrowLeft") ? 1 : 0);

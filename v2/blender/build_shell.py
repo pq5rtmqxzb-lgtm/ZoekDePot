@@ -27,7 +27,7 @@ import bpy  # noqa: E402
 import bmesh  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
-from geom2d import seg_local  # noqa: E402
+from geom2d import PUI_JAMB, PUI_OVERLAP, seg_local  # noqa: E402
 from common import (  # noqa: E402
     BALCONY_CEIL, BUILD_DIR, CEIL_LOW, CORRIDOR_WALLS, DOOR_H, FLOOR_MAT, JAMB, MASS_Y0, MASS_Y1,
     OUTSIDE, SLIDE_HEAD, SLIDE_TOP, SOLID_KINDS, WALL_HEIGHT, WALL_THICK, WET, MeshSet,
@@ -442,7 +442,7 @@ def build_sliding(ms, g, out):
     inn = -(out or 1)                                # normal sign of the indoor side
     name = f"pui.{g['index']}"
     props = {"part": "sliding", "geom": g["index"]}
-    jamb, head, sill, fd = 0.08, SLIDE_HEAD, 0.03, 0.12
+    jamb, head, sill, fd = PUI_JAMB, SLIDE_HEAD, 0.03, 0.12
     top = SLIDE_TOP
     ms.seg_box(name, "frames", "frame_wood", g, 0.0, jamb, -fd / 2, fd / 2, 0.0, top + head, props)
     ms.seg_box(name, "frames", "frame_wood", g, L - jamb, L, -fd / 2, fd / 2, 0.0, top + head, props)
@@ -473,7 +473,7 @@ def build_sliding(ms, g, out):
 
     fixed_a = mid - slide_end * pw / 2
     panel(fixed_a, -inn * 0.025, False)
-    panel(fixed_a + slide_end * pw * 0.15, inn * 0.03, True)
+    panel(fixed_a + slide_end * pw * PUI_OVERLAP, inn * 0.03, True)   # export_collision: pui_closed_span
 
 
 def build_railing(ms, g):

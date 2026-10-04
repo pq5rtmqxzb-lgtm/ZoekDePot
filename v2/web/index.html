@@ -18,9 +18,28 @@
     #moods button { border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; color: var(--ink);
       background: transparent; cursor: pointer; }
     #moods button[aria-pressed="true"] { background: rgba(244, 241, 234, .18); }
-    #wide { bottom: 16px; right: 16px; border: 0; border-radius: 12px; padding: 14px 16px; font: inherit;
-      color: var(--ink); background: var(--glass); backdrop-filter: blur(6px); cursor: pointer; pointer-events: auto; }
-    #wide[aria-pressed="true"] { background: rgba(244, 241, 234, .30); }
+    button { font: inherit; color: var(--ink); cursor: pointer; }
+    .big { border: 0; border-radius: 12px; padding: 14px 20px; font-size: 18px; font-weight: 600;
+      background: var(--glass); backdrop-filter: blur(6px); pointer-events: auto; }
+    .big.primary { background: #c8a46a; color: #1b1a18; }
+    #tourbtn { bottom: 16px; right: 16px; }
+    #start { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; pointer-events: auto; }
+    #start[hidden] { display: none; }
+    #start .big { background: rgba(244, 241, 234, .16); }
+    #start .big.primary { background: #c8a46a; font-size: 20px; padding: 16px 20px; }
+    #tour { bottom: 16px; left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 32px));
+      box-sizing: border-box; padding: 16px 18px; border-radius: 14px; background: rgba(24, 22, 20, .72);
+      backdrop-filter: blur(8px); pointer-events: auto; }
+    #tour[hidden], #tourbtn[hidden] { display: none; }
+    #tour .step { font-size: 14px; color: var(--dim); }
+    #tour h2 { font-size: 22px; margin: 2px 0 4px; }
+    #tour p { font-size: 17px; margin: 0 0 12px; color: var(--ink); }
+    #tour .row { display: flex; flex-wrap: wrap; gap: 8px; }
+    #tour .row button { flex: 1 1 auto; min-height: 48px; border: 0; border-radius: 10px; padding: 10px 14px;
+      font-size: 17px; background: rgba(244, 241, 234, .16); }
+    #tour .row #tourpause { background: #c8a46a; color: #1b1a18; font-weight: 600; }
+    body.touring #moods, body.touring #tourbtn { display: none; }
+    #fade { inset: 0; background: #1b1a18; opacity: 0; transition: opacity .3s; }
     #help { top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 18px 22px;
       border-radius: 12px; background: var(--glass); backdrop-filter: blur(6px); max-width: 340px; }
     #help h1 { font-size: 20px; margin: 0 0 6px; }
@@ -39,9 +58,14 @@
   <div id="room" class="hud">…</div>
   <div id="help" class="hud">
     <h1>Ons Nieuwe Huis</h1>
-    <p class="desk">Klik om rond te kijken · <b>WASD</b> of pijltjes om te lopen · <b>V</b> voor breed beeld · <b>Esc</b> om los te laten</p>
-    <p class="touch">Sleep links om te lopen, rechts om rond te kijken · <b>Breed</b> voor meer overzicht</p>
     <p id="loadtext">Laden…</p>
+    <div id="start" hidden>
+      <button id="starttour" class="big primary">▶&#xFE0E; Start de rondleiding</button>
+      <p>De rondleiding loopt vanzelf door alle kamers; alleen kijken is genoeg.</p>
+      <button id="startfree" class="big">Zelf rondlopen</button>
+      <p class="desk">Klik om rond te kijken · <b>WASD</b> of pijltjes om te lopen · <b>Esc</b> om los te laten</p>
+      <p class="touch">Sleep links om te lopen, rechts om rond te kijken</p>
+    </div>
   </div>
   <div id="stick" class="hud"></div>
   <div id="moods" class="hud" role="group" aria-label="Lichtsfeer">
@@ -49,7 +73,19 @@
     <button data-mood="evening" aria-pressed="false">Avond</button>
     <button data-mood="night" aria-pressed="false">Nacht</button>
   </div>
-  <button id="wide" class="hud" aria-pressed="false" title="Breed beeld (V)">Breed</button>
+  <button id="tourbtn" class="hud big" hidden>▶&#xFE0E; Rondleiding</button>
+  <div id="tour" class="hud" hidden role="region" aria-label="Rondleiding" aria-live="polite">
+    <div class="step" id="tourstep"></div>
+    <h2 id="tourtitle"></h2>
+    <p id="tourtext"></p>
+    <div class="row">
+      <button id="tourprev">◀&#xFE0E; Vorige</button>
+      <button id="tourpause">❚❚ Pauze</button>
+      <button id="tournext">Volgende ▶&#xFE0E;</button>
+      <button id="tourstop">✕ Stoppen</button>
+    </div>
+  </div>
+  <div id="fade" class="hud"></div>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

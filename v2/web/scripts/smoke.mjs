@@ -1,6 +1,7 @@
 // Smoke test for the v2 viewer: starts Vite, opens the viewer in headless
 // Chromium, checks it loads with baked lightmaps, walks with the keyboard
-// (and is stopped by a wall), switches moods, and saves screenshots to
+// (and is stopped by a wall), steps out onto the balcony, runs the guided
+// tour, switches moods, and saves screenshots to
 // v2/docs/renders/web_*.png.   npm test   (after npm run assets)
 import { spawn } from "node:child_process";
 import { chromium, devices } from "playwright";
@@ -47,7 +48,7 @@ try {
   check("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 
   // 2. walking east from the spawn: moves, then the wall stops it
-  await page.mouse.click(640, 360);
+  await page.mouse.click(1100, 200);       // beside the start screen's buttons
   await page.keyboard.down("KeyW");
   await page.waitForTimeout(6000);
   await page.keyboard.up("KeyW");
@@ -72,14 +73,63 @@ try {
   }
   check("no page errors after all shots", errors.length === 0, errors.slice(0, 3).join(" | "));
 
-  // 4. the lite tier (iPad / phones): 1K textures, half-size lightmaps, same scene
+  // 4. the balcony doors: out through the open part of the woonkamer's south
+  //    schuifpui (not through the glass of its closed panes)
+  await open("?pos=7.5,13.0,180,0&hud=0");
+  await page.mouse.click(640, 360);
+  await page.keyboard.down("KeyW");
+  await page.waitForTimeout(5000);
+  await page.keyboard.up("KeyW");
+  s = await page.evaluate(() => window.__viewer.state());
+  check("walks out onto the south balcony", s.room === "Balkon (zuid)", `room=${s.room} at (${s.x.toFixed(2)}, ${s.z.toFixed(2)})`);
+  await open("?pos=9.3,13.0,180,0&hud=0");
+  await page.mouse.click(640, 360);
+  await page.keyboard.down("KeyW");
+  await page.waitForTimeout(4000);
+  await page.keyboard.up("KeyW");
+  s = await page.evaluate(() => window.__viewer.state());
+  check("the closed panes stop the walker", s.z < 13.9, `z=${s.z.toFixed(2)} room=${s.room}`);
+  await page.keyboard.press("Escape");
+
+  // 5. the guided tour: every walk between the stops is found and stays clear,
+  //    each stop is in the room it names, it starts from the start screen and walks
+  await open("");
+  const tc = await page.evaluate(() => window.__viewer.tourCheck());
+  check("tour: every walk found", tc.found.every(Boolean), JSON.stringify(tc.found));
+  check("tour: walks keep clear of walls and furniture", tc.minClearance >= 0.29, `min ${tc.minClearance.toFixed(2)} m`);
+  console.log(`  tour stops: ${tc.stops.join(" > ")}`);
+  check("tour: start screen offers the tour", await page.isVisible("#starttour"));
+  await page.click("#starttour");
+  await page.waitForTimeout(500);
+  s = await page.evaluate(() => window.__viewer.state());
+  check("tour: starts at the first stop", s.tour.active && s.tour.index === 0 && s.room === "Gang", JSON.stringify(s.tour));
+  check("tour: panel shown, mood buttons hidden", await page.isVisible("#tour") && !(await page.isVisible("#moods")));
+  for (let i = 1; i < 7; i++) {
+    await page.click("#tournext");
+    await page.waitForTimeout(700);
+  }
+  s = await page.evaluate(() => window.__viewer.state());
+  check("tour: Volgende goes to the next stop", s.tour.index === 6 && s.room === "Woonkamer", `index=${s.tour.index} room=${s.room}`);
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: path.join(OUT, "web_tour.png") });
+  const before = await page.evaluate(() => { const t = window.__viewer.tour; t.t = 1e3; return window.__viewer.state(); });
+  await page.waitForTimeout(4000);
+  s = await page.evaluate(() => window.__viewer.state());
+  const walked = Math.hypot(s.x - before.x, s.z - before.z);
+  check("tour: walks on to the next stop by itself", s.tour.index === 7 && walked > 0.1, `index=${s.tour.index} phase=${s.tour.phase} walked ${walked.toFixed(2)} m`);
+  await page.click("#tourstop");
+  s = await page.evaluate(() => window.__viewer.state());
+  check("tour: Stoppen hands control back", !s.tour.active && await page.isVisible("#tourbtn"));
+  check("no page errors (tour)", errors.length === 0, errors.slice(0, 3).join(" | "));
+
+  // 6. the lite tier (iPad / phones): 1K textures, half-size lightmaps, same scene
   await open("?quality=lite&pos=9.25,13.45,11.6,-2.2&mood=day&hud=0");
   const sl = await page.evaluate(() => window.__viewer.state());
   check("lite tier loads", sl.tier === "lite" && sl.baked > 20, `tier=${sl.tier} baked=${sl.baked}`);
   await page.screenshot({ path: path.join(OUT, "web_woonkamer_lite.png") });
   check("no page errors (lite)", errors.length === 0, errors.slice(0, 3).join(" | "));
 
-  // 5. an emulated iPad (touch, coarse pointer): picks the lite tier on its own,
+  // 7. an emulated iPad (touch, coarse pointer): picks the lite tier on its own,
   //    walks with the touch stick (drag on the left half)
   // (pixel ratio 1: software WebGL at 2x makes every touch event wait seconds for a frame)
   await page.close();                     // its render loop would compete for the (software) GPU
