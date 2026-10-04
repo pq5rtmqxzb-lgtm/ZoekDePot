@@ -50,10 +50,15 @@ const [collision, manifest] = await Promise.all([
   json<CollisionData>(`${ASSETS}/collision.json`),
   json<Manifest>(`${ASSETS}/lightmaps/manifest.json`),
 ]);
-const lightmaps = new Lightmaps(manifest, `${ASSETS}/lightmaps`, envMap);
+// quality tier: full on desktops, lite (1K textures, half-size lightmaps)
+// on touch devices; ?quality=full|lite overrides
+const query = new URLSearchParams(location.search);
+const tier = query.get("quality") ?? (matchMedia("(pointer: coarse)").matches ? "lite" : "full");
+const lite = tier === "lite";
+const lightmaps = new Lightmaps(manifest, `${ASSETS}/lightmaps`, envMap, lite);
 const gltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const [gltf] = await Promise.all([
-  gltfLoader.loadAsync(`${ASSETS}/apartment.glb`, (e) => {
+  gltfLoader.loadAsync(`${ASSETS}/${lite ? "apartment-lite.glb" : "apartment.glb"}`, (e) => {
     if (e.total) loadBar.style.width = `${(100 * e.loaded) / e.total}%`;
   }),
   lightmaps.load(new THREE.TextureLoader()),
@@ -100,6 +105,7 @@ setMood(startMood && startMood in MOOD_LOOK ? startMood : "day");
 const vel = { x: 0, z: 0 };
 let last = performance.now();
 let lastRoom = "";
+let frameMs = 16.7;                                  // smoothed frame time (performance budget checks)
 function step(h: number): void {
   const [ix, iz] = walker.intent();
   const speed = SPEED * (walker.running ? 1.8 : 1);
@@ -112,6 +118,7 @@ function step(h: number): void {
 function frame(now: number): void {
   // fixed 1/120 s physics steps, so a slow frame never tunnels through a
   // wall and slow devices still walk at the right speed
+  frameMs += (now - last - frameMs) * 0.05;
   let dt = Math.min(0.5, (now - last) / 1000);
   last = now;
   while (dt > 1e-4) { const h = Math.min(dt, 1 / 120); step(h); dt -= h; }
@@ -127,8 +134,9 @@ requestAnimationFrame(frame);
 // test hooks (smoke test / screenshots)
 Object.assign(window, {
   __viewer: {
-    state: () => ({ x: pos.x, z: pos.z, yaw: walker.yaw, room: lastRoom, mood,
-      baked: lightmaps.bakedMaterialCount, info: renderer.info.render }),
+    state: () => ({ x: pos.x, z: pos.z, yaw: walker.yaw, room: lastRoom, mood, tier,
+      baked: lightmaps.bakedMaterialCount, info: renderer.info.render,
+      fps: 1000 / frameMs, textures: renderer.info.memory.textures }),
     setMood,
     scene,
     ready: true,

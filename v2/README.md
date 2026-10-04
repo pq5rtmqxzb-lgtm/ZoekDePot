@@ -108,7 +108,7 @@ the web viewer:
 4. `scene.glb` holds the whole furnished apartment with both UV maps.
 
 The viewer draws: **colour = albedo x lightmap x scale** (three.js:
-`material.lightMap` in sRGB, `lightMapIntensity = scale`). Glass, lamps'
+`material.lightMap` in sRGB, `lightMapIntensity = scale x pi`). Glass, lamps'
 bulbs and the exterior are not baked.
 
 `preview_lightmaps.py` renders the scene the way the viewer will (every
@@ -117,7 +117,7 @@ path-traced render (`docs/renders/lmcompare_<view>.png`) to check the bake.
 
 | Quality | Where | Lightmaps | Time |
 |---|---|---|---|
-| `draft` (default) | cloud CPU | 2048 px, 32 samples | ~5 min per map |
+| `draft` (default) | cloud CPU | 2048 px, 64 samples | ~10 min per map |
 | `final` | laptop, GPU | 4096 px, 1024 samples | minutes per map on a recent GPU |
 
 On the laptop (Blender 4.5 LTS):
@@ -159,7 +159,13 @@ npm test         # headless smoke test + screenshots in v2/docs/renders/web_*.pn
   on their sliding half, as in v1.
 - **Moods:** Dag / Avond / Nacht buttons switch the lightmap set live.
 - **URL:** `?pos=x,z,yaw,pitch&mood=evening` (yaw/pitch in degrees; three.js
-  rotation: yaw 0 looks north) — used by the smoke test.
+  rotation: yaw 0 looks north) — used by the smoke test. `&hud=0` hides the
+  help panel.
+- **Quality tiers:** `full` on desktops (textures up to 2K, full lightmaps),
+  `lite` on touch devices such as the iPad (textures up to 1K, lightmaps at
+  half size, about a quarter of the GPU memory). `?quality=full|lite`
+  overrides the automatic choice; `npm run assets` writes both
+  (`apartment.glb` / `apartment-lite.glb`, `*.webp` / `*-lite.webp`).
 
 ## Running it
 

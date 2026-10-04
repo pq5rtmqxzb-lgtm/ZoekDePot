@@ -19,22 +19,25 @@ const mb = (n) => (n / 1e6).toFixed(1) + " MB";
 
 await mkdir(path.join(OUT, "lightmaps"), { recursive: true });
 
-// 1. the model
+// 1. the model, in two tiers: full (desktop, textures <= 2K) and lite
+//    (iPad / phones, textures <= 1K)
 await MeshoptEncoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ "meshopt.encoder": MeshoptEncoder });
-const doc = await io.read(path.join(BUILD, "scene.glb"));
-// the viewer lights everything from the lightmaps: drop the exported lamps
-const lights = doc.getRoot().listExtensionsUsed().find((e) => e.extensionName === "KHR_lights_punctual");
-if (lights) lights.dispose();
-await doc.transform(
-  dedup(),
-  prune({ keepAttributes: true }),   // keep TEXCOORD_1: the lightmap UVs no material references
-  textureCompress({ encoder: sharp, targetFormat: "webp", resize: [2048, 2048], quality: 88 }),
-  meshopt({ encoder: MeshoptEncoder, level: "medium" }),
-);
-const glb = path.join(OUT, "apartment.glb");
-await io.write(glb, doc);
-console.log(`apartment.glb ${mb((await stat(path.join(BUILD, "scene.glb"))).size)} -> ${mb((await stat(glb)).size)}`);
+for (const [name, size, quality] of [["apartment.glb", 2048, 88], ["apartment-lite.glb", 1024, 80]]) {
+  const doc = await io.read(path.join(BUILD, "scene.glb"));
+  // the viewer lights everything from the lightmaps: drop the exported lamps
+  const lights = doc.getRoot().listExtensionsUsed().find((e) => e.extensionName === "KHR_lights_punctual");
+  if (lights) lights.dispose();
+  await doc.transform(
+    dedup(),
+    prune({ keepAttributes: true }),   // keep TEXCOORD_1: the lightmap UVs no material references
+    textureCompress({ encoder: sharp, targetFormat: "webp", resize: [size, size], quality }),
+    meshopt({ encoder: MeshoptEncoder, level: "medium" }),
+  );
+  const glb = path.join(OUT, name);
+  await io.write(glb, doc);
+  console.log(`${name} ${mb((await stat(path.join(BUILD, "scene.glb"))).size)} -> ${mb((await stat(glb)).size)}`);
+}
 
 // 2. lightmaps
 const manifest = JSON.parse(await readFile(path.join(BUILD, "lightmaps", "manifest.json"), "utf8"));
@@ -43,9 +46,13 @@ for (const [mood, groups] of Object.entries(manifest.maps)) {
   for (const [group, entry] of Object.entries(groups)) {
     const src = path.join(BUILD, "lightmaps", entry.file);
     const file = entry.file.replace(/\.png$/, ".webp");
+    const lite = entry.file.replace(/\.png$/, "-lite.webp");
     await sharp(src).webp({ quality: 92, effort: 5 }).toFile(path.join(OUT, "lightmaps", file));
+    const half = Math.round(manifest.groups[group].size / 2);
+    await sharp(src).resize(half, half).webp({ quality: 90, effort: 5 }).toFile(path.join(OUT, "lightmaps", lite));
     total += (await stat(path.join(OUT, "lightmaps", file))).size;
     entry.file = file;
+    entry.lite = lite;
   }
 }
 await writeFile(path.join(OUT, "lightmaps", "manifest.json"), JSON.stringify(manifest, null, 1));

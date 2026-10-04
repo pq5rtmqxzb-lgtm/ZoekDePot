@@ -3,7 +3,7 @@
 // (and is stopped by a wall), switches moods, and saves screenshots to
 // v2/docs/renders/web_*.png.   npm test   (after npm run assets)
 import { spawn } from "node:child_process";
-import { chromium } from "playwright";
+import { chromium, devices } from "playwright";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -68,9 +68,41 @@ try {
     await open(q);
     await page.screenshot({ path: path.join(OUT, `web_${name}.png`) });
     const st = await page.evaluate(() => window.__viewer.state());
-    console.log(`  web_${name}.png  room=${st.room} mood=${st.mood} calls=${st.info.calls} tris=${st.info.triangles}`);
+    console.log(`  web_${name}.png  room=${st.room} mood=${st.mood} calls=${st.info.calls} tris=${st.info.triangles} textures=${st.textures}`);
   }
   check("no page errors after all shots", errors.length === 0, errors.slice(0, 3).join(" | "));
+
+  // 4. the lite tier (iPad / phones): 1K textures, half-size lightmaps, same scene
+  await open("?quality=lite&pos=9.25,13.45,11.6,-2.2&mood=day&hud=0");
+  const sl = await page.evaluate(() => window.__viewer.state());
+  check("lite tier loads", sl.tier === "lite" && sl.baked > 20, `tier=${sl.tier} baked=${sl.baked}`);
+  await page.screenshot({ path: path.join(OUT, "web_woonkamer_lite.png") });
+  check("no page errors (lite)", errors.length === 0, errors.slice(0, 3).join(" | "));
+
+  // 5. an emulated iPad (touch, coarse pointer): picks the lite tier on its own,
+  //    walks with the touch stick (drag on the left half)
+  const ipad = await browser.newContext({ ...devices["iPad Pro 11 landscape"] });
+  const tab = await ipad.newPage();
+  tab.on("pageerror", (e) => errors.push(String(e)));
+  await tab.goto(BASE + "?hud=0");
+  await tab.waitForFunction(() => window.__viewer?.ready, null, { timeout: 180000 });
+  const t0 = await tab.evaluate(() => window.__viewer.state());
+  check("iPad picks the lite tier", t0.tier === "lite", `tier=${t0.tier}`);
+  const vp = tab.viewportSize();
+  const cdp = await ipad.newCDPSession(tab);
+  const touch = (type, x, y) => cdp.send("Input.dispatchTouchEvent",
+    { type, touchPoints: type === "touchEnd" ? [] : [{ x, y, id: 1 }] });
+  const sx = vp.width * 0.2, sy = vp.height * 0.7;
+  await touch("touchStart", sx, sy);
+  for (let i = 1; i <= 10; i++) { await touch("touchMove", sx, sy - 6 * i); }
+  await tab.waitForTimeout(4000);
+  await touch("touchEnd", 0, 0);
+  const t1 = await tab.evaluate(() => window.__viewer.state());
+  const moved = Math.hypot(t1.x - t0.x, t1.z - t0.z);
+  check("iPad walks with the touch stick", moved > 0.5, `moved ${moved.toFixed(2)} m`);
+  await tab.screenshot({ path: path.join(OUT, "web_ipad.png") });
+  check("no page errors (iPad)", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await ipad.close();
   await browser.close();
 } finally {
   server.kill();

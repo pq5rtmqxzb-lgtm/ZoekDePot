@@ -8,7 +8,7 @@ export type Mood = "day" | "evening" | "night";
 
 export interface Manifest {
   groups: Record<string, { size: number; objects: string[] }>;
-  maps: Record<string, Record<string, { file: string; scale: number }>>;
+  maps: Record<string, Record<string, { file: string; lite?: string; scale: number }>>;
 }
 
 // Per mood: background, exposure (Blender AgX exposure in stops, as in
@@ -29,13 +29,15 @@ export class Lightmaps {
 
   /** `env`: a soft reflection map, given only to metal, glass and glossy
    * materials (a scene-wide environment would light everything twice). */
-  constructor(private manifest: Manifest, private base: string, private env: THREE.Texture) {}
+  constructor(private manifest: Manifest, private base: string, private env: THREE.Texture,
+              private lite = false) {}
 
   async load(loader: THREE.TextureLoader): Promise<void> {
     const jobs: Promise<void>[] = [];
     for (const [mood, groups] of Object.entries(this.manifest.maps)) {
       for (const [group, entry] of Object.entries(groups)) {
-        jobs.push(loader.loadAsync(`${this.base}/${entry.file}`).then((t) => {
+        const file = this.lite && entry.lite ? entry.lite : entry.file;
+        jobs.push(loader.loadAsync(`${this.base}/${file}`).then((t) => {
           t.colorSpace = THREE.SRGBColorSpace;   // encoded with the sRGB curve: decodes to linear
           t.flipY = false;                       // glTF UV convention
           t.channel = 1;                         // TEXCOORD_1 = the lightmap UVs
