@@ -226,16 +226,20 @@ def classify_mass(me, solid, model, colls, mats):
 
 # ------------------------------------------------------------ rooms
 
-TUCK = 0.015   # m that floors/ceilings reach into the walls
+TUCK = 0.05          # m that indoor floors/ceilings reach under the walls (< half the thinnest wall)
+TUCK_BALCONY = 0.015  # balconies: open sides end at the railing's slab edge
+THRESHOLD_Y = 0.002   # threshold strips sit a hair above the floors that tuck under them
 
 
-def room_outlines(r, grow):
+def room_outlines(rooms, r, grow):
     """One outline per room: the union of its rects + polys (merged in a
     bmesh: weld, split T-junctions, dissolve the shared edges), offset
-    outward by `grow`. model.json rooms stop ~1 cm short of the wall faces;
-    left as is, sun leaks through that slit and the viewer shows a dark
-    line. Growing the merged outline tucks floors and ceilings under the
-    walls without overlapping pieces of the same room."""
+    outward by up to `grow`. model.json rooms stop 1-4 cm short of the wall
+    faces; left as is, sun leaks through that slit and the viewer shows a
+    dark line. Growing the merged outline tucks floors and ceilings under
+    the walls without overlapping pieces of the same room. Each edge grows
+    only as far as it can without entering another room (a few rooms touch
+    without a wall segment between them)."""
     bm = bmesh.new()
     shapes = [[(rc["x1"], rc["z1"]), (rc["x2"], rc["z1"]), (rc["x2"], rc["z2"]), (rc["x1"], rc["z2"])]
               for rc in r["rects"]] + [list(map(tuple, p)) for p in r["polys"]]
@@ -272,17 +276,30 @@ def room_outlines(r, grow):
                 clean.append(p)
         area = sum(clean[i - 1][0] * clean[i][1] - clean[i][0] * clean[i - 1][1] for i in range(len(clean)))
         sign = 1 if area > 0 else -1                 # outward normal of edge d is sign*(d.z, -d.x)
+        cnt = len(clean)
+        # edge i runs clean[i] -> clean[i+1]; pick its offset
+        edges = []
+        for i in range(cnt):
+            a, b = Vector(clean[i]), Vector(clean[(i + 1) % cnt])
+            d = (b - a).normalized()
+            nrm = Vector((d.y, -d.x)) * sign
+            off = grow
+            while off > 0:
+                hits = [room_at(rooms, *(a + (b - a) * f + nrm * off)) for f in (0.05, 0.25, 0.5, 0.75, 0.95)]
+                if all(h is None or h is r for h in hits):
+                    break
+                off = round(off - 0.005, 4)
+            edges.append((a + nrm * off, d))
         out = []
-        for i, p in enumerate(clean):
-            q, n = clean[i - 1], clean[(i + 1) % len(clean)]
-            d1 = Vector((p[0] - q[0], p[1] - q[1])).normalized()
-            d2 = Vector((n[0] - p[0], n[1] - p[1])).normalized()
-            n1 = Vector((d1.y, -d1.x)) * sign
-            n2 = Vector((d2.y, -d2.x)) * sign
-            m = n1 + n2
-            k = grow / max(0.25, (1 + n1.dot(n2)) / 2) ** 0.5 if m.length > 1e-9 else grow
-            m = m.normalized() if m.length > 1e-9 else n1
-            out.append((p[0] + m.x * k, p[1] + m.y * k))
+        for i in range(cnt):                         # vertex i = edge i-1 meets edge i
+            (p1, d1), (p2, d2) = edges[i - 1], edges[i]
+            den = d1.x * d2.y - d1.y * d2.x
+            if abs(den) < 1e-6:                      # collinear: just shift
+                v = p2
+            else:
+                t = ((p2.x - p1.x) * d2.y - (p2.y - p1.y) * d2.x) / den
+                v = p1 + d1 * t
+            out.append((v.x, v.y))
         outlines.append(out)
     bm.free()
     return outlines
@@ -292,7 +309,7 @@ def build_rooms(ms, model):
     for r in model["rooms"]:
         rid = r["id"]
         balcony = rid.startswith("balkon")
-        outlines = room_outlines(r, TUCK)
+        outlines = room_outlines(model["rooms"], r, TUCK_BALCONY if balcony else TUCK)
         mat = FLOOR_MAT.get(r.get("kind"), "floor_hout")
         props = {"part": "floor", "room": rid, "finish": r.get("kind", "hout"), "closed": False}
         ceil_h = BALCONY_CEIL if balcony else r["ceil"]
@@ -307,7 +324,7 @@ def build_rooms(ms, model):
         # ever let light in. Never seen; skipped by the bake.
         if not balcony:
             slab = {"part": "slab", "closed": False, "bake": False}
-            for pts in room_outlines(r, 0.25):
+            for pts in room_outlines([], r, 0.25):
                 ms.poly("slab.upper", "ceilings", "concrete", pts, MASS_Y1, up=False, props=slab)
                 ms.poly("slab.lower", "floors", "concrete", pts, MASS_Y0, up=True, props=slab)
 
@@ -333,7 +350,7 @@ def build_thresholds(ms, model):
         a0, a1 = (-JAMB, L + JAMB) if g["kind"] == "door" else (0.0, L)
         base = [seg_point(g, a0, -t / 2), seg_point(g, a1, -t / 2), seg_point(g, a1, t / 2), seg_point(g, a0, t / 2)]
         rid = inside["id"]
-        ms.poly(f"floor.{rid}", "floors", FLOOR_MAT.get(inside.get("kind"), "floor_hout"), base, 0.0, up=True,
+        ms.poly(f"floor.{rid}", "floors", FLOOR_MAT.get(inside.get("kind"), "floor_hout"), base, THRESHOLD_Y, up=True,
                 props={"part": "floor", "room": rid, "finish": inside.get("kind", "hout"), "closed": False})
 
 

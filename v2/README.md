@@ -48,7 +48,7 @@ NW corner of the north facade. The `.glb` lands in exactly that frame (see
 | `wall.corridor.*` | Shared corridor (limewash) | `room=corridor` |
 | `wall.reveal` | Reveals and soffits inside openings | `part=reveal` |
 | `facade.<geom>` | Outside skin (gevelbekleding) | `part=facade` |
-| `floor.<room>` / `ceil.<room>` | One merged outline per room, tucked 1.5 cm under the walls | `part`, `room`, `finish` |
+| `floor.<room>` / `ceil.<room>` | One merged outline per room, tucked up to 5 cm under the walls (never into a neighbouring room); thresholds 2 mm proud | `part`, `room`, `finish` |
 | `frame.<geom>` / `dorpel.<geom>` | Nestelkozijnen (white), voordeur (hardwood), kunststeen dorpel at wet rooms | `geom` |
 | `pui.<geom>` | Hef-schuifpui: fixed + sliding pane, open where v1's walkable gap is | `geom` |
 | `railing.<geom>` / `screen.<geom>` | Balkonhek, privacy screens, slab edges | `geom` |

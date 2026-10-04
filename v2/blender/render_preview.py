@@ -115,7 +115,7 @@ def main():
         overview = name == "dollhouse"
         # Dollhouse: lift the lid — no ceilings, no storey above.
         hide = [o for o in bpy.data.objects if overview and (
-            o.name.startswith("ceil.") or o.name in ("building.mass", "ground"))]
+            o.name.startswith(("ceil.", "slab.upper")) or o.name in ("building.mass", "ground"))]
         for o in hide:
             o.hide_render = True
         scene.render.film_transparent = overview
