@@ -140,6 +140,10 @@ cd v2/web && npm install && npm run assets && npm run site
 git checkout -b bake-final && git add ../preview && git commit -m "Final bake" && git push -u origin bake-final
 ```
 
+The raw bakes are kept in `v2/build/lightmaps/raw/` (`.npz`), so the
+post-processing (denoise, smoothing, encoding) can be redone in minutes
+without baking again: `python v2/blender/bake.py --reprocess 1 [--smooth 0.8]`.
+
 The bake prints one line per map; `v2/build/scene.glb` (>100 MB) is too big
 for GitHub, so the compressed `v2/preview/` is what goes in the commit.
 

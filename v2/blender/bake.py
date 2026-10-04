@@ -4,7 +4,7 @@
     blender -b -P v2/blender/bake.py -- --quality final   # 4K, GPU (laptop)
     ... [--moods day,evening,night] [--groups shell,furniture] [--size 1024] [--samples 32]
     ... [--smooth 1.2] [--out some/dir]   (test bake: only lightmaps, nothing else written)
-    ... --reprocess 1 [--smooth 0.8]      (redo denoise/smoothing from lightmaps/raw/*.exr)
+    ... --reprocess 1 [--smooth 0.8]      (redo denoise/smoothing from lightmaps/raw/*.npz)
 
 Reads v2/build/scene.blend and writes, to v2/build/:
 - lightmaps/<mood>_<group>.png  — irradiance (light only, no surface colour),
@@ -45,6 +45,9 @@ QUALITY = {
     "final": dict(size=4096, samples=1024, device="GPU", margin=16, smooth=0.6),
 }
 LM = "Lightmap"
+# furniture islands are small (few texels per panel) and mostly lit
+# indirectly: noisier, so they get twice the in-island smoothing
+SMOOTH_SCALE = {"furniture": 2.0}
 SHELL_COLLECTIONS = ("walls", "floors", "ceilings", "frames", "railings")
 SKIP_MATERIALS = {"M_glass", "M_frosted", "M_sheer", "M_bulb"}
 
@@ -322,7 +325,8 @@ def fill_empty(rgb, known, steps=48):
 
 def postprocess(img, size, sigma):
     """Raw bake (no margin: empty texels are exactly 0) -> filled ->
-    OIDN -> in-island smoothing -> filled again. Returns linear RGB."""
+    OIDN -> in-island smoothing -> filled again. Returns (linear RGB,
+    mask of the baked texels)."""
     a = pixels(img)
     mask = a[..., :3].max(axis=-1) > 0
     a[..., :3] = fill_empty(a[..., :3], mask)
@@ -330,7 +334,7 @@ def postprocess(img, size, sigma):
     img.pixels.foreach_set(a.ravel())
     clean = denoise(img, size)[..., :3]
     clean = smooth_islands(clean, mask, sigma)
-    return fill_empty(clean, mask)
+    return fill_empty(clean, mask), mask
 
 
 def denoise(img, size):
@@ -366,11 +370,13 @@ def denoise(img, size):
     return a
 
 
-def encode(a, path):
+def encode(a, path, mask):
     """Linear irradiance -> scale + sRGB-encoded 8-bit PNG. The scale keeps
-    the brightest 0.5 % (sun patches, lamp shades) from crushing the rest."""
+    the brightest 0.5 % of the baked texels (sun patches, lamp shades) from
+    crushing the rest; the filled gaps between islands don't count (a
+    bright island next to a big gap would otherwise set the scale)."""
     rgb = np.maximum(a[..., :3], 0)
-    lit = rgb.max(axis=-1)
+    lit = rgb.max(axis=-1)[mask]
     valid = lit[lit > 1e-5]
     scale = float(np.percentile(valid, 99.5)) if valid.size else 1.0
     x = np.clip(rgb / max(scale, 1e-6), 0, 1)
@@ -380,17 +386,33 @@ def encode(a, path):
     return scale
 
 
+def save_raw(img, path):
+    """The raw bake as numbers (float16 RGB). Not via Image.save(): Blender
+    writes a generated float image to EXR with the sRGB curve applied."""
+    path.parent.mkdir(exist_ok=True)
+    np.savez_compressed(path, rgb=pixels(img)[..., :3].astype(np.float16))
+
+
+def load_raw(path):
+    rgb = np.load(path)["rgb"].astype(np.float32)
+    h, w = rgb.shape[:2]
+    img = bpy.data.images.new(path.stem, w, h, float_buffer=True)
+    a = np.concatenate([rgb, np.ones((h, w, 1), np.float32)], axis=-1)
+    img.pixels.foreach_set(a.ravel())
+    return img
+
+
 def reprocess(q):
     """Redo denoise / smoothing / encoding from the raw bakes kept in
-    lightmaps/raw/ (no Cycles, no UV changes): --reprocess 1 [--smooth 0.8]."""
+    lightmaps/raw/*.npz (no Cycles, no UV changes): --reprocess 1 [--smooth 0.8]."""
     manifest = json.loads((OUT / "manifest.json").read_text())
-    for raw in sorted((OUT / "raw").glob("*.exr")):
+    for raw in sorted((OUT / "raw").glob("*.npz")):
         mood, g = raw.stem.split("_", 1)
-        img = bpy.data.images.load(str(raw), check_existing=False)
-        clean = postprocess(img, img.size[0], q["smooth"])
+        img = load_raw(raw)
+        clean, mask = postprocess(img, img.size[0], q["smooth"] * SMOOTH_SCALE.get(g, 1.0))
         bpy.data.images.remove(img)
         name = f"{mood}_{g}.png"
-        scale = encode(clean, OUT / name)
+        scale = encode(clean, OUT / name, mask)
         manifest["maps"].setdefault(mood, {})[g] = {"file": name, "scale": round(scale, 4)}
         print(f"[{mood}/{g}] reprocessed, scale {scale:.3f}", flush=True)
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=1))
@@ -450,12 +472,10 @@ def main():
             img = bpy.data.images.new(f"LM_{mood}_{g}", size, size, float_buffer=True)
             t = time.time()
             bake_group(objs, img, q)
-            (OUT / "raw").mkdir(exist_ok=True)       # the raw bake, for reprocess()
-            img.filepath_raw, img.file_format = str(OUT / "raw" / f"{mood}_{g}.exr"), "OPEN_EXR"
-            img.save()
-            clean = postprocess(img, size, q["smooth"])
+            save_raw(img, OUT / "raw" / f"{mood}_{g}.npz")   # for --reprocess
+            clean, mask = postprocess(img, size, q["smooth"] * SMOOTH_SCALE.get(g, 1.0))
             name = f"{mood}_{g}.png"
-            scale = encode(clean, OUT / name)
+            scale = encode(clean, OUT / name, mask)
             manifest["maps"][mood][g] = {"file": name, "scale": round(scale, 4)}
             bpy.data.images.remove(img)
             print(f"[{mood}/{g}] baked {size}px x {q['samples']} samples in {time.time() - t:.0f}s, "
