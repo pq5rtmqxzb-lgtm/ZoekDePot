@@ -1,0 +1,36 @@
+name: v2 shell
+
+# Rebuilds the v2 Blender shell from data/model.json and verifies the
+# exported .glb (walls, openings, rooms) whenever either side changes.
+on:
+  pull_request:
+    paths: ['data/model.json', 'v2/blender/**', '.github/workflows/v2-shell.yml']
+  push:
+    paths: ['data/model.json', 'v2/blender/**', '.github/workflows/v2-shell.yml']
+
+jobs:
+  shell:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'     # bpy 4.5 wheels are built for 3.11
+          cache: pip
+          cache-dependency-path: v2/blender/requirements.txt
+      - name: System libraries for bpy
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends
+             libgl1 libglx0 libx11-6 libxext6 libxfixes3 libxi6 libxrender1 libxkbcommon0 libsm6 libice6
+      - run: pip install -r v2/blender/requirements.txt
+      - name: Build shell
+        run: python v2/blender/build_shell.py
+      - name: Check glb against model.json
+        run: python v2/blender/check_glb.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-shell
+          path: |
+            v2/build/shell.glb
+            v2/docs/plan-section.png
+          if-no-files-found: ignore

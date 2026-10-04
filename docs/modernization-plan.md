@@ -150,11 +150,15 @@ cloud machine has 4 CPU cores and no GPU, so:
 
 ## Plan
 
-### Phase 0 — Freeze v1
+### Phase 0 — Freeze v1 ✅
+- Done 2026-10-04: v1 = `main` @ `620add7`. The cloud session can't push tags, so
+  create the `v1` tag on GitHub (Releases → "Draft a new release" → tag `v1` on that commit).
 - Tag the current `main` as `v1`. v1 stays live at the current URL until v2 matches it.
 - Create a `v2/` folder in the same repo. `data/model.json` and `tools/` stay shared.
 
-### Phase 1 — Generate the shell in Blender
+### Phase 1 — Generate the shell in Blender ✅
+- Done 2026-10-04. See [`v2/README.md`](../v2/README.md). The exported glb matches `model.json`
+  within 5 mm on every wall face, every opening is checked, and CI rebuilds and checks it.
 - `v2/blender/build_shell.py`: `model.json` → walls with real openings, floors and
   ceilings per room, window and door frames, sliding doors, balcony glass and railings,
   plus the façade around the windows (visible from inside).

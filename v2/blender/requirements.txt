@@ -1,0 +1,2 @@
+bpy==4.5.14     # Blender 4.5 LTS as a Python module; needs Python 3.11
+Pillow          # plan-section overlay in check_glb.py
