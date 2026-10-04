@@ -14,11 +14,11 @@ v1 stays untouched and live until v2 is better.
 | 0 | Freeze v1 | ✅ `v1` = `main` @ `620add7` (create the `v1` tag on GitHub: Releases → new tag on that commit) |
 | 1 | Shell generated in Blender | ✅ walls with real openings, floors/ceilings per room, frames, schuifpuien, railings — checked against `model.json` |
 | 2a | Furniture, kitchen, sanitary ware, lamps, wall tiles, plinths | ✅ from `v2/data/furniture.json`, checked against the walls |
-| 2b | Photoreal PBR textures | waiting on network access to Poly Haven / ambientCG (see below) |
+| 2b | Photoreal textures | ✅ CC0 Poly Haven scans via `v2/data/materials.json`; untreated oak plank floor and bathroom tiles composed from scans |
 | 2c | Baked lighting (day / evening / night) for the viewer | next |
 | 3–6 | Viewer, features, deploy, extras | — |
 
-## Preview (Phase 2a: furnished, flat placeholder colours, CPU draft)
+## Preview (Phase 2b: furnished and textured, CPU draft)
 
 | | |
 |---|---|
@@ -30,8 +30,7 @@ v1 stays untouched and live until v2 is better.
 
 Day views: sky + sun for Den Haag at 15:30 in late April, lamps off except
 in the windowless gang and the bathroom. `avond`: sunset in the west-north-
-west with every lamp on. Surfaces are still flat colours: the tiles, oak,
-linen and stone get real scanned textures in Phase 2b. Known open point:
+west with every lamp on. Known open point:
 hairline shadow gaps at the slaapkamer 2 alcove pier and the slanted SW wall
 (room outline and wall face more than 5 cm apart in `model.json`).
 
@@ -62,12 +61,28 @@ Furniture objects are `furn.<id>` (hard parts, 4 mm bevel), `furn.<id>.soft`
 `furn.<id>.curtain`; lamps add real light sources `light.<id>` with their
 room as a property.
 
-## Textures (Phase 2b) need network access
+## Surfaces (textures)
 
-The cloud environment can reach GitHub, PyPI and npm, but not the free CC0
-texture libraries. Add these under **Network access → Custom → Allowed
-domains** in the environment settings (keep the default package managers):
-`polyhaven.com`, `api.polyhaven.com`, `dl.polyhaven.org`, `ambientcg.com`.
+`v2/data/materials.json` holds every finish: which CC0 scan from
+[Poly Haven](https://polyhaven.com) it uses, its colour, roughness and
+size. `textures.py` downloads the scans once (cache: `v2/assets/cache/`,
+not committed) and writes the final maps to `v2/build/textures/`.
+
+| Finish | How |
+|---|---|
+| **Vloer: eiken lamel, onbehandeld** | composed plank by plank from two raw-oak scans (`oak_veneer_03`, `silver_oak_veneer_01`): 19 cm wide, 1.0–2.2 m long, staggered, fine V-groove, matt (roughness 0.70), running north–south. Colour `#D5C2A2`. |
+| Badkamertegels | composed: 60x60 floor, 30x60 wall (laid horizontally), grout lines, slight tone per tile |
+| Wanden, plafonds | `white_stucco`, tinted (walls stay repaintable) |
+| Linnen, bouclé, jute, wol | `rough_linen`, `curly_teddy_natural`, `hessian_230`, `poly_wool_herringbone`, each recoloured |
+| Kozijnen (Red Grandis), gevel (Basralocus) | `sapele_veneer`, `wood_planks_grey` |
+| Meubels | light oak (`oak_veneer_03`), dark oak (`oak_veneer_01`) |
+
+Change a colour, plank width or tile size in `materials.json`, then run
+`textures.py` (add `--only floor_hout` to redo one) and the build scripts.
+Without textures (as in CI) everything falls back to flat colours.
+
+The environment needs network access to `polyhaven.com`, `api.polyhaven.com`
+and `dl.polyhaven.org` for the downloads.
 
 ## Running it
 
@@ -77,6 +92,7 @@ laptop results match. Two ways to run the same scripts:
 ```sh
 # A) Blender as a Python module (what the cloud sessions and CI use; Python 3.11)
 pip install -r v2/blender/requirements.txt
+python v2/blender/textures.py           # CC0 scans -> v2/build/textures/ (optional, needs network)
 python v2/blender/build_shell.py        # -> v2/build/shell.blend + shell.glb
 python v2/blender/check_glb.py          # verifies the glb, writes v2/docs/plan-section.png
 python v2/blender/check_furniture.py    # furniture.json vs walls/rooms/each other (no Blender needed)

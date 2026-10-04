@@ -80,7 +80,8 @@ def main():
         o.select_set(o in objs or o in lamp_objs)
     glb = BUILD_DIR / "furniture.glb"
     bpy.ops.export_scene.gltf(filepath=str(glb), export_format="GLB", use_selection=True,
-                              export_extras=True, export_apply=True, export_lights=True)
+                              export_extras=True, export_apply=True, export_lights=True,
+                              export_image_format="JPEG", export_jpeg_quality=85)
     faces = sum(len(o.evaluated_get(bpy.context.evaluated_depsgraph_get()).data.polygons) for o in objs)
     print(f"furniture: {len(data['items'])} items -> {len(objs)} objects, {len(lamp_objs)} lights, "
           f"{faces} faces after bevels")

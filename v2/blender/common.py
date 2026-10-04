@@ -12,6 +12,7 @@ Python tools use. All builders below take MODEL coordinates and convert with
 `P()` at the last moment.
 """
 import json
+import math
 import pathlib
 import sys
 
@@ -169,15 +170,35 @@ MATERIALS = {
 FLOOR_MAT = {"hout": "floor_hout", "tegel": "floor_tegel", "steen": "floor_steen", "tapijt": "floor_tapijt"}
 
 
+TEXTURES = BUILD_DIR / "textures"
+
+
+def texture_index():
+    """Material textures made by textures.py (empty when not generated:
+    everything then falls back to the flat colours above, as in CI)."""
+    p = TEXTURES / "index.json"
+    return json.loads(p.read_text()) if p.exists() else {}
+
+
 def make_materials():
+    """(Re)build every M_<name> material. Idempotent: the node tree is
+    rebuilt from scratch, so scripts that open an earlier .blend pick up
+    new textures and colours."""
     mats = {}
+    tex = texture_index()
     for name, spec in MATERIALS.items():
         m = bpy.data.materials.get("M_" + name) or bpy.data.materials.new("M_" + name)
         m.use_nodes = True
-        bsdf = m.node_tree.nodes.get("Principled BSDF")
+        nt = m.node_tree
+        nt.nodes.clear()
+        out = nt.nodes.new("ShaderNodeOutputMaterial")
+        bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+        nt.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
         bsdf.inputs["Base Color"].default_value = srgb(spec["color"])
         bsdf.inputs["Roughness"].default_value = spec["rough"]
         bsdf.inputs["Metallic"].default_value = spec.get("metal", 0.0)
+        if name in tex:
+            add_textures(nt, bsdf, name, tex[name])
         if "emit" in spec:
             bsdf.inputs["Emission Color"].default_value = srgb(spec["color"])
             bsdf.inputs["Emission Strength"].default_value = spec["emit"]
@@ -190,6 +211,41 @@ def make_materials():
             m.use_backface_culling = False
         mats[name] = m
     return mats
+
+
+def add_textures(nt, bsdf, name, info):
+    """Colour / roughness / normal maps on the world-scale UVs (1 unit =
+    1 m): the Mapping node scales them to their real size and turns them by
+    `rot` (scale is applied before rotation, hence the swap at 90°)."""
+    sx, sy = info["size"]
+    rot = info.get("rot", 0) % 180
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    mp = nt.nodes.new("ShaderNodeMapping")
+    mp.inputs["Scale"].default_value = (1 / sy, 1 / sx, 1) if rot == 90 else (1 / sx, 1 / sy, 1)
+    mp.inputs["Rotation"].default_value = (0, 0, math.radians(rot))
+    nt.links.new(tc.outputs["UV"], mp.inputs["Vector"])
+
+    def image(kind, color_space):
+        p = TEXTURES / f"{name}_{kind}.jpg"
+        if not p.exists():
+            return None
+        node = nt.nodes.new("ShaderNodeTexImage")
+        node.image = bpy.data.images.load(str(p), check_existing=True)
+        node.image.colorspace_settings.name = color_space
+        nt.links.new(mp.outputs["Vector"], node.inputs["Vector"])
+        return node
+
+    c = image("color", "sRGB")
+    if c:
+        nt.links.new(c.outputs["Color"], bsdf.inputs["Base Color"])
+    r = image("rough", "Non-Color")
+    if r:
+        nt.links.new(r.outputs["Color"], bsdf.inputs["Roughness"])
+    n = image("normal", "Non-Color")
+    if n:
+        nm = nt.nodes.new("ShaderNodeNormalMap")
+        nt.links.new(n.outputs["Color"], nm.inputs["Color"])
+        nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
 
 
 # ---------------------------------------------------------------- mesh builder

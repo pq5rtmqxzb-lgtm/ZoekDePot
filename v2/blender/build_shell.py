@@ -549,7 +549,8 @@ def main():
     glb = BUILD_DIR / "shell.glb"
     bpy.ops.wm.save_as_mainfile(filepath=str(blend))
     bpy.ops.export_scene.gltf(filepath=str(glb), export_format="GLB", export_extras=True,
-                              export_apply=True, export_yup=True)
+                              export_apply=True, export_yup=True,
+                              export_image_format="JPEG", export_jpeg_quality=85)
     faces = sum(len(o.data.polygons) for o in walls + others)
     print(f"shell: {len(walls)} wall objects, {len(others)} other objects, {faces} faces")
     print(f"wrote {blend.relative_to(BUILD_DIR.parents[1])} and {glb.relative_to(BUILD_DIR.parents[1])} "
