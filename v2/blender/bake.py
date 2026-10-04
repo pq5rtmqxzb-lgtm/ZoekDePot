@@ -4,6 +4,7 @@
     blender -b -P v2/blender/bake.py -- --quality final   # 4K, GPU (laptop)
     ... [--moods day,evening,night] [--groups shell,furniture] [--size 1024] [--samples 32]
     ... [--smooth 1.2] [--out some/dir]   (test bake: only lightmaps, nothing else written)
+    ... --reprocess 1 [--smooth 0.8]      (redo denoise/smoothing from lightmaps/raw/*.npz)
 
 Reads v2/build/scene.blend and writes, to v2/build/:
 - lightmaps/<mood>_<group>.png  — irradiance (light only, no surface colour),
@@ -44,13 +45,17 @@ QUALITY = {
     "final": dict(size=4096, samples=1024, device="GPU", margin=16, smooth=0.6),
 }
 LM = "Lightmap"
+# furniture islands are small (few texels per panel) and mostly lit
+# indirectly: noisier, so they get twice the in-island smoothing
+SMOOTH_SCALE = {"furniture": 2.0}
 SHELL_COLLECTIONS = ("walls", "floors", "ceilings", "frames", "railings")
 SKIP_MATERIALS = {"M_glass", "M_frosted", "M_sheer", "M_bulb"}
 
 
 def parse():
     a = script_args()
-    opts = {"quality": "draft", "moods": ",".join(MOODS), "groups": "shell,furniture,exterior", "out": ""}
+    opts = {"quality": "draft", "moods": ",".join(MOODS), "groups": "shell,furniture,exterior", "out": "",
+            "reprocess": "0"}
     for i in range(0, len(a) - 1, 2):
         opts[a[i].lstrip("-")] = a[i + 1]
     q = dict(QUALITY[opts["quality"]])
@@ -61,6 +66,7 @@ def parse():
         global OUT
         OUT = Path(opts["out"]).resolve()
         q["test"] = True
+    q["reprocess"] = opts["reprocess"] not in ("0", "")
     return opts["quality"], q, opts["moods"].split(","), opts["groups"].split(",")
 
 
@@ -268,17 +274,16 @@ def pixels(img):
     return a.reshape(img.size[1], img.size[0], 4)
 
 
-def smooth_islands(img, sigma):
+def smooth_islands(rgb, mask, sigma):
     """Gaussian blur that stays inside the baked texels (normalised
-    convolution with the coverage mask). OIDN keeps thin islands (reveals,
-    frames, chair legs: a few texels wide) as they are, texel noise
-    included; a 1-2 px blur takes that out without crossing the empty gap
-    between islands."""
+    convolution with the coverage mask), run AFTER denoising: OIDN keeps
+    thin islands (reveals, frames, chair legs: a few texels wide) as they
+    are, texel noise included; a 1-2 px blur takes that out without
+    crossing the empty gap between islands. (Blurring before OIDN turns
+    the noise into blotches it then keeps as detail.)"""
     if sigma <= 0:
-        return
-    a = pixels(img)
-    rgb = a[..., :3]
-    mask = (rgb.max(axis=-1) > 0).astype(np.float32)
+        return rgb
+    m = mask.astype(np.float32)
     r = max(1, int(math.ceil(2.5 * sigma)))
     k = np.exp(-0.5 * (np.arange(-r, r + 1) / sigma) ** 2).astype(np.float32)
     k /= k.sum()
@@ -291,21 +296,18 @@ def smooth_islands(img, sigma):
             x = acc
         return x
 
-    num = blur(rgb * mask[..., None])
-    den = blur(mask)
-    out = np.where(mask[..., None] > 0, num / np.maximum(den, 1e-6)[..., None], 0)
-    a[..., :3] = out
-    img.pixels.foreach_set(a.ravel())
+    num = blur(rgb * m[..., None])
+    den = blur(m)
+    return np.where(mask[..., None], num / np.maximum(den, 1e-6)[..., None], 0).astype(np.float32)
 
 
-def fill_empty(img, steps=48):
+def fill_empty(rgb, known, steps=48):
     """Grow the baked islands into the empty atlas (each empty texel takes
     the mean of its baked neighbours, repeatedly). Without it the black
     background bleeds into island edges when denoising and in the viewer's
     mipmaps — dark seams along every edge."""
-    a = pixels(img)
-    rgb = a[..., :3].copy()
-    known = rgb.max(axis=-1) > 0
+    rgb = rgb.copy()
+    known = known.copy()
     for _ in range(steps):
         if known.all():
             break
@@ -318,10 +320,21 @@ def fill_empty(img, steps=48):
         grow = ~known & (cnt > 0)
         rgb[grow] = acc[grow] / cnt[grow][:, None]
         known = known | grow
-    a[..., :3] = rgb
+    return rgb
+
+
+def postprocess(img, size, sigma):
+    """Raw bake (no margin: empty texels are exactly 0) -> filled ->
+    OIDN -> in-island smoothing -> filled again. Returns (linear RGB,
+    mask of the baked texels)."""
+    a = pixels(img)
+    mask = a[..., :3].max(axis=-1) > 0
+    a[..., :3] = fill_empty(a[..., :3], mask)
     a[..., 3] = 1.0
     img.pixels.foreach_set(a.ravel())
-    return known
+    clean = denoise(img, size)[..., :3]
+    clean = smooth_islands(clean, mask, sigma)
+    return fill_empty(clean, mask), mask
 
 
 def denoise(img, size):
@@ -357,11 +370,13 @@ def denoise(img, size):
     return a
 
 
-def encode(a, path):
+def encode(a, path, mask):
     """Linear irradiance -> scale + sRGB-encoded 8-bit PNG. The scale keeps
-    the brightest 0.5 % (sun patches, lamp shades) from crushing the rest."""
+    the brightest 0.5 % of the baked texels (sun patches, lamp shades) from
+    crushing the rest; the filled gaps between islands don't count (a
+    bright island next to a big gap would otherwise set the scale)."""
     rgb = np.maximum(a[..., :3], 0)
-    lit = rgb.max(axis=-1)
+    lit = rgb.max(axis=-1)[mask]
     valid = lit[lit > 1e-5]
     scale = float(np.percentile(valid, 99.5)) if valid.size else 1.0
     x = np.clip(rgb / max(scale, 1e-6), 0, 1)
@@ -371,8 +386,42 @@ def encode(a, path):
     return scale
 
 
+def save_raw(img, path):
+    """The raw bake as numbers (float16 RGB). Not via Image.save(): Blender
+    writes a generated float image to EXR with the sRGB curve applied."""
+    path.parent.mkdir(exist_ok=True)
+    np.savez_compressed(path, rgb=pixels(img)[..., :3].astype(np.float16))
+
+
+def load_raw(path):
+    rgb = np.load(path)["rgb"].astype(np.float32)
+    h, w = rgb.shape[:2]
+    img = bpy.data.images.new(path.stem, w, h, float_buffer=True)
+    a = np.concatenate([rgb, np.ones((h, w, 1), np.float32)], axis=-1)
+    img.pixels.foreach_set(a.ravel())
+    return img
+
+
+def reprocess(q):
+    """Redo denoise / smoothing / encoding from the raw bakes kept in
+    lightmaps/raw/*.npz (no Cycles, no UV changes): --reprocess 1 [--smooth 0.8]."""
+    manifest = json.loads((OUT / "manifest.json").read_text())
+    for raw in sorted((OUT / "raw").glob("*.npz")):
+        mood, g = raw.stem.split("_", 1)
+        img = load_raw(raw)
+        clean, mask = postprocess(img, img.size[0], q["smooth"] * SMOOTH_SCALE.get(g, 1.0))
+        bpy.data.images.remove(img)
+        name = f"{mood}_{g}.png"
+        scale = encode(clean, OUT / name, mask)
+        manifest["maps"].setdefault(mood, {})[g] = {"file": name, "scale": round(scale, 4)}
+        print(f"[{mood}/{g}] reprocessed, scale {scale:.3f}", flush=True)
+    (OUT / "manifest.json").write_text(json.dumps(manifest, indent=1))
+
+
 def main():
     quality, q, moods, groups = parse()
+    if q["reprocess"]:
+        return reprocess(q)
     t0 = time.time()
     bpy.ops.wm.open_mainfile(filepath=str(BUILD_DIR / "scene.blend"))
     scene = bpy.context.scene
@@ -423,11 +472,10 @@ def main():
             img = bpy.data.images.new(f"LM_{mood}_{g}", size, size, float_buffer=True)
             t = time.time()
             bake_group(objs, img, q)
-            smooth_islands(img, q["smooth"])
-            fill_empty(img)
-            clean = denoise(img, size)
+            save_raw(img, OUT / "raw" / f"{mood}_{g}.npz")   # for --reprocess
+            clean, mask = postprocess(img, size, q["smooth"] * SMOOTH_SCALE.get(g, 1.0))
             name = f"{mood}_{g}.png"
-            scale = encode(clean, OUT / name)
+            scale = encode(clean, OUT / name, mask)
             manifest["maps"][mood][g] = {"file": name, "scale": round(scale, 4)}
             bpy.data.images.remove(img)
             print(f"[{mood}/{g}] baked {size}px x {q['samples']} samples in {time.time() - t:.0f}s, "
