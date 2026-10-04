@@ -391,6 +391,9 @@ def main():
                 continue
         for d in prefs.devices:
             d.use = True
+        gpus = [d.name for d in prefs.devices if d.type != "CPU"]
+        print(f"GPU: {prefs.compute_device_type} {', '.join(gpus)}" if gpus
+              else "WARNING: no GPU found, baking on the CPU (slow at final quality)", flush=True)
     scene.cycles.samples = q["samples"]
     scene.cycles.max_bounces, scene.cycles.diffuse_bounces = 8, 6
     scene.cycles.caustics_reflective = scene.cycles.caustics_refractive = False

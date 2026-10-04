@@ -120,15 +120,28 @@ path-traced render (`docs/renders/lmcompare_<view>.png`) to check the bake.
 | `draft` (default) | cloud CPU | 2048 px, 64 samples | ~10 min per map |
 | `final` | laptop, GPU | 4096 px, 1024 samples | minutes per map on a recent GPU |
 
-On the laptop (Blender 4.5 LTS):
+On the laptop — the same route as the cloud: Blender as a Python module
+(`bpy` 4.5 needs **Python 3.11**; Blender's own Python lacks Pillow, which
+`textures.py` and `bake.py` use). Also needs git and Node.js 20+.
 
 ```sh
-git pull
-python v2/blender/textures.py                       # or reuse a copied v2/build/textures
-blender -b -P v2/blender/build_shell.py
-blender -b -P v2/blender/build_furniture.py
-blender -b -P v2/blender/bake.py -- --quality final
+git clone https://github.com/pq5rtmqxzb-lgtm/ZoekDePot.git && cd ZoekDePot
+python3.11 -m venv .venv
+source .venv/bin/activate                 # Windows: .venv\Scripts\activate
+pip install -r v2/blender/requirements.txt
+
+python v2/blender/textures.py             # CC0 scans -> v2/build/textures (downloads)
+python v2/blender/build_shell.py
+python v2/blender/build_furniture.py
+python v2/blender/export_collision.py
+python v2/blender/bake.py --quality final # first line says which GPU it uses
+
+cd v2/web && npm install && npm run assets && npm run site
+git checkout -b bake-final && git add ../preview && git commit -m "Final bake" && git push -u origin bake-final
 ```
+
+The bake prints one line per map; `v2/build/scene.glb` (>100 MB) is too big
+for GitHub, so the compressed `v2/preview/` is what goes in the commit.
 
 Cycles bakes every selected object separately and re-syncs the scene each
 time (~2 s per object), so `bake.py` bakes each group as one temporary
