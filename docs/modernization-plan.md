@@ -154,6 +154,8 @@ cloud machine has 4 CPU cores and no GPU, so:
 - Done 2026-10-04: v1 = `main` @ `620add7`. The cloud session can't push tags, so
   create the `v1` tag on GitHub (Releases → "Draft a new release" → tag `v1` on that commit).
 - Tag the current `main` as `v1`. v1 stays live at the current URL until v2 matches it.
+- **2026-10-04:** v1 removed (app, vendored three.js, its smoke test); v2 is the site,
+  published from `v2/site/`. v1's last state stays reachable at commit `620add7`.
 - Create a `v2/` folder in the same repo. `data/model.json` and `tools/` stay shared.
 
 ### Phase 1 — Generate the shell in Blender ✅

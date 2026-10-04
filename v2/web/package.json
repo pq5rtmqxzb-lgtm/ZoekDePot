@@ -9,7 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "node scripts/smoke.mjs",
-    "site": "vite build --outDir ../preview --emptyOutDir"
+    "site": "vite build --outDir ../site --emptyOutDir"
   },
   "dependencies": {
     "three": "^0.186.1"
