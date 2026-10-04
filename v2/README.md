@@ -48,10 +48,11 @@ another piece, or leaves its room.
 | Room | Pieces |
 |---|---|
 | Woonkamer, zithoek | 3-zitsbank 240x95 (linnen), bouclé fauteuil, salontafel 120x60 eiken, tv-meubel 180 + 65" tv, boekenkast 180x210, vloerkleed 300x250, vloerlamp, plant |
-| Woonkamer, eethoek | **eigen tafel 260x100**, 8 eiken stoelen met linnen zitkussen, 2 hanglampen, dressoir 120x45 met tafellamp |
+| Woonkamer, eethoek (zuid) | **eigen tafel 260x100** bij de grote zuidpui, 8 eiken stoelen met linnen zitkussen, 2 hanglampen |
 | Keuken | **eigen keuken: SieMatic SLX** volgens de keukentekeningen (greeploos, mat gelakte fronten licht greige, bronskleurige greepkanalen), werkblad **Caesarstone 4230 Shitake**. Hoge kastenwand 2,57 m tot aan het plafond (extra rij kasten) met twee zwarte Siemens-ovens en de Siemens inbouwkoelkast; kookeiland 2574 x 1000 x 950 met Siemens inductie + afzuiging, Franke Maris spoelbak + Lina XL kraan in Coffee, vaatwasser, twee krukken in het midden; 2 hanglampen |
-| Woonkamer, zuid | 2 linnen fauteuils + bijzettafel bij de grote pui, vloerkleed, vloerlamp, planten, vitrage |
-| Slaapkamer 1 | **eigen bed 140x200** met gestoffeerd hoofdbord, nachtkastje + lamp, kledingkast 160x60x230, leesstoel + lamp in de NW-punt, verduisterend linnen |
+| Woonkamer, midden | 2 linnen fauteuils + bijzettafel naar de zithoek gericht, vloerkleed, vloerlamp; dressoir 120x45 met tafellamp tegen het badkamerblok |
+| Woonkamer, zuid | planten, vitrage |
+| Slaapkamer 1 | **eigen bed 140x200** met gestoffeerd hoofdbord tegen de lange schuine wand, 2 nachtkastjes + lampen, kledingkast 160x60x230, leesstoel + lamp tegen de oostwand, verduisterend linnen |
 | Slaapkamer 2 | **eigen bed 140x200**, 2 nachtkastjes, kledingkast 200x60x230, bureau 120x60 met stoel in de nis |
 | Badkamer (nieuwe indeling) | **eigen ontwerp**: wastafel met spiegel + radiator op de noordwand; douchetoilet op een voorzetwand (toiletgedeelte); inloopdouche met wandje met nis tegen de kolom, glazen douchewand, regendouche uit het plafond, douchegoot en getegeld bankje. Tegels: vloer + toiletgedeelte lichte beige steenlook 60x60, noord- en oostwand grijze reliëftegel, douche Grespania Rambla 7,5x30 groen (staand) |
 | Kleine badkamer, toilet | inloopdouche, dubbele wastafel, designradiator; hangtoilet op voorzetwand, fontein |
@@ -178,7 +179,11 @@ is a build output (~40 MB of model and lightmaps): rebuild it with
   go faster, Q/E to turn. Touch: drag the left half to walk, the right half to
   look. Collision against the same walls and furniture footprints that
   `check_furniture.py` verifies (`export_collision.py`); schuifpuien are open
-  on their sliding half, as in v1.
+  on their sliding half, as in v1. Eye height 1.68 m.
+- **Wide view:** `V` or the *Breed* button switches from 78° to 100°
+  horizontally. A screen shows far less than the eye takes in (at 78° on a
+  16:9 screen the floor only enters the picture ~3.7 m ahead), so rooms feel
+  smaller than they are; the wide view brings floor and ceiling into view.
 - **Moods:** Dag / Avond / Nacht buttons switch the lightmap set live.
 - **Renderer:** WebGL2 (`WebGLRenderer`). WebGPU brings nothing here yet —
   everything is baked, so the GPU only draws ~370 textured batches — and
@@ -188,7 +193,7 @@ is a build output (~40 MB of model and lightmaps): rebuild it with
   a navmesh adds a dependency without changing how walking feels.
 - **URL:** `?pos=x,z,yaw,pitch&mood=evening` (yaw/pitch in degrees; three.js
   rotation: yaw 0 looks north) — used by the smoke test. `&hud=0` hides the
-  help panel.
+  help panel, `&view=wide` starts in the wide view.
 - **Quality tiers:** `full` on desktops (textures up to 2K, full lightmaps,
   4x MSAA + a light bloom on lamp bulbs and sun patches), `lite` on touch
   devices such as the iPad (textures up to 1K, lightmaps at half size, about

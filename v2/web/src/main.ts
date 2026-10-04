@@ -13,7 +13,7 @@ import { Lightmaps, MOOD_LOOK, type Manifest, type Mood } from "./lightmaps";
 import { Walker } from "./controls";
 
 const ASSETS = `${import.meta.env.BASE_URL}assets`;
-const EYE = 1.70, RADIUS = 0.25, SPEED = 1.4, HFOV = 78;
+const EYE = 1.68, RADIUS = 0.25, SPEED = 1.4, HFOV = 78, HFOV_WIDE = 100;
 
 // quality tier: full on desktops (2K textures, full lightmaps, bloom),
 // lite on touch devices (1K textures, half-size lightmaps, no post-processing);
@@ -21,6 +21,9 @@ const EYE = 1.70, RADIUS = 0.25, SPEED = 1.4, HFOV = 78;
 const query = new URLSearchParams(location.search);
 const tier = query.get("quality") ?? (matchMedia("(pointer: coarse)").matches ? "lite" : "full");
 const lite = tier === "lite";
+// wide view (V key, "Breed" button, ?view=wide): 100° instead of 78°, so more
+// floor and ceiling are in view and a room reads closer to its real size
+let wide = query.get("view") === "wide";
 
 const canvas = document.getElementById("view") as HTMLCanvasElement;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
@@ -54,12 +57,23 @@ function resize(): void {
   composer?.setSize(w, h);
   camera.aspect = w / h;
   // hold ~78° horizontally like the Blender previews (and v1), clamp on portrait screens
-  const v = 2 * Math.atan(Math.tan((HFOV * Math.PI) / 360) / camera.aspect) * (180 / Math.PI);
-  camera.fov = Math.max(45, Math.min(80, v));
+  const hfov = wide ? HFOV_WIDE : HFOV;
+  const v = 2 * Math.atan(Math.tan((hfov * Math.PI) / 360) / camera.aspect) * (180 / Math.PI);
+  camera.fov = Math.max(45, Math.min(wide ? 100 : 80, v));
   camera.updateProjectionMatrix();
 }
 addEventListener("resize", resize);
 resize();
+
+const wideBtn = document.getElementById("wide")!;
+function setWide(w: boolean): void {
+  wide = w;
+  wideBtn.setAttribute("aria-pressed", String(w));
+  resize();
+}
+setWide(wide);
+wideBtn.addEventListener("click", (e) => { e.stopPropagation(); setWide(!wide); });
+addEventListener("keydown", (e) => { if (e.code === "KeyV" && !e.repeat) setWide(!wide); });
 
 const loadBar = document.getElementById("load")!;
 const loadText = document.getElementById("loadtext")!;
@@ -160,7 +174,7 @@ requestAnimationFrame(frame);
 // test hooks (smoke test / screenshots)
 Object.assign(window, {
   __viewer: {
-    state: () => ({ x: pos.x, z: pos.z, yaw: walker.yaw, room: lastRoom, mood, tier,
+    state: () => ({ x: pos.x, z: pos.z, yaw: walker.yaw, room: lastRoom, mood, tier, wide, fov: camera.fov,
       baked: lightmaps.bakedMaterialCount, info: renderer.info.render,
       fps: 1000 / frameMs, textures: renderer.info.memory.textures }),
     setMood,
