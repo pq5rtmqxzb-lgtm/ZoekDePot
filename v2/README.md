@@ -26,7 +26,7 @@ v1 stays untouched and live until v2 is better.
 | ![Eettafel](docs/renders/eettafel.png) | ![Keuken](docs/renders/keuken.png) |
 | ![Kookeiland](docs/renders/eiland.png) | ![SieMatic SLX](docs/renders/slx.png) |
 | ![Slaapkamer 1](docs/renders/slaapk1.png) | |
-| ![Slaapkamer 2](docs/renders/slaapk2.png) | ![Badkamer](docs/renders/badkamer.png) |
+| ![Slaapkamer 2](docs/renders/slaapk2.png) | ![Badkamer](docs/renders/badkamer2.png) |
 | ![Gang](docs/renders/gang.png) | ![Dollhouse](docs/renders/dollhouse.png) |
 
 Day views: sky + sun for Den Haag at 15:30 in late April, lamps off except
@@ -53,7 +53,8 @@ another piece, or leaves its room.
 | Woonkamer, zuid | 2 linnen fauteuils + bijzettafel bij de grote pui, vloerkleed, vloerlamp, planten, vitrage |
 | Slaapkamer 1 | **eigen bed 140x200** met gestoffeerd hoofdbord, nachtkastje + lamp, kledingkast 160x60x230, leesstoel + lamp in de NW-punt, verduisterend linnen |
 | Slaapkamer 2 | **eigen bed 140x200**, 2 nachtkastjes, kledingkast 200x60x230, bureau 120x60 met stoel in de nis |
-| Badkamers, toilet | vrijstaand bad, inloopdouches, hangtoiletten op voorzetwanden, wastafelmeubels (1 en 2 kommen), designradiatoren, fontein |
+| Badkamer (nieuwe indeling) | **eigen ontwerp**: wastafel met spiegel + radiator op de noordwand; douchetoilet op een voorzetwand (toiletgedeelte); inloopdouche met wandje met nis tegen de kolom, glazen douchewand, regendouche uit het plafond, douchegoot en getegeld bankje. Tegels: vloer + toiletgedeelte lichte beige steenlook 60x60, noord- en oostwand grijze reliëftegel, douche Grespania Rambla 7,5x30 groen (staand) |
+| Kleine badkamer, toilet | inloopdouche, dubbele wastafel, designradiator; hangtoilet op voorzetwand, fontein |
 | Gang, berging | kapstok + schoenenbank, loper, inbouwspots; WTW, boiler, verdeler, wasmachine + droger |
 | Balkons | noord: bistroset + plantenbak; zuid: loungebank, 2 stoelen, tafel, planten |
 
@@ -72,7 +73,11 @@ not committed) and writes the final maps to `v2/build/textures/`.
 | Finish | How |
 |---|---|
 | **Vloer: eiken lamel, onbehandeld** | composed plank by plank from two raw-oak scans (`oak_veneer_03`, `silver_oak_veneer_01`): 19 cm wide, 1.0–2.2 m long, staggered, fine V-groove, matt (roughness 0.70), running north–south. Colour `#D5C2A2`. |
-| Badkamertegels | composed: 60x60 floor, 30x60 wall (laid horizontally), grout lines, slight tone per tile |
+| Badkamertegels | composed from a height map (grout recess, bevels, relief, glaze waves): main bathroom per the owners' samples — beige stone look 60x60 with speckles (floor, toilet section), grey-beige relief tile (north + east wall, hexagon relief approximated), Grespania Rambla 7.5x30 glossy green with handmade undulation (shower); other wet rooms 60x60 floor, 30x60 wall |
+
+Per-room finishes live under `"rooms"` in `materials.json`: the floor
+material and wall rules (which wall, optional x/z range → material), first
+match wins. The main bathroom uses them to mix three tiles and paint.
 | Wanden, plafonds | `white_stucco`, tinted (walls stay repaintable) |
 | Linnen, bouclé, jute, wol | `rough_linen`, `curly_teddy_natural`, `hessian_230`, `poly_wool_herringbone`, each recoloured |
 | Kozijnen (Red Grandis), gevel (Basralocus) | `sapele_veneer`, `wood_planks_grey` |

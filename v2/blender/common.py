@@ -170,7 +170,41 @@ MATERIALS = {
     "kitchen_front": dict(color=0xBDB7AE, rough=0.55),
     "kitchen_grip":  dict(color=0x6B5A49, rough=0.38, metal=1.0),
     "worktop":       dict(color=0xA89B8A, rough=0.55),
+    # main bathroom (owners' choice, 2026-10)
+    "bath_stone":    dict(color=0xD6CCBF, rough=0.55),
+    "bath_relief":   dict(color=0xDAD5CC, rough=0.50),
+    "bath_green":    dict(color=0x3E4C44, rough=0.07),
 }
+
+MATERIALS_JSON = ROOT / "v2" / "data" / "materials.json"
+
+
+def room_finishes():
+    """Per-room finish rules from materials.json ("rooms")."""
+    if not MATERIALS_JSON.exists():
+        return {}
+    rooms = json.loads(MATERIALS_JSON.read_text()).get("rooms", {})
+    return {k: v for k, v in rooms.items() if not k.startswith("_")}
+
+
+SIDE_OF_NORMAL = {(0, 1): "north", (0, -1): "south", (-1, 0): "east", (1, 0): "west"}
+
+
+def wall_finish(rules, nx, nz, px, pz):
+    """Material for a room-side wall face (model-frame normal and centre)
+    from a room's rules, or None. A face on the north wall looks south (+z)."""
+    if abs(nx) < 0.9 and abs(nz) < 0.9:
+        return None
+    side = SIDE_OF_NORMAL[(round(nx), round(nz))]
+    for r in rules.get("walls", []):
+        if r["wall"] != side:
+            continue
+        if "x" in r and not (r["x"][0] <= px <= r["x"][1]):
+            continue
+        if "z" in r and not (r["z"][0] <= pz <= r["z"][1]):
+            continue
+        return r["material"]
+    return None
 FLOOR_MAT = {"hout": "floor_hout", "tegel": "floor_tegel", "steen": "floor_steen", "tapijt": "floor_tapijt"}
 
 

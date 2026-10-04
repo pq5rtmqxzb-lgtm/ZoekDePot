@@ -39,7 +39,21 @@ FOOTPRINT = {
     "chair":        lambda it: (0.44, 0.44, 0.0),
     "bistro_table": lambda it: (0.56, 0.56, 0.0),
     "planter":      lambda it: (it.get("w", 1.6), it.get("d", 0.28), 0.0),
+    "wall_toilet":  lambda it: (0.40, 0.62, 0.01),
+    "vanity":       lambda it: (it.get("w", 1.0), 0.48, 0.0),
+    "radiator":     lambda it: (it.get("w", 0.5), 0.10, 0.0),
 }
+# built-ins given as an axis-aligned box x1..x2, z1..z2
+AXIS_BOXES = {"voorzetwand", "tiled_bench", "niche_wall"}
+
+
+def as_footprint(it):
+    """(item with x, z, rot, footprint fn) for any piece with a footprint."""
+    if it["type"] in AXIS_BOXES:
+        w, d = it["x2"] - it["x1"], it["z2"] - it["z1"]
+        box = dict(it, x=(it["x1"] + it["x2"]) / 2, z=(it["z1"] + it["z2"]) / 2, rot=0)
+        return box, (lambda _it, w=w, d=d: (w, d, 0.0))
+    return it, FOOTPRINT.get(it["type"])
 
 
 def main():
@@ -54,7 +68,7 @@ def main():
     problems = [f"duplicate id {i!r}" for i in set(ids) if ids.count(i) > 1]
     checked = 0
     for it in items:
-        fp = FOOTPRINT.get(it["type"])
+        it, fp = as_footprint(it)
         if fp is None:
             continue
         checked += 1
@@ -89,7 +103,7 @@ def main():
     # furniture against furniture: sample each footprint inside every other one
     rects = []
     for it in items:
-        fp = FOOTPRINT.get(it["type"])
+        it, fp = as_footprint(it)
         if fp:
             w, d, oz0 = fp(it)
             rects.append((it, w, d, oz0, math.radians(it.get("rot", 0))))

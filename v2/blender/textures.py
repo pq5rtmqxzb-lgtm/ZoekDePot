@@ -190,39 +190,99 @@ def make_planks(name, spec, res, ppm=1024):
     return {"size": [W / ppm, H / ppm], "rot": spec.get("rot", 0)}
 
 
+def _smooth_noise(rng, h, w, cells):
+    """Smooth random field (0 mean, ~unit std) of size h x w with about
+    `cells` random knots across the shorter side."""
+    k = max(2, int(cells))
+    gh, gw = max(2, round(k * h / min(h, w))), max(2, round(k * w / min(h, w)))
+    g = rng.normal(0, 1, (gh, gw)).astype(np.float32)
+    im = Image.fromarray(((g - g.min()) / (np.ptp(g) + 1e-6) * 255).astype(np.uint8), "L").resize((w, h), Image.BICUBIC)
+    a = np.asarray(im, np.float32) / 255.0
+    return (a - a.mean()) / (a.std() + 1e-6)
+
+
+def _hex_ridges(u, v, size, width):
+    """1 on the outlines of a pointy-top hexagon grid (cell radius `size`),
+    falling off over `width`; u, v in metres, tile-local."""
+    q = (np.sqrt(3) / 3 * u - v / 3) / size
+    r = (2 / 3 * v) / size
+    x, z = q, r
+    y = -x - z
+    rx, ry, rz = np.round(x), np.round(y), np.round(z)
+    dx, dy, dz = np.abs(rx - x), np.abs(ry - y), np.abs(rz - z)
+    fix_x = (dx > dy) & (dx > dz)
+    fix_y = ~fix_x & (dy > dz)
+    rx = np.where(fix_x, -ry - rz, rx)
+    ry = np.where(fix_y, -rx - rz, ry)
+    rz = -rx - ry
+    cu = size * np.sqrt(3) * (rx + rz / 2)                # centre of the nearest hex
+    cv = size * 1.5 * rz
+    pu, pv = u - cu, v - cv
+    apothem = size * np.sqrt(3) / 2
+    m = np.maximum(np.abs(pu), np.abs(pu * 0.5 + pv * np.sqrt(3) / 2))
+    m = np.maximum(m, np.abs(pu * 0.5 - pv * np.sqrt(3) / 2))
+    edge = apothem - m                                    # distance to the hex outline
+    return np.clip(1 - edge / width, 0, 1)
+
+
 def make_tiles(name, spec, res, ppm=1024):
+    """Tiles from a height map: tile faces, grout recess with a small bevel,
+    optional raised relief (`relief: hex`), handmade glaze undulation
+    (`glaze` = height amplitude in m, plus `pillow` at the edges), speckles,
+    and per-tile tone/hue variation. Colour/roughness/normal follow."""
     rng = np.random.default_rng(spec.get("seed", 7))
     s = fetch(spec["source"], res)
     tw, th = spec["tile_size"]
-    nx, ny = max(1, round(1.2 / tw)), max(1, round(1.2 / th))   # ~1.2 m tile-able patch
+    nx, ny = max(1, round(1.2 / tw)), max(1, round(1.2 / th))    # ~1.2 m tileable patch
     W, H = round(nx * tw * ppm), round(ny * th * ppm)
     sw, sh = s["size"]
     base = resize(s["color"], round(sw * ppm), round(sh * ppm))
     reps = (int(np.ceil(H / base.shape[0])), int(np.ceil(W / base.shape[1])), 1)
     base = np.tile(base, reps)[:H, :W]
     L = lum(base)
-    detail = 1.0 + 0.6 * (L / L.mean() - 1.0)
-    color = hex_rgb(spec["color"])[None, None, :] * detail[..., None]
+    color = hex_rgb(spec["color"])[None, None, :] * (1.0 + spec.get("detail", 0.6) * (L / L.mean() - 1.0))[..., None]
+
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    cw, ch = W / nx, H / ny
+    lx, ly = xx % cw, yy % ch                                       # px inside the tile
+    d = np.minimum(np.minimum(lx, cw - lx), np.minimum(ly, ch - ly))
+    half = spec.get("grout", 0.003) * ppm / 2
+    gm = np.clip(half + 1 - d, 0, 1)                                # 1 in the grout
+    height = np.zeros((H, W), np.float32)
+    bevel = 1.5e-3 * ppm
+    height -= 0.0015 * np.clip(1 - (d - half) / bevel, 0, 1)        # bevel + grout recess (m)
+    # per tile: tone, hue, glaze undulation
+    glaze = spec.get("glaze", 0.0)
     for j in range(ny):
         for i in range(nx):
             y0, y1 = round(j * H / ny), round((j + 1) * H / ny)
             x0, x1 = round(i * W / nx), round((i + 1) * W / nx)
-            color[y0:y1, x0:x1] *= 1.0 + rng.normal(0, spec.get("variation", 0.02))
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    cw, ch = W / nx, H / ny
-    dx = np.minimum(xx % cw, cw - (xx % cw))
-    dy = np.minimum(yy % ch, ch - (yy % ch))
-    half = spec.get("grout", 0.003) * ppm / 2
-    d = np.minimum(dx, dy)
-    gm = np.clip((half + 1 - d), 0, 1)[..., None]                  # 1 in the grout
-    color = color * (1 - gm) + hex_rgb(spec["grout_color"])[None, None, :] * gm
+            tone = 1.0 + rng.normal(0, spec.get("variation", 0.02))
+            hue = 1.0 + rng.normal(0, spec.get("hue_variation", 0.0), 3)
+            color[y0:y1, x0:x1] *= (tone * hue)[None, None, :].astype(np.float32)
+            if glaze:
+                height[y0:y1, x0:x1] += glaze * _smooth_noise(rng, y1 - y0, x1 - x0, 3 + rng.integers(3))
+    if spec.get("pillow"):
+        height -= spec["pillow"] * (1 - np.clip(d / (0.012 * ppm), 0, 1)) ** 2
+    if spec.get("relief") == "hex":
+        u, v = (lx - cw / 2) / ppm, (ly - ch / 2) / ppm
+        ridge = _hex_ridges(u, v, spec.get("relief_size", 0.12), spec.get("relief_width", 0.0025))
+        height += spec.get("relief_height", 0.0008) * ridge
+        color *= (1 - 0.04 * ridge)[..., None]
+    if glaze:   # glaze pools darker in the hollows of a handmade tile
+        hn = (height - height.mean()) / (height.std() + 1e-9)
+        color *= (1 + 0.08 * np.clip(hn, -2, 2))[..., None]
+    if spec.get("speckle"):
+        dots = rng.random((H, W)) < spec["speckle"] / (ppm * ppm)   # density per m2
+        dots = dots | np.roll(dots, 1, 0) | np.roll(dots, 1, 1)
+        shade = np.where(rng.random((H, W)) < 0.7, 0.75, 1.12).astype(np.float32)
+        color = np.where(dots[..., None], color * shade[..., None], color)
+    color = color * (1 - gm[..., None]) + hex_rgb(spec["grout_color"])[None, None, :] * gm[..., None]
     rough = np.full((H, W), spec.get("roughness", 0.3), np.float32)
-    rough = rough * (1 - gm[..., 0]) + 0.85 * gm[..., 0]
-    # normal: tile edges slope into the grout over ~1.5 mm
-    bevel = half + 1.5e-3 * ppm
-    nxm = np.where(dx < bevel, np.sign((xx % cw) - cw / 2) * -0.35 * (1 - dx / bevel), 0) * (dx <= dy)
-    nym = np.where(dy < bevel, np.sign((yy % ch) - ch / 2) * 0.35 * (1 - dy / bevel), 0) * (dy < dx)
-    n = np.stack([nxm, nym, np.ones_like(nxm)], -1)
+    rough = rough * (1 - gm) + 0.85 * gm
+    # normal from the height map (OpenGL convention: +v is up = -row)
+    gy, gx = np.gradient(height * ppm)
+    n = np.stack([-gx, gy, np.ones_like(gx)], -1)
     n /= np.linalg.norm(n, axis=-1, keepdims=True)
     save(name, color, rough, n * 0.5 + 0.5)
     return {"size": [W / ppm, H / ppm], "rot": spec.get("rot", 0)}

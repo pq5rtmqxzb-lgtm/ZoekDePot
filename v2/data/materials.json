@@ -3,49 +3,364 @@
   "_doc": "Surface finishes for v2 (read by v2/blender/textures.py; materials not listed keep a flat colour from common.py). Keys are material names (M_<key> in Blender). kind: 'scan' = a CC0 Poly Haven scan (source) used as is (tint null) or recoloured to tint while keeping its weave/grain (detail = how much of the scan's light/dark variation survives, 0..1); 'planks' = a plank floor composed from raw-wood scans; 'tiles' = tiles with grout composed from a fine surface scan. Sizes in metres; colours sRGB hex; roughness 0 (gloss) .. 1 (matte); rot = degrees the texture turns on the surface.",
   "materials": {
     "floor_hout": {
-      "kind": "planks", "sources": ["oak_veneer_03", "silver_oak_veneer_01"],
-      "plank_width": 0.19, "plank_length": [1.0, 2.2], "tile": [4.8, 1.9],
-      "color": "#D5C2A2", "variation": 0.03, "roughness": 0.70, "groove": 0.0015, "rot": 90,
+      "kind": "planks",
+      "sources": [
+        "oak_veneer_03",
+        "silver_oak_veneer_01"
+      ],
+      "plank_width": 0.19,
+      "plank_length": [
+        1.0,
+        2.2
+      ],
+      "tile": [
+        4.8,
+        1.9
+      ],
+      "color": "#D5C2A2",
+      "variation": 0.03,
+      "roughness": 0.7,
+      "groove": 0.0015,
+      "rot": 90,
       "note": "Eiken lamelvloer, onbehandeld (licht, mat). Planken 19 cm breed, 1,0-2,2 m lang, lopen noord-zuid (rot 90)."
     },
     "floor_tegel": {
-      "kind": "tiles", "source": "white_stucco", "tile_size": [0.6, 0.6], "grout": 0.003,
-      "color": "#D5D1CA", "grout_color": "#A39F98", "variation": 0.02, "roughness": 0.40,
+      "kind": "tiles",
+      "source": "white_stucco",
+      "tile_size": [
+        0.6,
+        0.6
+      ],
+      "grout": 0.003,
+      "color": "#D5D1CA",
+      "grout_color": "#A39F98",
+      "variation": 0.02,
+      "roughness": 0.4,
       "note": "Badkamervloer: keramische tegel 60x60, warm lichtgrijs"
     },
     "wall_tile": {
-      "kind": "tiles", "source": "white_stucco", "tile_size": [0.6, 0.3], "grout": 0.002,
-      "color": "#DEDAD3", "grout_color": "#BAB5AD", "variation": 0.015, "roughness": 0.22,
+      "kind": "tiles",
+      "source": "white_stucco",
+      "tile_size": [
+        0.6,
+        0.3
+      ],
+      "grout": 0.002,
+      "color": "#DEDAD3",
+      "grout_color": "#BAB5AD",
+      "variation": 0.015,
+      "roughness": 0.22,
       "note": "Badkamerwand: 30x60 liggend, licht"
     },
-    "plaster":      { "kind": "scan", "source": "white_stucco", "tint": "#EDEAE4", "detail": 0.5, "roughness": 0.90 },
-    "ceiling":      { "kind": "scan", "source": "white_stucco", "tint": "#F4F3F0", "detail": 0.3, "roughness": 0.95 },
-    "limewash":     { "kind": "scan", "source": "painted_plaster_wall", "tint": null },
-    "floor_steen":  { "kind": "scan", "source": "concrete_tiles_02", "tint": null, "note": "Balkontegels" },
-    "floor_tapijt": { "kind": "scan", "source": "poly_wool_herringbone", "tint": "#8E8F92", "detail": 1.0, "note": "Corridor: tapijt gemeleerd lichtgrijs" },
-    "cladding":     { "kind": "scan", "source": "wood_planks_grey", "tint": null, "note": "Gevel: verticale Basralocus delen, vergrijsd" },
-    "facade_mass":  { "kind": "scan", "source": "wood_planks_grey", "tint": null },
-    "lamel":        { "kind": "scan", "source": "wood_planks_grey", "tint": null, "rot": 90 },
-    "frame_wood":   { "kind": "scan", "source": "sapele_veneer", "tint": "#7A3E26", "detail": 0.9, "note": "Kozijnen en puien: Red Grandis" },
-    "handrail":     { "kind": "scan", "source": "sapele_veneer", "tint": "#6E4630", "detail": 0.9 },
-    "concrete":     { "kind": "scan", "source": "concrete_wall_001", "tint": null },
-    "oak":          { "kind": "scan", "source": "oak_veneer_03", "tint": "#CDAF86", "detail": 0.9, "roughness": 0.55, "note": "Meubels: licht eiken" },
-    "oak_dark":     { "kind": "scan", "source": "oak_veneer_01", "tint": "#6E4C34", "detail": 0.9, "roughness": 0.55 },
-    "linen":        { "kind": "scan", "source": "rough_linen", "tint": "#B9B2A6", "detail": 0.8, "note": "Bank: linnen warm grijs" },
-    "linen_oat":    { "kind": "scan", "source": "rough_linen", "tint": "#D9D0C1", "detail": 0.8 },
-    "outdoor":      { "kind": "scan", "source": "rough_linen", "tint": "#8D877C", "detail": 0.8 },
-    "bedding":      { "kind": "scan", "source": "rough_linen", "tint": "#F4F2ED", "detail": 0.5 },
-    "duvet":        { "kind": "scan", "source": "rough_linen", "tint": "#E6E0D5", "detail": 0.6 },
-    "lampshade":    { "kind": "scan", "source": "rough_linen", "tint": "#EDE6D8", "detail": 0.5 },
-    "sheer":        { "kind": "scan", "source": "rough_linen", "tint": "#F3F0E9", "detail": 0.4 },
-    "boucle":       { "kind": "scan", "source": "curly_teddy_natural", "tint": "#EAE5DB", "detail": 0.9, "note": "Fauteuils: boucle" },
-    "headboard":    { "kind": "scan", "source": "poly_wool_herringbone", "tint": "#8A8F86", "detail": 1.0 },
-    "rug_oat":      { "kind": "scan", "source": "hessian_230", "tint": "#D3CAB9", "detail": 1.0, "note": "Vloerkleden: jute" },
-    "rug_taupe":    { "kind": "scan", "source": "hessian_230", "tint": "#8A7F72", "detail": 1.0 },
-    "rug_stone":    { "kind": "scan", "source": "poly_wool_herringbone", "tint": "#A9A398", "detail": 1.0, "note": "Woonkamerkleed: wol visgraat" },
-    "stone_light":  { "kind": "scan", "source": "white_stucco", "tint": "#D8D0C3", "detail": 0.6, "roughness": 0.35, "note": "Kookeiland + wastafelbladen: composiet" },
-    "kitchen_front": { "kind": "scan", "source": "white_stucco", "tint": "#BDB7AE", "detail": 0.12, "roughness": 0.55, "note": "Keuken: SieMatic SLX fronten, mat gelakt, licht greige (kleur afgelezen van het monster)" },
-    "worktop":      { "kind": "scan", "source": "plastered_wall_04", "tint": "#A89B8A", "detail": 0.9, "roughness": 0.55, "note": "Werkblad + achterwand: Caesarstone 4230 Shitake (warm greige, fijn zandkorrelig)" },
-    "stone_dark":   { "kind": "scan", "source": "plastered_wall_05", "tint": "#2C2C2E", "detail": 0.5, "roughness": 0.30, "note": "Werkblad wandopstelling" }
+    "plaster": {
+      "kind": "scan",
+      "source": "white_stucco",
+      "tint": "#EDEAE4",
+      "detail": 0.5,
+      "roughness": 0.9
+    },
+    "ceiling": {
+      "kind": "scan",
+      "source": "white_stucco",
+      "tint": "#F4F3F0",
+      "detail": 0.3,
+      "roughness": 0.95
+    },
+    "limewash": {
+      "kind": "scan",
+      "source": "painted_plaster_wall",
+      "tint": null
+    },
+    "floor_steen": {
+      "kind": "scan",
+      "source": "concrete_tiles_02",
+      "tint": null,
+      "note": "Balkontegels"
+    },
+    "floor_tapijt": {
+      "kind": "scan",
+      "source": "poly_wool_herringbone",
+      "tint": "#8E8F92",
+      "detail": 1.0,
+      "note": "Corridor: tapijt gemeleerd lichtgrijs"
+    },
+    "cladding": {
+      "kind": "scan",
+      "source": "wood_planks_grey",
+      "tint": null,
+      "note": "Gevel: verticale Basralocus delen, vergrijsd"
+    },
+    "facade_mass": {
+      "kind": "scan",
+      "source": "wood_planks_grey",
+      "tint": null
+    },
+    "lamel": {
+      "kind": "scan",
+      "source": "wood_planks_grey",
+      "tint": null,
+      "rot": 90
+    },
+    "frame_wood": {
+      "kind": "scan",
+      "source": "sapele_veneer",
+      "tint": "#7A3E26",
+      "detail": 0.9,
+      "note": "Kozijnen en puien: Red Grandis"
+    },
+    "handrail": {
+      "kind": "scan",
+      "source": "sapele_veneer",
+      "tint": "#6E4630",
+      "detail": 0.9
+    },
+    "concrete": {
+      "kind": "scan",
+      "source": "concrete_wall_001",
+      "tint": null
+    },
+    "oak": {
+      "kind": "scan",
+      "source": "oak_veneer_03",
+      "tint": "#CDAF86",
+      "detail": 0.9,
+      "roughness": 0.55,
+      "note": "Meubels: licht eiken"
+    },
+    "oak_dark": {
+      "kind": "scan",
+      "source": "oak_veneer_01",
+      "tint": "#6E4C34",
+      "detail": 0.9,
+      "roughness": 0.55
+    },
+    "linen": {
+      "kind": "scan",
+      "source": "rough_linen",
+      "tint": "#B9B2A6",
+      "detail": 0.8,
+      "note": "Bank: linnen warm grijs"
+    },
+    "linen_oat": {
+      "kind": "scan",
+      "source": "rough_linen",
+      "tint": "#D9D0C1",
+      "detail": 0.8
+    },
+    "outdoor": {
+      "kind": "scan",
+      "source": "rough_linen",
+      "tint": "#8D877C",
+      "detail": 0.8
+    },
+    "bedding": {
+      "kind": "scan",
+      "source": "rough_linen",
+      "tint": "#F4F2ED",
+      "detail": 0.5
+    },
+    "duvet": {
+      "kind": "scan",
+      "source": "rough_linen",
+      "tint": "#E6E0D5",
+      "detail": 0.6
+    },
+    "lampshade": {
+      "kind": "scan",
+      "source": "rough_linen",
+      "tint": "#EDE6D8",
+      "detail": 0.5
+    },
+    "sheer": {
+      "kind": "scan",
+      "source": "rough_linen",
+      "tint": "#F3F0E9",
+      "detail": 0.4
+    },
+    "boucle": {
+      "kind": "scan",
+      "source": "curly_teddy_natural",
+      "tint": "#EAE5DB",
+      "detail": 0.9,
+      "note": "Fauteuils: boucle"
+    },
+    "headboard": {
+      "kind": "scan",
+      "source": "poly_wool_herringbone",
+      "tint": "#8A8F86",
+      "detail": 1.0
+    },
+    "rug_oat": {
+      "kind": "scan",
+      "source": "hessian_230",
+      "tint": "#D3CAB9",
+      "detail": 1.0,
+      "note": "Vloerkleden: jute"
+    },
+    "rug_taupe": {
+      "kind": "scan",
+      "source": "hessian_230",
+      "tint": "#8A7F72",
+      "detail": 1.0
+    },
+    "rug_stone": {
+      "kind": "scan",
+      "source": "poly_wool_herringbone",
+      "tint": "#A9A398",
+      "detail": 1.0,
+      "note": "Woonkamerkleed: wol visgraat"
+    },
+    "stone_light": {
+      "kind": "scan",
+      "source": "white_stucco",
+      "tint": "#D8D0C3",
+      "detail": 0.6,
+      "roughness": 0.35,
+      "note": "Kookeiland + wastafelbladen: composiet"
+    },
+    "kitchen_front": {
+      "kind": "scan",
+      "source": "white_stucco",
+      "tint": "#BDB7AE",
+      "detail": 0.12,
+      "roughness": 0.55,
+      "note": "Keuken: SieMatic SLX fronten, mat gelakt, licht greige (kleur afgelezen van het monster)"
+    },
+    "worktop": {
+      "kind": "scan",
+      "source": "plastered_wall_04",
+      "tint": "#A89B8A",
+      "detail": 0.9,
+      "roughness": 0.55,
+      "note": "Werkblad + achterwand: Caesarstone 4230 Shitake (warm greige, fijn zandkorrelig)"
+    },
+    "stone_dark": {
+      "kind": "scan",
+      "source": "plastered_wall_05",
+      "tint": "#2C2C2E",
+      "detail": 0.5,
+      "roughness": 0.3,
+      "note": "Werkblad wandopstelling"
+    },
+    "bath_stone": {
+      "kind": "tiles",
+      "source": "plastered_wall_04",
+      "tile_size": [
+        0.6,
+        0.6
+      ],
+      "grout": 0.002,
+      "color": "#D6CCBF",
+      "grout_color": "#BFB6A9",
+      "variation": 0.015,
+      "detail": 0.7,
+      "speckle": 9000,
+      "roughness": 0.55,
+      "note": "Badkamer: vloer + toiletgedeelte, lichte beige steenlook tegel (monster links op de foto), 60x60"
+    },
+    "bath_relief": {
+      "kind": "tiles",
+      "source": "white_stucco",
+      "tile_size": [
+        0.6,
+        0.6
+      ],
+      "grout": 0.002,
+      "color": "#DAD5CC",
+      "grout_color": "#C9C3BA",
+      "variation": 0.01,
+      "detail": 0.4,
+      "roughness": 0.5,
+      "relief": "hex",
+      "relief_size": 0.12,
+      "relief_width": 0.003,
+      "relief_height": 0.0009,
+      "note": "Badkamer: noord- en oostwand, grijze tegel met reliëf (monster rechtsboven). Patroon en maat benaderd: hexagon-lijnen, 60x60"
+    },
+    "bath_green": {
+      "kind": "tiles",
+      "source": "white_stucco",
+      "tile_size": [
+        0.075,
+        0.3
+      ],
+      "grout": 0.002,
+      "color": "#3E4C44",
+      "grout_color": "#8C8E88",
+      "variation": 0.07,
+      "hue_variation": 0.025,
+      "detail": 0.15,
+      "roughness": 0.07,
+      "glaze": 0.0006,
+      "pillow": 0.0008,
+      "note": "Douche: Grespania Rambla (Icon collection) 7,5x30, groen, glanzend handgemaakt-look, staand verwerkt"
+    }
+  },
+  "rooms": {
+    "_doc": "Per-room finishes. floor = floor material; walls = rules, first match wins: wall = which side of the room the face is on (north/south/east/west), optional x or z range [min, max] in metres; default = material for the room's other walls.",
+    "badkamer": {
+      "floor": "bath_stone",
+      "walls": [
+        {
+          "wall": "north",
+          "material": "bath_relief"
+        },
+        {
+          "wall": "east",
+          "x": [
+            6.8,
+            7.1
+          ],
+          "material": "bath_relief",
+          "note": "oostwand"
+        },
+        {
+          "wall": "west",
+          "x": [
+            5.5,
+            5.7
+          ],
+          "material": "bath_green",
+          "note": "kolom, zijde douche"
+        },
+        {
+          "wall": "east",
+          "x": [
+            4.9,
+            5.1
+          ],
+          "material": "bath_stone",
+          "note": "kolom, zijde toilet"
+        },
+        {
+          "wall": "south",
+          "z": [
+            6.3,
+            6.5
+          ],
+          "material": "bath_stone",
+          "note": "kolom, noordzijde"
+        },
+        {
+          "wall": "south",
+          "x": [
+            3.7,
+            5.1
+          ],
+          "material": "bath_stone",
+          "note": "toiletgedeelte"
+        },
+        {
+          "wall": "south",
+          "x": [
+            5.5,
+            7.1
+          ],
+          "material": "bath_green",
+          "note": "douche, achter het bankje"
+        }
+      ],
+      "default": "plaster"
+    }
   }
 }

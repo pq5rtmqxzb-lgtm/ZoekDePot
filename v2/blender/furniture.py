@@ -496,26 +496,82 @@ def bath(f, it):
 
 
 def walkin_shower(f, it):
+    """Walk-in shower. drain [x, z] (square) or drain_line [x0, x1, z]
+    (linear, along x); screen [x, z0, z1]: glass along z at x with a black
+    profile; head [x, z] + arm [nx, nz]: wall-mounted rain shower, or
+    ceiling [x, z, r]: ceiling-mounted rain shower of radius r; thermostat
+    [x, z, nx, nz] on a wall."""
     g = F(f.ms, it, f.lights, 0.0, 0.0, 0.0)
-    dx, dz = it["drain"]
-    g.box(0.15, 0.006, 0.15, "black", dx, 0.003, dz)
+    ceil = it.get("_ceil", 2.55)
+    if "drain" in it:
+        dx, dz = it["drain"]
+        g.box(0.15, 0.006, 0.15, "black", dx, 0.003, dz)
+    if "drain_line" in it:
+        x0, x1, dz = it["drain_line"]
+        g.box(x1 - x0, 0.006, 0.07, "black", (x0 + x1) / 2, 0.003, dz)
     sx, sz0, sz1 = it["screen"]
+    gh = it.get("screen_h", 2.0)
     if sz1 > sz0:
-        g.box(0.008, 2.0, sz1 - sz0, "glass", sx, 1.0, (sz0 + sz1) / 2)
-        g.box(0.02, 0.02, sz1 - sz0, "black", sx, 2.0, (sz0 + sz1) / 2)
-        g.box(0.02, 2.0, 0.02, "black", sx, 1.0, sz0 + 0.01)
-    hx, hz = it["head"]
-    nx, nz = it["arm"]
-    g.box(0.38 if nx else 0.016, 0.016, 0.38 if nz else 0.016, "black", hx + nx * 0.19, 2.15, hz + nz * 0.19)
-    g.cyl(0.13, 2.10, 2.12, "black", ox=hx + nx * 0.38, oz=hz + nz * 0.38, n=32)
-    g.box(0.06 if nx else 0.30, 0.06, 0.06 if nz else 0.30, "black", hx + nx * 0.03, 1.10, hz + nz * 0.03)
+        g.box(0.008, gh, sz1 - sz0, "glass", sx, gh / 2, (sz0 + sz1) / 2)
+        g.box(0.02, 0.02, sz1 - sz0, "black", sx, gh, (sz0 + sz1) / 2)
+        g.box(0.02, gh, 0.02, "black", sx, gh / 2, sz1 - 0.01 if it.get("profile_end") == "z1" else sz0 + 0.01)
+    if "head" in it:
+        hx, hz = it["head"]
+        nx, nz = it["arm"]
+        g.box(0.38 if nx else 0.016, 0.016, 0.38 if nz else 0.016, "black", hx + nx * 0.19, 2.15, hz + nz * 0.19)
+        g.cyl(0.13, 2.10, 2.12, "black", ox=hx + nx * 0.38, oz=hz + nz * 0.38, n=32)
+        g.box(0.06 if nx else 0.30, 0.06, 0.06 if nz else 0.30, "black", hx + nx * 0.03, 1.10, hz + nz * 0.03)
+    if "ceiling" in it:
+        cx, cz, r = it["ceiling"]
+        g.cyl(0.012, ceil - 0.12, ceil, "black", ox=cx, oz=cz, n=12)
+        g.cyl(r, ceil - 0.135, ceil - 0.12, "black", ox=cx, oz=cz, n=48)
+    if "thermostat" in it:
+        tx, tz, nx, nz = it["thermostat"]
+        g.box(0.06 if nx else 0.30, 0.07, 0.06 if nz else 0.30, "black", tx + nx * 0.03, 1.10, tz + nz * 0.03)
+        g.box(0.03 if nx else 0.02, 0.85, 0.02 if nx else 0.03, "black", tx + nx * 0.02 + (0.30 if nz else 0),
+              1.55, tz + nz * 0.02 + (0.30 if nx else 0))                  # slide bar with hand shower
 
 
 def voorzetwand(f, it):
+    """Boxed-in cistern wall (axis-aligned), tiled in `finish`."""
     g = F(f.ms, it, f.lights, 0.0, 0.0, 0.0)
     x1, z1, x2, z2, h = it["x1"], it["z1"], it["x2"], it["z2"], it.get("h", 1.2)
-    g.box(x2 - x1, h, z2 - z1, "wall_tile", (x1 + x2) / 2, h / 2, (z1 + z2) / 2)
-    g.box(x2 - x1 + 0.01, 0.02, z2 - z1 + 0.01, "stone_light", (x1 + x2) / 2, h + 0.01, (z1 + z2) / 2)
+    fin = it.get("finish", "wall_tile")
+    g.box(x2 - x1, h, z2 - z1, fin, (x1 + x2) / 2, h / 2, (z1 + z2) / 2)
+    g.box(x2 - x1, 0.02, z2 - z1 + 0.01, it.get("top", "stone_light"), (x1 + x2) / 2, h + 0.01, (z1 + z2) / 2)
+
+
+def tiled_bench(f, it):
+    """Built-in tiled bench (axis-aligned block)."""
+    g = F(f.ms, it, f.lights, 0.0, 0.0, 0.0)
+    x1, z1, x2, z2, h = it["x1"], it["z1"], it["x2"], it["z2"], it.get("h", 0.45)
+    g.box(x2 - x1, h, z2 - z1, it.get("finish", "wall_tile"), (x1 + x2) / 2, h / 2, (z1 + z2) / 2)
+
+
+def niche_wall(f, it):
+    """Short tiled wall (axis-aligned footprint x1..x2, z1..z2, height h)
+    with a niche on the `niche_side` face ("+x" / "-x" / "+z" / "-z"):
+    niche = [y0, y1, depth], set in from both ends by 8 cm. Built from
+    solid blocks around the niche, so no booleans are needed."""
+    g = F(f.ms, it, f.lights, 0.0, 0.0, 0.0)
+    x1, z1, x2, z2, h = it["x1"], it["z1"], it["x2"], it["z2"], it.get("h", 2.0)
+    fin = it.get("finish", "wall_tile")
+    y0, y1, dep = it.get("niche", [1.0, 1.4, 0.08])
+    side = it.get("niche_side", "+x")
+    cx, cz, w, d = (x1 + x2) / 2, (z1 + z2) / 2, x2 - x1, z2 - z1
+    g.box(w, y0, d, fin, cx, y0 / 2, cz)                                     # below the niche
+    g.box(w, h - y1, d, fin, cx, (y1 + h) / 2, cz)                           # above
+    m = (y0 + y1) / 2
+    if side in ("+x", "-x"):                                                 # niche runs along z
+        s = 1 if side == "+x" else -1
+        g.box(w - dep, y1 - y0, d, fin, cx - s * dep / 2, m, cz)             # behind the niche
+        for zz in (z1 + 0.04, z2 - 0.04):                                    # the two ends
+            g.box(dep, y1 - y0, 0.08, fin, cx + s * (w - dep) / 2, m, zz)
+    else:                                                                    # niche runs along x
+        s = 1 if side == "+z" else -1
+        g.box(w, y1 - y0, d - dep, fin, cx, m, cz - s * dep / 2)
+        for xx in (x1 + 0.04, x2 - 0.04):
+            g.box(0.08, y1 - y0, dep, fin, xx, m, cz + s * (d - dep) / 2)
 
 
 def wall_toilet(f, it):
@@ -582,7 +638,7 @@ BUILDERS = {
     "coat_rack": coat_rack, "curtains": curtains, "bistro_table": bistro_table, "planter": planter,
     "kitchen_d": kitchen_d, "bath": bath, "walkin_shower": walkin_shower, "voorzetwand": voorzetwand,
     "wall_toilet": wall_toilet, "vanity": vanity, "fontein": fontein, "radiator": radiator,
-    "techniek": techniek,
+    "techniek": techniek, "tiled_bench": tiled_bench, "niche_wall": niche_wall,
 }
 
 
@@ -598,6 +654,8 @@ def build_items(mats, items, rooms):
         f = F(ms, it, lights)
         if it["type"] in ("pendant", "downlight"):
             fn(f, it, ceil=ceil.get(it.get("room"), WALL_HEIGHT))
+        elif it["type"] == "walkin_shower":
+            fn(f, dict(it, _ceil=ceil.get(it.get("room"), WALL_HEIGHT)))
         else:
             fn(f, it)
     return ms, lights
