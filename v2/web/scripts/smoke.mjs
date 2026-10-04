@@ -81,10 +81,12 @@ try {
 
   // 5. an emulated iPad (touch, coarse pointer): picks the lite tier on its own,
   //    walks with the touch stick (drag on the left half)
-  const ipad = await browser.newContext({ ...devices["iPad Pro 11 landscape"] });
+  // (pixel ratio 1: software WebGL at 2x makes every touch event wait seconds for a frame)
+  await page.close();                     // its render loop would compete for the (software) GPU
+  const ipad = await browser.newContext({ ...devices["iPad Pro 11 landscape"], deviceScaleFactor: 1 });
   const tab = await ipad.newPage();
   tab.on("pageerror", (e) => errors.push(String(e)));
-  await tab.goto(BASE + "?hud=0");
+  await tab.goto(BASE + "?hud=0", { waitUntil: "domcontentloaded", timeout: 120000 });
   await tab.waitForFunction(() => window.__viewer?.ready, null, { timeout: 180000 });
   const t0 = await tab.evaluate(() => window.__viewer.state());
   check("iPad picks the lite tier", t0.tier === "lite", `tier=${t0.tier}`);
@@ -94,7 +96,7 @@ try {
     { type, touchPoints: type === "touchEnd" ? [] : [{ x, y, id: 1 }] });
   const sx = vp.width * 0.2, sy = vp.height * 0.7;
   await touch("touchStart", sx, sy);
-  for (let i = 1; i <= 10; i++) { await touch("touchMove", sx, sy - 6 * i); }
+  for (let i = 1; i <= 3; i++) { await touch("touchMove", sx, sy - 20 * i); }
   await tab.waitForTimeout(4000);
   await touch("touchEnd", 0, 0);
   const t1 = await tab.evaluate(() => window.__viewer.state());

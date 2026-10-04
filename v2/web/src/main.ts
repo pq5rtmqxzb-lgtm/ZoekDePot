@@ -4,6 +4,10 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { resolve, roomAt, type CollisionData } from "./collision";
 import { Lightmaps, MOOD_LOOK, type Manifest, type Mood } from "./lightmaps";
 import { Walker } from "./controls";
@@ -11,9 +15,16 @@ import { Walker } from "./controls";
 const ASSETS = `${import.meta.env.BASE_URL}assets`;
 const EYE = 1.70, RADIUS = 0.25, SPEED = 1.4, HFOV = 78;
 
+// quality tier: full on desktops (2K textures, full lightmaps, bloom),
+// lite on touch devices (1K textures, half-size lightmaps, no post-processing);
+// ?quality=full|lite overrides
+const query = new URLSearchParams(location.search);
+const tier = query.get("quality") ?? (matchMedia("(pointer: coarse)").matches ? "lite" : "full");
+const lite = tier === "lite";
+
 const canvas = document.getElementById("view") as HTMLCanvasElement;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, lite ? 1.5 : 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.AgXToneMapping;
 
@@ -23,9 +34,24 @@ camera.rotation.order = "YXZ";
 const pmrem = new THREE.PMREMGenerator(renderer);
 const envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;   // reflections only (see Lightmaps)
 
+// full tier: HDR render (4x MSAA) -> bloom on what is brighter than white
+// (lamp bulbs, sun patches) -> AgX tone mapping in the OutputPass
+let composer: EffectComposer | null = null;
+let bloom: UnrealBloomPass | null = null;
+if (!lite) {
+  const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
+  composer = new EffectComposer(renderer, target);
+  composer.addPass(new RenderPass(scene, camera));
+  bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.2, 0.15, 2.5);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+}
+
 function resize(): void {
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h, false);
+  composer?.setPixelRatio(renderer.getPixelRatio());
+  composer?.setSize(w, h);
   camera.aspect = w / h;
   // hold ~78° horizontally like the Blender previews (and v1), clamp on portrait screens
   const v = 2 * Math.atan(Math.tan((HFOV * Math.PI) / 360) / camera.aspect) * (180 / Math.PI);
@@ -50,11 +76,6 @@ const [collision, manifest] = await Promise.all([
   json<CollisionData>(`${ASSETS}/collision.json`),
   json<Manifest>(`${ASSETS}/lightmaps/manifest.json`),
 ]);
-// quality tier: full on desktops, lite (1K textures, half-size lightmaps)
-// on touch devices; ?quality=full|lite overrides
-const query = new URLSearchParams(location.search);
-const tier = query.get("quality") ?? (matchMedia("(pointer: coarse)").matches ? "lite" : "full");
-const lite = tier === "lite";
 const lightmaps = new Lightmaps(manifest, `${ASSETS}/lightmaps`, envMap, lite);
 // one manager for the model, its textures and the lightmaps: the bar counts files
 const manager = new THREE.LoadingManager();
@@ -127,7 +148,7 @@ function frame(now: number): void {
   camera.rotation.set(walker.pitch, walker.yaw, 0);
   const room = roomAt(collision.rooms, pos.x, pos.z)?.name ?? "";
   if (room !== lastRoom) { roomEl.textContent = room || "—"; lastRoom = room; }
-  renderer.render(scene, camera);
+  if (composer) composer.render(); else renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

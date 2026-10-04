@@ -3,6 +3,7 @@
     python v2/blender/bake.py                      # draft: 2K, CPU (cloud)
     blender -b -P v2/blender/bake.py -- --quality final   # 4K, GPU (laptop)
     ... [--moods day,evening,night] [--groups shell,furniture] [--size 1024] [--samples 32]
+    ... [--smooth 1.2] [--out some/dir]   (test bake: only lightmaps, nothing else written)
 
 Reads v2/build/scene.blend and writes, to v2/build/:
 - lightmaps/<mood>_<group>.png  — irradiance (light only, no surface colour),
@@ -25,6 +26,7 @@ import math
 import os
 import sys
 import time
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -37,8 +39,9 @@ from lighting import MOODS, set_mood, setup_world  # noqa: E402
 
 OUT = BUILD_DIR / "lightmaps"
 QUALITY = {
-    "draft": dict(size=2048, samples=64, device="CPU", margin=16),
-    "final": dict(size=4096, samples=1024, device="GPU", margin=16),
+    # margin: gap between UV islands (px); smooth: in-island blur (px) before denoising
+    "draft": dict(size=2048, samples=64, device="CPU", margin=16, smooth=1.2),
+    "final": dict(size=4096, samples=1024, device="GPU", margin=16, smooth=0.6),
 }
 LM = "Lightmap"
 SHELL_COLLECTIONS = ("walls", "floors", "ceilings", "frames", "railings")
@@ -47,13 +50,17 @@ SKIP_MATERIALS = {"M_glass", "M_frosted", "M_sheer", "M_bulb"}
 
 def parse():
     a = script_args()
-    opts = {"quality": "draft", "moods": ",".join(MOODS), "groups": "shell,furniture,exterior"}
+    opts = {"quality": "draft", "moods": ",".join(MOODS), "groups": "shell,furniture,exterior", "out": ""}
     for i in range(0, len(a) - 1, 2):
         opts[a[i].lstrip("-")] = a[i + 1]
     q = dict(QUALITY[opts["quality"]])
-    for k in ("size", "samples", "margin"):
+    for k in ("size", "samples", "margin", "smooth"):
         if k in opts:
-            q[k] = int(opts[k])
+            q[k] = type(q[k])(opts[k])
+    if opts["out"]:                       # test bake: lightmaps elsewhere, no scene export
+        global OUT
+        OUT = Path(opts["out"]).resolve()
+        q["test"] = True
     return opts["quality"], q, opts["moods"].split(","), opts["groups"].split(",")
 
 
@@ -242,8 +249,10 @@ def bake_group(objs, img, q):
         nt.nodes.active = node
     bpy.ops.object.select_all(action="DESELECT")
     stand_in.select_set(True)
+    # no bake margin: texels left empty mark the islands' outline for
+    # smooth_islands(); fill_empty() grows the islands afterwards
     bpy.ops.object.bake(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"}, use_clear=True,
-                        margin=q["margin"], target="IMAGE_TEXTURES")
+                        margin=0, target="IMAGE_TEXTURES")
     for m in mats:
         m.node_tree.nodes.remove(m.node_tree.nodes["LM_bake"])
     me = stand_in.data
@@ -257,6 +266,36 @@ def pixels(img):
     a = np.empty(img.size[0] * img.size[1] * 4, np.float32)
     img.pixels.foreach_get(a)
     return a.reshape(img.size[1], img.size[0], 4)
+
+
+def smooth_islands(img, sigma):
+    """Gaussian blur that stays inside the baked texels (normalised
+    convolution with the coverage mask). OIDN keeps thin islands (reveals,
+    frames, chair legs: a few texels wide) as they are, texel noise
+    included; a 1-2 px blur takes that out without crossing the empty gap
+    between islands."""
+    if sigma <= 0:
+        return
+    a = pixels(img)
+    rgb = a[..., :3]
+    mask = (rgb.max(axis=-1) > 0).astype(np.float32)
+    r = max(1, int(math.ceil(2.5 * sigma)))
+    k = np.exp(-0.5 * (np.arange(-r, r + 1) / sigma) ** 2).astype(np.float32)
+    k /= k.sum()
+
+    def blur(x):
+        for axis in (0, 1):
+            acc = np.zeros_like(x)
+            for i, w in enumerate(k):
+                acc += w * np.roll(x, i - r, axis)
+            x = acc
+        return x
+
+    num = blur(rgb * mask[..., None])
+    den = blur(mask)
+    out = np.where(mask[..., None] > 0, num / np.maximum(den, 1e-6)[..., None], 0)
+    a[..., :3] = out
+    img.pixels.foreach_set(a.ravel())
 
 
 def fill_empty(img, steps=48):
@@ -381,6 +420,7 @@ def main():
             img = bpy.data.images.new(f"LM_{mood}_{g}", size, size, float_buffer=True)
             t = time.time()
             bake_group(objs, img, q)
+            smooth_islands(img, q["smooth"])
             fill_empty(img)
             clean = denoise(img, size)
             name = f"{mood}_{g}.png"
@@ -391,6 +431,9 @@ def main():
                   f"scale {scale:.3f}", flush=True)
 
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=1))
+    if q.get("test"):
+        print(f"test bake: {OUT}")
+        return
     # restore surface UVs as active, keep the scene light-free of the bake setup
     for o in scene.objects:
         if o.type == "MESH" and o.data.uv_layers.get("UVMap"):

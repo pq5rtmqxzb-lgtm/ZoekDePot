@@ -158,12 +158,19 @@ npm test         # headless smoke test + screenshots in v2/docs/renders/web_*.pn
   `check_furniture.py` verifies (`export_collision.py`); schuifpuien are open
   on their sliding half, as in v1.
 - **Moods:** Dag / Avond / Nacht buttons switch the lightmap set live.
+- **Renderer:** WebGL2 (`WebGLRenderer`). WebGPU brings nothing here yet —
+  everything is baked, so the GPU only draws ~370 textured batches — and
+  WebGL2 runs everywhere, including older iPads.
+- **Collision:** 2D (walls as capsules, furniture as boxes, from the same
+  data the checks use) instead of a navmesh: one floor level, no stairs, so
+  a navmesh adds a dependency without changing how walking feels.
 - **URL:** `?pos=x,z,yaw,pitch&mood=evening` (yaw/pitch in degrees; three.js
   rotation: yaw 0 looks north) — used by the smoke test. `&hud=0` hides the
   help panel.
-- **Quality tiers:** `full` on desktops (textures up to 2K, full lightmaps),
-  `lite` on touch devices such as the iPad (textures up to 1K, lightmaps at
-  half size, about a quarter of the GPU memory). `?quality=full|lite`
+- **Quality tiers:** `full` on desktops (textures up to 2K, full lightmaps,
+  4x MSAA + a light bloom on lamp bulbs and sun patches), `lite` on touch
+  devices such as the iPad (textures up to 1K, lightmaps at half size, about
+  a quarter of the GPU memory, no post-processing, pixel ratio <= 1.5). `?quality=full|lite`
   overrides the automatic choice; `npm run assets` writes both
   (`apartment/` / `apartment-lite/`, `*.webp` / `*-lite.webp`).
 - **Download size:** the model is a `.gltf` with one WebP file per texture

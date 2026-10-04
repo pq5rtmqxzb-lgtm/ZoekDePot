@@ -190,6 +190,20 @@ cloud machine has 4 CPU cores and no GPU, so:
 - **Done when:** side-by-side screenshots from the same `?pos=` spots clearly beat v1.
 
 ### Phase 3 — Web viewer core (desktop first)
+- **Status (2026-10-04):** `v2/web/` — Vite + TypeScript + three.js r186. Done: baked model
+  with day / evening / night lightmaps, AgX, bloom + 4x MSAA on desktop, first-person
+  walking (mouse/keyboard and touch stick) with collision, quality tiers `full` / `lite`
+  (auto on touch devices), model as gltf with one WebP per texture (largest file < 3 MB;
+  ~25 MB desktop, ~8 MB iPad, plus ~5 MB lightmaps), headless smoke test including an
+  emulated iPad. Deliberate changes to the list below:
+  - WebGL2 only: with everything baked WebGPU gains nothing, WebGL2 runs on every iPad.
+  - 2D collision (capsules + boxes from the checked layout) instead of a navmesh: one
+    floor, no stairs.
+  - meshopt + WebP instead of KTX2: KTX2 saves GPU memory, but at good quality (UASTC) its
+    files are typically several times larger than WebP; revisit if the iPad runs out of memory.
+  - Not split per room yet: the whole flat is ~30 MB and loads at once; the 25 MB per
+    file limit is met.
+  - Still to check on a real iPad (Safari) and a normal laptop: frame rate.
 - Vite + TypeScript + current Three.js: WebGPU renderer with WebGL2 fallback, and
   glTF, KTX2 and meshopt loaders.
 - Colour pipeline for realism: AgX or Neutral tone mapping, bloom on the lamps, SMAA.
