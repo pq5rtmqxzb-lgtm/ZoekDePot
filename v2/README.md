@@ -16,6 +16,21 @@ v1 stays untouched and live until v2 is better.
 | 2 | Materials, furniture, baked light | next |
 | 3–6 | Viewer, features, deploy, extras | — |
 
+## Preview (Phase 1: geometry + placeholder materials, CPU draft)
+
+| | |
+|---|---|
+| ![Dollhouse](docs/renders/dollhouse.png) | ![Woonkamer](docs/renders/woonkamer.png) |
+| ![Keuken](docs/renders/keuken.png) | ![Slaapkamer 1](docs/renders/slaapk1.png) |
+| ![Slaapkamer 2](docs/renders/slaapk2.png) | ![Plan section over the PDF](docs/plan-section.png) |
+
+Lighting is daylight only (sky + sun for Den Haag, 15:30 in late April), so
+windowless spaces such as the gang stay dark until Phase 2 adds the lamps.
+Materials are flat placeholders. Known open points for Phase 2:
+hairline shadow gaps at the slaapkamer 2 alcove pier and the slanted SW
+wall (room outline and wall face more than 5 cm apart in `model.json`);
+plinths, wall tiles, kitchen and sanitary ware are not in the shell yet.
+
 ## Running it
 
 Blender **4.5 LTS** is used everywhere (free, blender.org), so cloud and

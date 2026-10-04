@@ -32,7 +32,7 @@ VIEWS = {
     "slaapk1":   ((5.00, 1.70, 3.90), (0.6, 1.20, 0.6)),
     "gang":      ((0.70, 1.70, 8.75), (6.8, 1.35, 8.80)),   # no windows: off by default until the Phase 2 lamps
     "slaapk2":   ((3.90, 1.70, 11.90), (1.2, 1.10, 15.5)),
-    "dollhouse": ((-6.5, 13.0, 23.0), (4.6, 0.3, 7.6)),
+    "dollhouse": ((1.0, 24.0, 22.0), (4.9, 0.0, 7.4)),
 }
 
 
@@ -93,7 +93,7 @@ def setup_render(scene, samples, width):
 def camera(scene, eye, target, overview):
     cam = bpy.data.cameras.new("cam")
     cam.sensor_fit = "HORIZONTAL"
-    cam.angle = math.radians(44 if overview else 78)   # v1 holds ~80° horizontal
+    cam.angle = math.radians(60 if overview else 78)   # v1 holds ~80° horizontal
     cam.clip_start = 0.05
     ob = bpy.data.objects.new("cam", cam)
     scene.collection.objects.link(ob)
@@ -119,6 +119,8 @@ def main():
         for o in hide:
             o.hide_render = True
         scene.render.film_transparent = overview
+        # Interiors are lit through windows; the overview sees direct sun.
+        scene.view_settings.exposure = -0.5 if overview else 1.0
         cam = camera(scene, eye, target, overview)
         scene.render.filepath = str(OUT / f"{name}.png")
         bpy.ops.render.render(write_still=True)
