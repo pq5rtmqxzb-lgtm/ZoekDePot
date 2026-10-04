@@ -1,5 +1,5 @@
 {
-  "_doc": "Rebuild data for YP_bouwnummer_25.pdf (Type R3.sp). Phase 1 extracted dimensions from the PDF; Phase 2 renders this to floorplan/floorplan.svg (tools/render-floorplan.py); Phase 3 builds the 3D model (APARTMENT_GEOM in index.html) and verifies it against the PDF's own vector lines with tools/compare-to-pdf.py. As of the latest fidelity pass every model wall lies on a PDF wall slab within 0.12 m (centreline vs slab face), including all diagonal chamfers; see phase3_model_fidelity.",
+  "_doc": "Rebuild data for YP_bouwnummer_25.pdf (Type R3.sp). Phase 1 extracted dimensions from the PDF; Phase 2 renders this to floorplan/floorplan.svg (tools/render-floorplan.py); Phase 3 builds the 3D model (now data/model.json) and verifies it against the PDF's own vector lines with tools/compare-to-pdf.py. As of the latest fidelity pass every model wall lies on a PDF wall slab within 0.12 m (centreline vs slab face), including all diagonal chamfers; see phase3_model_fidelity.",
   "phase3_model_fidelity": {
     "tool": "tools/compare-to-pdf.py (model walls + diagonals vs the PDF's own vector lines)",
     "tolerance_m": 0.15,

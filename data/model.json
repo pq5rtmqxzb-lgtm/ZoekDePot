@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_doc": "3D-model bron voor type R3.sp (bouwnummer 25). geom = muur-hartlijnen {kind: wall|door|sidelight|sliding|window|railing|screen, x1,z1,x2,z2, t? (dikte, default 0.20), open_to? [x,z] (deuren: het punt waar het blad naartoe openzwaait; x1,z1 = scharnierzijde), entrance/closet (deurtype), note/section = documentatie}. rooms = vloervlakken per kamer, ceil? = plafondhoogte (default 2.80; badkamers en verkeersruimten 2.55 volgens de Technische Omschrijving). Gelezen door js/data.js (fetch) en tools/{plan-overlay,compare-to-pdf,pdf-overlay}.py. Maatvoering + deurdraairichtingen geverifieerd tegen de vectoren van plans/YP_bouwnummer_25.pdf.",
+  "_doc": "3D-model bron voor type R3.sp (bouwnummer 25). geom = muur-hartlijnen {kind: wall|door|sidelight|sliding|window|railing|screen, x1,z1,x2,z2, t? (dikte, default 0.20), open_to? [x,z] (deuren: het punt waar het blad naartoe openzwaait; x1,z1 = scharnierzijde), entrance/closet (deurtype), note/section = documentatie}. rooms = vloervlakken per kamer, ceil? = plafondhoogte (default 2.80; badkamers en verkeersruimten 2.55 volgens de Technische Omschrijving). Gelezen door de v2 Blender-scripts (v2/blender) en tools/{plan-overlay,compare-to-pdf,pdf-overlay}.py. Maatvoering + deurdraairichtingen geverifieerd tegen de vectoren van plans/YP_bouwnummer_25.pdf.",
   "geom": [
     {
       "kind": "wall",

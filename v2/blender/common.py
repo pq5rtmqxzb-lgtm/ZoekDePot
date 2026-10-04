@@ -23,7 +23,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 MODEL_JSON = ROOT / "data" / "model.json"
 BUILD_DIR = ROOT / "v2" / "build"
 
-# Heights (Technische Omschrijving; same values as js/constants.js)
+# Heights (Technische Omschrijving)
 WALL_HEIGHT = 2.80     # vrije hoogte woonvertrekken
 CEIL_LOW = 2.55        # badkamers + verkeersruimten
 DOOR_H = 2.315         # binnendeur (opdek/stomp 2315 mm)
@@ -38,8 +38,7 @@ SOLID_KINDS = {"wall", "door", "sidelight", "sliding", "window"}
 OUTSIDE = {"balkon_n", "balkon_z", "corridor"}
 WET = {"badkamer", "badkklein", "toilet"}
 
-# Shared corridor outside the voordeur — not part of the sales drawing, so
-# v1 keeps it in js/apartment.js (buildCorridor). Same numbers here.
+# Shared corridor outside the voordeur — not part of the sales drawing.
 CORRIDOR_WALLS = [
     {"kind": "wall", "x1": -1.96, "z1": 6.30, "x2": -1.96, "z2": 12.40, "t": 0.20, "corridor": True},
     {"kind": "wall", "x1": -2.06, "z1": 6.30, "x2": 0.38, "z2": 6.30, "t": 0.20, "corridor": True},
