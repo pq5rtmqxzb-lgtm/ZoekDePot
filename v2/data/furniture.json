@@ -29,9 +29,9 @@
     { "id": "plant_living", "type": "plant", "room": "woonkamer", "x": 6.30, "z": 0.75, "rot": 0, "h": 1.8 },
     { "id": "curtain_living_n", "type": "curtains", "room": "woonkamer", "x1": 7.04, "x2": 10.53, "z": -0.085, "inside": 1, "fabric": "sheer" },
 
-    { "id": "dining", "type": "dining_table", "room": "woonkamer", "x": 8.8, "z": 12.2, "rot": 0, "w": 1.00, "d": 2.60, "chairs": 8, "own": true, "note": "Eigen eettafel 260x100 tegenover het kookeiland, bij de schuifpui; lange kant noord-zuid, 8 stoelen (4 per kant)" },
-    { "id": "pendant_dining_a", "type": "pendant", "room": "woonkamer", "x": 8.8, "z": 11.55, "y": 1.85 },
-    { "id": "pendant_dining_b", "type": "pendant", "room": "woonkamer", "x": 8.8, "z": 12.85, "y": 1.85 },
+    { "id": "dining", "type": "dining_table", "room": "woonkamer", "x": 8.78, "z": 7.10, "rot": 0, "w": 1.00, "d": 2.60, "chairs": 8, "own": true, "note": "Eigen eettafel 260x100, lange kant noord-zuid; 8 stoelen (4 per kant)" },
+    { "id": "pendant_dining_a", "type": "pendant", "room": "woonkamer", "x": 8.78, "z": 6.45, "y": 1.85 },
+    { "id": "pendant_dining_b", "type": "pendant", "room": "woonkamer", "x": 8.78, "z": 7.75, "y": 1.85 },
     { "id": "dresser", "type": "dresser", "room": "woonkamer", "x": 7.265, "z": 4.85, "rot": 90, "w": 1.20, "d": 0.45, "h": 0.78, "note": "Dressoir 120x45 tegen het badkamerblok" },
     { "id": "bookshelf", "type": "bookshelf", "room": "woonkamer", "x": 10.36, "z": 4.65, "rot": -90, "w": 1.80, "d": 0.32, "h": 2.10, "note": "Boekenkast 180x210 tegen de oostwand" },
 
@@ -41,12 +41,12 @@
     { "id": "pendant_island_a", "type": "pendant", "room": "woonkamer", "x": 5.91, "z": 12.00, "y": 1.95 },
     { "id": "pendant_island_b", "type": "pendant", "room": "woonkamer", "x": 5.91, "z": 13.10, "y": 1.95 },
 
-    { "id": "chair_s1", "type": "armchair", "room": "woonkamer", "x": 8.45, "z": 7.15, "rot": 160, "fabric": "linen", "note": "Twee fauteuils midden in de woonkamer (waar eerst de eettafel stond), met zicht op de zuidpui" },
-    { "id": "chair_s2", "type": "armchair", "room": "woonkamer", "x": 9.55, "z": 7.15, "rot": 200, "fabric": "linen" },
-    { "id": "sidetable_s", "type": "side_table", "room": "woonkamer", "x": 9.00, "z": 6.35, "rot": 0 },
-    { "id": "rug_south", "type": "rug", "room": "woonkamer", "x": 9.00, "z": 7.15, "rot": 0, "w": 2.40, "d": 2.00, "color": "oat" },
-    { "id": "floorlamp_south", "type": "floor_lamp", "room": "woonkamer", "x": 10.15, "z": 6.55, "rot": 0 },
-    { "id": "plant_south", "type": "plant", "room": "woonkamer", "x": 10.15, "z": 13.45, "rot": 0, "h": 1.5 },
+    { "id": "chair_s1", "type": "armchair", "room": "woonkamer", "x": 8.45, "z": 12.15, "rot": 160, "fabric": "linen", "note": "Twee fauteuils bij de grote zuidpui" },
+    { "id": "chair_s2", "type": "armchair", "room": "woonkamer", "x": 9.55, "z": 12.15, "rot": 200, "fabric": "linen" },
+    { "id": "sidetable_s", "type": "side_table", "room": "woonkamer", "x": 9.00, "z": 11.35, "rot": 0 },
+    { "id": "rug_south", "type": "rug", "room": "woonkamer", "x": 9.00, "z": 12.15, "rot": 0, "w": 2.40, "d": 2.00, "color": "oat" },
+    { "id": "floorlamp_south", "type": "floor_lamp", "room": "woonkamer", "x": 10.15, "z": 11.55, "rot": 0 },
+    { "id": "plant_south", "type": "plant", "room": "woonkamer", "x": 10.00, "z": 13.35, "rot": 0, "h": 1.5 },
     { "id": "plant_bay", "type": "plant", "room": "woonkamer", "x": 4.70, "z": 15.20, "rot": 0, "h": 1.7 },
     { "id": "curtain_living_s", "type": "curtains", "room": "woonkamer", "x1": 6.77, "x2": 10.19, "z": 13.90, "inside": -1, "fabric": "sheer" },
 

@@ -29,18 +29,18 @@ OUT = ROOT / "v2" / "docs" / "renders"
 # standing eye height of 1.70 m unless an overview), lamps = rooms whose
 # lamps are on ("*" = all), mood.
 VIEWS = {
-    "woonkamer": dict(eye=(10.00, 1.70, 13.50), target=(6.9, 1.25, 2.0)),
-    "eettafel":  dict(eye=(10.10, 1.70, 9.40), target=(7.2, 0.80, 13.4)),
+    "woonkamer": dict(eye=(9.25, 1.70, 13.45), target=(6.9, 1.25, 2.0)),
+    "eettafel":  dict(eye=(10.25, 1.70, 9.90), target=(7.4, 0.85, 5.0)),
     "keuken":    dict(eye=(8.60, 1.70, 4.20), target=(5.4, 1.15, 14.5)),
-    "eiland":    dict(eye=(10.20, 1.70, 11.00), target=(5.2, 1.00, 10.9)),
+    "eiland":    dict(eye=(9.60, 1.70, 12.80), target=(5.2, 1.00, 10.9)),
     "slx":       dict(eye=(4.62, 1.55, 13.75), target=(5.75, 0.70, 11.2)),
     "slaapk1":   dict(eye=(2.30, 1.70, 3.85), target=(5.4, 0.80, 1.2)),
     "slaapk2":   dict(eye=(3.20, 1.70, 11.75), target=(1.0, 0.90, 14.6)),
     "badkamer":  dict(eye=(4.10, 1.65, 4.85), target=(6.7, 0.80, 6.85), lamps={"badkamer"}),
     "badkamer2": dict(eye=(6.60, 1.65, 4.70), target=(4.0, 0.90, 6.60), lamps={"badkamer"}),
     "gang":      dict(eye=(0.70, 1.70, 8.75), target=(6.8, 1.35, 8.80), lamps={"gang"}),
-    "avond":     dict(eye=(10.00, 1.70, 13.50), target=(6.9, 1.25, 2.0), lamps="*", mood="evening"),
-    "nacht":     dict(eye=(10.00, 1.70, 13.50), target=(6.9, 1.25, 2.0), lamps="*", mood="night"),
+    "avond":     dict(eye=(9.25, 1.70, 13.45), target=(6.9, 1.25, 2.0), lamps="*", mood="evening"),
+    "nacht":     dict(eye=(9.25, 1.70, 13.45), target=(6.9, 1.25, 2.0), lamps="*", mood="night"),
     "dollhouse": dict(eye=(1.0, 24.0, 22.0), target=(4.9, 0.0, 7.4), overview=True),
 }
 

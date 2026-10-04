@@ -57,11 +57,10 @@ try {
 
   // 3. screenshots: same spots as the Blender previews, per mood
   const shots = [
-    ["woonkamer", "?pos=10.0,13.5,15.1,-2.2&mood=day&hud=0"],
-    ["avond", "?pos=10.0,13.5,15.1,-2.2&mood=evening&hud=0"],
-    ["nacht", "?pos=10.0,13.5,15.1,-2.2&mood=night&hud=0"],
-    ["keuken", "?pos=10.2,11.0,78.3,-5.3&mood=day&hud=0"],
-    ["eettafel", "?pos=10.1,9.4,144,-10&mood=day&hud=0"],
+    ["woonkamer", "?pos=9.25,13.45,11.6,-2.2&mood=day&hud=0"],
+    ["avond", "?pos=9.25,13.45,11.6,-2.2&mood=evening&hud=0"],
+    ["nacht", "?pos=9.25,13.45,11.6,-2.2&mood=night&hud=0"],
+    ["keuken", "?pos=9.6,12.8,66.6,-8.3&mood=day&hud=0"],
     ["slaapk1", "?pos=2.3,3.85,-49.5,-12.4&mood=day&hud=0"],
     ["badkamer", "?pos=6.6,4.7,126.2,-13.1&mood=day&hud=0"],
   ];
@@ -74,7 +73,7 @@ try {
   check("no page errors after all shots", errors.length === 0, errors.slice(0, 3).join(" | "));
 
   // 4. the lite tier (iPad / phones): 1K textures, half-size lightmaps, same scene
-  await open("?quality=lite&pos=10.0,13.5,15.1,-2.2&mood=day&hud=0");
+  await open("?quality=lite&pos=9.25,13.45,11.6,-2.2&mood=day&hud=0");
   const sl = await page.evaluate(() => window.__viewer.state());
   check("lite tier loads", sl.tier === "lite" && sl.baked > 20, `tier=${sl.tier} baked=${sl.baked}`);
   await page.screenshot({ path: path.join(OUT, "web_woonkamer_lite.png") });
