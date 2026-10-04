@@ -147,7 +147,7 @@ reflections from a soft room environment.
 python v2/blender/export_collision.py   # walls/furniture/rooms -> v2/build/collision.json
 cd v2/web
 npm install
-npm run assets   # v2/build -> public/assets (meshopt + WebP model, WebP lightmaps)
+npm run assets   # v2/build -> public/assets (meshopt + WebP model per tier, WebP lightmaps)
 npm run dev      # http://localhost:5173
 npm test         # headless smoke test + screenshots in v2/docs/renders/web_*.png
 ```
@@ -165,7 +165,12 @@ npm test         # headless smoke test + screenshots in v2/docs/renders/web_*.pn
   `lite` on touch devices such as the iPad (textures up to 1K, lightmaps at
   half size, about a quarter of the GPU memory). `?quality=full|lite`
   overrides the automatic choice; `npm run assets` writes both
-  (`apartment.glb` / `apartment-lite.glb`, `*.webp` / `*-lite.webp`).
+  (`apartment/` / `apartment-lite/`, `*.webp` / `*-lite.webp`).
+- **Download size:** the model is a `.gltf` with one WebP file per texture
+  (largest file < 3 MB, well under the 25 MB per-file limit of free static
+  hosts): ~25 MB full, ~7.5 MB lite, plus the lightmaps. Normal and
+  roughness maps are dropped on matte materials, where a lightmap-only
+  viewer can't show them.
 
 ## Running it
 

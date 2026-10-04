@@ -56,12 +56,13 @@ const query = new URLSearchParams(location.search);
 const tier = query.get("quality") ?? (matchMedia("(pointer: coarse)").matches ? "lite" : "full");
 const lite = tier === "lite";
 const lightmaps = new Lightmaps(manifest, `${ASSETS}/lightmaps`, envMap, lite);
-const gltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+// one manager for the model, its textures and the lightmaps: the bar counts files
+const manager = new THREE.LoadingManager();
+manager.onProgress = (_url, loaded, total) => { loadBar.style.width = `${(100 * loaded) / total}%`; };
+const gltfLoader = new GLTFLoader(manager).setMeshoptDecoder(MeshoptDecoder);
 const [gltf] = await Promise.all([
-  gltfLoader.loadAsync(`${ASSETS}/${lite ? "apartment-lite.glb" : "apartment.glb"}`, (e) => {
-    if (e.total) loadBar.style.width = `${(100 * e.loaded) / e.total}%`;
-  }),
-  lightmaps.load(new THREE.TextureLoader()),
+  gltfLoader.loadAsync(`${ASSETS}/${lite ? "apartment-lite" : "apartment"}/scene.gltf`),
+  lightmaps.load(new THREE.TextureLoader(manager)),
 ]);
 // the structural slabs and the far ground are never seen from inside
 gltf.scene.traverse((o) => { if (o.name.startsWith("slab")) o.visible = false; });
