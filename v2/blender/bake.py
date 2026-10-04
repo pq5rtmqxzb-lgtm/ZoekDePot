@@ -106,13 +106,32 @@ def lightmap_uvs(objs, size):
     bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.0, scale_to_bounds=False)
     bpy.ops.uv.select_all(action="SELECT")
     bpy.ops.uv.average_islands_scale()
-    bpy.ops.uv.pack_islands(margin_method="FRACTION", margin=3.0 / size, rotate=True)
+    bpy.ops.uv.pack_islands(margin_method="FRACTION", margin=3.0 / size, rotate=True, shape_method="AABB")
     bpy.ops.object.mode_set(mode="OBJECT")
 
 
 def bake_group(objs, img, q):
-    """Bake light (direct + indirect, no surface colour) into `img`."""
-    mats = {s.material for o in objs for s in o.material_slots if s.material}
+    """Bake light (direct + indirect, no surface colour) into `img`.
+    Cycles bakes selected objects one by one and re-syncs the whole scene
+    for each (~2 s apiece), so the group is baked as ONE joined stand-in:
+    copies of its objects joined into a single mesh (same lightmap UVs),
+    with the originals hidden meanwhile so no surface is doubled."""
+    scene = bpy.context.scene
+    copies = []
+    for o in objs:
+        c = o.copy()
+        c.data = o.data.copy()
+        scene.collection.objects.link(c)
+        copies.append(c)
+        o.hide_render = True
+    bpy.ops.object.select_all(action="DESELECT")
+    for c in copies:
+        c.select_set(True)
+    bpy.context.view_layer.objects.active = copies[0]
+    bpy.ops.object.join()
+    stand_in = bpy.context.view_layer.objects.active
+    stand_in.data.uv_layers.active = stand_in.data.uv_layers[LM]
+    mats = {s.material for s in stand_in.material_slots if s.material}
     for m in mats:
         nt = m.node_tree
         node = nt.nodes.get("LM_bake") or nt.nodes.new("ShaderNodeTexImage")
@@ -120,15 +139,16 @@ def bake_group(objs, img, q):
         node.image = img
         nt.nodes.active = node
     bpy.ops.object.select_all(action="DESELECT")
-    for o in objs:
-        o.select_set(True)
-        o.data.uv_layers.active = o.data.uv_layers[LM]
-    bpy.context.view_layer.objects.active = objs[0]
+    stand_in.select_set(True)
     bpy.ops.object.bake(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"}, use_clear=True,
                         margin=q["margin"], target="IMAGE_TEXTURES")
     for m in mats:
-        nt = m.node_tree
-        nt.nodes.remove(nt.nodes["LM_bake"])
+        m.node_tree.nodes.remove(m.node_tree.nodes["LM_bake"])
+    me = stand_in.data
+    bpy.data.objects.remove(stand_in)
+    bpy.data.meshes.remove(me)
+    for o in objs:
+        o.hide_render = False
 
 
 def pixels(img):

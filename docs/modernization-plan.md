@@ -173,7 +173,9 @@ cloud machine has 4 CPU cores and no GPU, so:
   sources, wall tiles and plinths. `check_furniture.py` guards the layout.
 - **2b ✅:** CC0 Poly Haven scans per `v2/data/materials.json`; the untreated oak plank floor and the
   bathroom tiles are composed from scans so plank size and colour match the real choice.
-- **2c:** lightmap bake (draft in the cloud, final on the laptop GPU).
+- **2c ✅:** lightmap bake per mood (day / evening / night) into two atlases (shell, furniture),
+  light only so walls stay repaintable; `scene.glb` with lightmap UVs; draft in the cloud, final on the
+  laptop GPU (`blender -b -P v2/blender/bake.py -- --quality final`).
 - PBR materials, mostly CC0 from Poly Haven and ambientCG, matched to the
   Technische Omschrijving: oak lamella floor, wall and floor tiles, plaster, Red Grandis
   frames, Basralocus cladding, glass.
@@ -230,6 +232,6 @@ In order of value:
 ### Step-by-step on the laptop (final bake)
 1. Install Blender 4.5 LTS (free).
 2. `git pull`, then run one command, for example
-   `blender -b -P v2/blender/bake.py -- --quality final`.
+   `blender -b -P v2/blender/bake.py -- --quality final` (see v2/README.md).
 3. Commit or upload the generated lightmaps. These steps can be done through screen
    access instead.

@@ -15,7 +15,7 @@ v1 stays untouched and live until v2 is better.
 | 1 | Shell generated in Blender | ✅ walls with real openings, floors/ceilings per room, frames, schuifpuien, railings — checked against `model.json` |
 | 2a | Furniture, kitchen, sanitary ware, lamps, wall tiles, plinths | ✅ from `v2/data/furniture.json`, checked against the walls |
 | 2b | Photoreal textures | ✅ CC0 Poly Haven scans via `v2/data/materials.json`; untreated oak plank floor and bathroom tiles composed from scans |
-| 2c | Baked lighting (day / evening / night) for the viewer | next |
+| 2c | Baked lighting (day / evening / night) for the viewer | ✅ pipeline + draft bake in the cloud; final bake on the laptop GPU (see below) |
 | 3–6 | Viewer, features, deploy, extras | — |
 
 ## Preview (Phase 2b: furnished and textured, CPU draft)
@@ -49,7 +49,7 @@ another piece, or leaves its room.
 |---|---|
 | Woonkamer, zithoek | 3-zitsbank 240x95 (linnen), bouclé fauteuil, salontafel 120x60 eiken, tv-meubel 180 + 65" tv, boekenkast 180x210, vloerkleed 300x250, vloerlamp, plant |
 | Woonkamer, eethoek | **eigen tafel 260x100**, 8 eiken stoelen met linnen zitkussen, 2 hanglampen, dressoir 120x45 met tafellamp |
-| Keuken | **eigen keuken: SieMatic SLX** (greeploos, mat gelakte fronten in licht greige, bronskleurige greeplijsten onder het werkblad en tussen de laden), werkblad + achterwand **Caesarstone 4230 Shitake**; opstelling D: wandopstelling + kookeiland met spoelbak en inductie; 3 barkrukken, 2 hanglampen |
+| Keuken | **eigen keuken: SieMatic SLX** volgens de keukentekeningen (greeploos, mat gelakte fronten licht greige, bronskleurige greepkanalen), werkblad **Caesarstone 4230 Shitake**. Hoge kastenwand 2,57 m tot aan het plafond (extra rij kasten) met twee zwarte Siemens-ovens en de Siemens inbouwkoelkast; kookeiland 2574 x 1000 x 950 met Siemens inductie + afzuiging, Franke Maris spoelbak + Lina XL kraan in Coffee, vaatwasser, twee krukken in het midden; 2 hanglampen |
 | Woonkamer, zuid | 2 linnen fauteuils + bijzettafel bij de grote pui, vloerkleed, vloerlamp, planten, vitrage |
 | Slaapkamer 1 | **eigen bed 140x200** met gestoffeerd hoofdbord, nachtkastje + lamp, kledingkast 160x60x230, leesstoel + lamp in de NW-punt, verduisterend linnen |
 | Slaapkamer 2 | **eigen bed 140x200**, 2 nachtkastjes, kledingkast 200x60x230, bureau 120x60 met stoel in de nis |
@@ -90,6 +90,48 @@ Without textures (as in CI) everything falls back to flat colours.
 
 The environment needs network access to `polyhaven.com`, `api.polyhaven.com`
 and `dl.polyhaven.org` for the downloads.
+
+## Baked lighting (Phase 2c)
+
+`bake.py` bakes the light of each mood (`day`, `evening`, `night`; defined
+in `lighting.py`, shared with the path-traced previews) into lightmaps for
+the web viewer:
+
+1. every static surface gets a second UV map (`Lightmap`, glTF `TEXCOORD_1`),
+   packed into one atlas per group: `shell` (walls, floors, ceilings, frames,
+   railings) and `furniture`;
+2. Cycles bakes **light only** (direct + indirect irradiance, no surface
+   colour) — so a repainted wall keeps its light and shadows;
+3. OpenImageDenoise cleans it, and it is stored as an sRGB 8-bit PNG plus a
+   `scale` in `v2/build/lightmaps/manifest.json`;
+4. `scene.glb` holds the whole furnished apartment with both UV maps.
+
+The viewer draws: **colour = albedo x lightmap x scale** (three.js:
+`material.lightMap` in sRGB, `lightMapIntensity = scale`). Glass, lamps'
+bulbs and the exterior are not baked.
+
+`preview_lightmaps.py` renders the scene the way the viewer will (every
+baked surface = albedo x lightmap, all real lights off) next to the
+path-traced render (`docs/renders/lmcompare_<view>.png`) to check the bake.
+
+| Quality | Where | Lightmaps | Time |
+|---|---|---|---|
+| `draft` (default) | cloud CPU | 2048 px, 32 samples | ~5 min per map |
+| `final` | laptop, GPU | 4096 px, 1024 samples | minutes per map on a recent GPU |
+
+On the laptop (Blender 4.5 LTS):
+
+```sh
+git pull
+python v2/blender/textures.py                       # or reuse a copied v2/build/textures
+blender -b -P v2/blender/build_shell.py
+blender -b -P v2/blender/build_furniture.py
+blender -b -P v2/blender/bake.py -- --quality final
+```
+
+Cycles bakes every selected object separately and re-syncs the scene each
+time (~2 s per object), so `bake.py` bakes each group as one temporary
+joined copy: 370 objects → one bake per group.
 
 ## Running it
 
