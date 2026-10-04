@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Ons Nieuwe Huis — v2</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root { --ink: #f4f1ea; --dim: rgba(244, 241, 234, .72); --glass: rgba(24, 22, 20, .55); }
+    html, body { margin: 0; height: 100%; background: #1b1a18; color: var(--ink);
+      font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
+    #view { position: fixed; inset: 0; touch-action: none; }
+    .hud { position: fixed; pointer-events: none; }
+    #room { top: 16px; left: 16px; padding: 6px 12px; border-radius: 8px; background: var(--glass);
+      backdrop-filter: blur(6px); font-weight: 600; letter-spacing: .01em; }
+    #moods { bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px;
+      padding: 6px; border-radius: 12px; background: var(--glass); backdrop-filter: blur(6px); pointer-events: auto; }
+    #moods button { border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; color: var(--ink);
+      background: transparent; cursor: pointer; }
+    #moods button[aria-pressed="true"] { background: rgba(244, 241, 234, .18); }
+    #help { top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 18px 22px;
+      border-radius: 12px; background: var(--glass); backdrop-filter: blur(6px); max-width: 340px; }
+    #help h1 { font-size: 20px; margin: 0 0 6px; }
+    #help p { margin: 4px 0; color: var(--dim); }
+    #help.hidden { display: none; }
+    #load { top: 0; left: 0; height: 3px; background: #c8a46a; width: 0; transition: width .2s; }
+    #stick { width: 120px; height: 120px; border-radius: 50%; border: 2px solid rgba(244, 241, 234, .35);
+      display: none; }
+    @media (pointer: coarse) { #help .desk { display: none; } }
+    @media (pointer: fine) { #help .touch { display: none; } }
+  </style>
+  <script type="module" crossorigin src="./assets/index-BnWQFD6g.js"></script>
+</head>
+<body>
+  <canvas id="view"></canvas>
+  <div id="load" class="hud"></div>
+  <div id="room" class="hud">…</div>
+  <div id="help" class="hud">
+    <h1>Ons Nieuwe Huis</h1>
+    <p class="desk">Klik om rond te kijken · <b>WASD</b> of pijltjes om te lopen · <b>Esc</b> om los te laten</p>
+    <p class="touch">Sleep links om te lopen, rechts om rond te kijken</p>
+    <p id="loadtext">Laden…</p>
+  </div>
+  <div id="stick" class="hud"></div>
+  <div id="moods" class="hud" role="group" aria-label="Lichtsfeer">
+    <button data-mood="day" aria-pressed="true">Dag</button>
+    <button data-mood="evening" aria-pressed="false">Avond</button>
+    <button data-mood="night" aria-pressed="false">Nacht</button>
+  </div>
+</body>
+</html>
