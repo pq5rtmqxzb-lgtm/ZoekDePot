@@ -8,3 +8,6 @@ test/artifacts/
 v2/build/
 # v2: downloaded CC0 scans (fetched by v2/blender/textures.py)
 v2/assets/cache/
+# v2 web viewer: generated assets + build output
+v2/web/public/assets/
+v2/web/dist/

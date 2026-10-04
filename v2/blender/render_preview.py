@@ -40,6 +40,7 @@ VIEWS = {
     "badkamer2": dict(eye=(6.60, 1.65, 4.70), target=(4.0, 0.90, 6.60), lamps={"badkamer"}),
     "gang":      dict(eye=(0.70, 1.70, 8.75), target=(6.8, 1.35, 8.80), lamps={"gang"}),
     "avond":     dict(eye=(9.25, 1.70, 13.45), target=(6.9, 1.25, 2.0), lamps="*", mood="evening"),
+    "nacht":     dict(eye=(9.25, 1.70, 13.45), target=(6.9, 1.25, 2.0), lamps="*", mood="night"),
     "dollhouse": dict(eye=(1.0, 24.0, 22.0), target=(4.9, 0.0, 7.4), overview=True),
 }
 

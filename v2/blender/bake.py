@@ -17,7 +17,8 @@ texture as `lightMap` in sRGB, `lightMapIntensity = scale`). The light is
 baked without the surface colour, so walls can be repainted and keep their
 light and shadow. Moods and lamps come from lighting.py (same as the
 path-traced previews). Groups share one atlas each: `shell` (walls, floors,
-ceilings, frames, railings) and `furniture`.
+ceilings, frames — the rooms), `furniture`, and `exterior` (facade,
+railings, balconies, corridor; half resolution).
 """
 import json
 import math
@@ -45,7 +46,7 @@ SKIP_MATERIALS = {"M_glass", "M_frosted", "M_sheer", "M_bulb"}
 
 def parse():
     a = script_args()
-    opts = {"quality": "draft", "moods": ",".join(MOODS), "groups": "shell,furniture"}
+    opts = {"quality": "draft", "moods": ",".join(MOODS), "groups": "shell,furniture,exterior"}
     for i in range(0, len(a) - 1, 2):
         opts[a[i].lstrip("-")] = a[i + 1]
     q = dict(QUALITY[opts["quality"]])
@@ -64,17 +65,32 @@ def bakeable(o):
     return bool(mats - SKIP_MATERIALS)
 
 
+EXTERIOR_ROOMS = ("balkon_n", "balkon_z", "corridor")
+
+
+def is_exterior(o):
+    """Outside the flat: facade skin, railings, screens, balconies and the
+    shared corridor. Baked into their own atlas at half resolution, so the
+    rooms get the texels."""
+    if o.name.startswith(("facade.", "railing.", "screen.")):
+        return True
+    return o.get("room") in EXTERIOR_ROOMS
+
+
 def groups_of(scene_objects):
-    shell, furn = [], []
+    shell, furn, ext = [], [], []
     for o in scene_objects:
         if not bakeable(o):
             continue
         colls = {c.name for c in o.users_collection}
         if colls & set(SHELL_COLLECTIONS):
-            shell.append(o)
+            (ext if is_exterior(o) else shell).append(o)
         elif "furniture" in colls:
-            furn.append(o)
-    return {"shell": shell, "furniture": furn}
+            (ext if is_exterior(o) else furn).append(o)
+    return {"shell": shell, "furniture": furn, "exterior": ext}
+
+
+GROUP_SCALE = {"shell": 1.0, "furniture": 1.0, "exterior": 0.5}
 
 
 def apply_modifiers(objs):
@@ -237,8 +253,9 @@ def main():
         objs = all_groups[g]
         apply_modifiers(objs)
         t = time.time()
-        lightmap_uvs(objs, q["size"])
-        manifest["groups"][g] = {"size": q["size"], "objects": sorted(o.name for o in objs)}
+        size = int(q["size"] * GROUP_SCALE.get(g, 1.0))
+        lightmap_uvs(objs, size)
+        manifest["groups"][g] = {"size": size, "objects": sorted(o.name for o in objs)}
         print(f"[{g}] {len(objs)} objects, lightmap UVs packed in {time.time() - t:.0f}s", flush=True)
 
     for mood in moods:
@@ -246,15 +263,16 @@ def main():
         manifest["maps"][mood] = {}
         for g in groups:
             objs = all_groups[g]
-            img = bpy.data.images.new(f"LM_{mood}_{g}", q["size"], q["size"], float_buffer=True)
+            size = manifest["groups"][g]["size"]
+            img = bpy.data.images.new(f"LM_{mood}_{g}", size, size, float_buffer=True)
             t = time.time()
             bake_group(objs, img, q)
-            clean = denoise(img, q["size"])
+            clean = denoise(img, size)
             name = f"{mood}_{g}.png"
             scale = encode(clean, OUT / name)
             manifest["maps"][mood][g] = {"file": name, "scale": round(scale, 4)}
             bpy.data.images.remove(img)
-            print(f"[{mood}/{g}] baked {q['size']}px x {q['samples']} samples in {time.time() - t:.0f}s, "
+            print(f"[{mood}/{g}] baked {size}px x {q['samples']} samples in {time.time() - t:.0f}s, "
                   f"scale {scale:.3f}", flush=True)
 
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=1))

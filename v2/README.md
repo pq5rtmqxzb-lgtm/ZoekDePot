@@ -16,7 +16,8 @@ v1 stays untouched and live until v2 is better.
 | 2a | Furniture, kitchen, sanitary ware, lamps, wall tiles, plinths | ✅ from `v2/data/furniture.json`, checked against the walls |
 | 2b | Photoreal textures | ✅ CC0 Poly Haven scans via `v2/data/materials.json`; untreated oak plank floor and bathroom tiles composed from scans |
 | 2c | Baked lighting (day / evening / night) for the viewer | ✅ pipeline + draft bake in the cloud; final bake on the laptop GPU (see below) |
-| 3–6 | Viewer, features, deploy, extras | — |
+| 3 | Web viewer core | in progress: `v2/web/` — loads the baked model, lightmaps per mood, walking with collision |
+| 4–6 | Features, deploy, extras | — |
 
 ## Preview (Phase 2b: furnished and textured, CPU draft)
 
@@ -132,6 +133,33 @@ blender -b -P v2/blender/bake.py -- --quality final
 Cycles bakes every selected object separately and re-syncs the scene each
 time (~2 s per object), so `bake.py` bakes each group as one temporary
 joined copy: 370 objects → one bake per group.
+
+## Web viewer (Phase 3)
+
+`v2/web/` — Vite + TypeScript + three.js (r186). It shows the baked model
+exactly as `preview_lightmaps.py` predicts: every baked surface is
+albedo x lightmap x scale (`material.lightMap`, sRGB, `lightMapIntensity =
+scale x pi` because three.js treats a light map as irradiance), unbaked
+exterior pieces are unlit and dimmed per mood, glass and metal only pick up
+reflections from a soft room environment.
+
+```sh
+python v2/blender/export_collision.py   # walls/furniture/rooms -> v2/build/collision.json
+cd v2/web
+npm install
+npm run assets   # v2/build -> public/assets (meshopt + WebP model, WebP lightmaps)
+npm run dev      # http://localhost:5173
+npm test         # headless smoke test + screenshots in v2/docs/renders/web_*.png
+```
+
+- **Walking:** click to look around (mouse), WASD / arrows to walk, Shift to
+  go faster, Q/E to turn. Touch: drag the left half to walk, the right half to
+  look. Collision against the same walls and furniture footprints that
+  `check_furniture.py` verifies (`export_collision.py`); schuifpuien are open
+  on their sliding half, as in v1.
+- **Moods:** Dag / Avond / Nacht buttons switch the lightmap set live.
+- **URL:** `?pos=x,z,yaw,pitch&mood=evening` (yaw/pitch in degrees; three.js
+  rotation: yaw 0 looks north) — used by the smoke test.
 
 ## Running it
 
