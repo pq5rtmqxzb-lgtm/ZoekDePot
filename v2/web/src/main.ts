@@ -139,10 +139,8 @@ const tourBtn = document.getElementById("tourbtn")!;
 const fade = document.getElementById("fade")!;
 const $ = (id: string) => document.getElementById(id)!;
 let tourEnded = false;                               // the panel stays up with "Nog een keer"
-// phones get a lower panel (see the CSS): a short step label, the text held
-// to three lines unless opened with "Lees meer", and no text while walking
+// phones get a lower panel (see the CSS) with a short step label
 const compact = matchMedia("(max-width: 560px), (max-height: 500px)");
-let textOpen = false, textStop = -1;
 compact.addEventListener("change", () => renderTour());
 
 function hideHelp(): void {
@@ -168,15 +166,6 @@ function renderTour(): void {
   $("tourstep").textContent = tourEnded ? (small ? "Einde" : "Einde van de rondleiding")
     : (small ? `${tour.index + 1}/${n}` : `Stap ${tour.index + 1} van ${n}`) + (status ? ` · ${status}` : "");
   $("tourtitle").textContent = st.title;
-  if (textStop !== tour.index) { textOpen = false; textStop = tour.index; }
-  const text = $("tourtext"), more = $("tourmore");
-  text.textContent = st.text;
-  text.hidden = small && walking;
-  text.classList.toggle("clamp", small && !textOpen);
-  // "Lees meer" only when the three lines cut the text off
-  more.hidden = !small || text.hidden || !(textOpen || text.scrollHeight > text.clientHeight + 1);
-  more.textContent = textOpen ? "Minder ▴" : "Lees meer ▾";
-  more.setAttribute("aria-expanded", String(textOpen));
   $("tourprev").hidden = tourEnded;
   $("tournext").hidden = tourEnded;
   ($("tourprev") as HTMLButtonElement).disabled = tour.index === 0;
@@ -222,7 +211,6 @@ press("startfree", hideHelp);
 press("tourbtn", startTour);
 press("tourpause", () => (tourEnded ? startTour() : tour.setPaused(!tour.paused)));
 press("tourstop", stopTour);
-press("tourmore", () => { textOpen = !textOpen; renderTour(); });
 press("tourprev", () => fadeTo(() => tour.jump(tour.index - 1)));      // walking: back to the room just left
 press("tournext", () => fadeTo(() => tour.jump(tour.index + (tour.phase === "walk" ? 0 : 1))));   // walking: arrive now
 addEventListener("keydown", (e) => {

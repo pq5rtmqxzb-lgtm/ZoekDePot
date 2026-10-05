@@ -156,28 +156,23 @@ try {
   check("no page errors (iPad)", errors.length === 0, errors.slice(0, 3).join(" | "));
   await ipad.close();
 
-  // 8. the tour on a phone (iPhone 13): a low panel, the four buttons on one
-  //    row, the text held to three lines ("Lees meer") and gone while walking
+  // 8. the tour on a phone (iPhone 13): a low panel (room name, no
+  //    description) with the four buttons on one row
   const phone = await browser.newContext({ ...devices["iPhone 13"], deviceScaleFactor: 1 });
   const ph = await phone.newPage();
   ph.on("pageerror", (e) => errors.push(String(e)));
   await ph.goto(BASE, { waitUntil: "domcontentloaded", timeout: 120000 });
   await ph.waitForFunction(() => window.__viewer?.ready, null, { timeout: 180000 });
   await ph.click("#starttour");
-  for (let i = 0; i < 3; i++) { await ph.click("#tournext"); await ph.waitForTimeout(700); }   // Slaapkamer 1: a long text
+  for (let i = 0; i < 3; i++) { await ph.click("#tournext"); await ph.waitForTimeout(700); }
   const panel = () => ph.evaluate(() => {
     const r = document.getElementById("tour").getBoundingClientRect();
     const tops = [...document.querySelectorAll("#tour .row button")].map((b) => Math.round(b.getBoundingClientRect().top));
-    return { share: r.height / innerHeight, rows: new Set(tops).size, text: !document.getElementById("tourtext").hidden };
+    return { share: r.height / innerHeight, rows: new Set(tops).size };
   });
   const p0 = await panel();
   check("phone tour: buttons on one row", p0.rows === 1, `rows=${p0.rows}`);
-  check("phone tour: panel under a third of the screen", p0.share < 0.34, `${Math.round(p0.share * 100)}%`);
-  check("phone tour: long text offers Lees meer", await ph.isVisible("#tourmore"));
-  await ph.evaluate(() => { window.__viewer.tour.t = 1e3; });          // walk on
-  await ph.waitForTimeout(1000);
-  const p1 = await panel();
-  check("phone tour: no text while walking", !p1.text && p1.share < 0.2, `text=${p1.text} ${Math.round(p1.share * 100)}%`);
+  check("phone tour: panel under a fifth of the screen", p0.share < 0.2, `${Math.round(p0.share * 100)}%`);
   check("no page errors (phone)", errors.length === 0, errors.slice(0, 3).join(" | "));
   await phone.close();
   await browser.close();

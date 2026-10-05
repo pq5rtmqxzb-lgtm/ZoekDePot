@@ -33,26 +33,19 @@
     #tour[hidden], #tourbtn[hidden] { display: none; }
     #tour [hidden] { display: none !important; }
     #tour .step { font-size: 14px; color: var(--dim); }
-    #tour h2 { font-size: 22px; margin: 2px 0 4px; }
-    #tour p { font-size: 17px; margin: 0 0 12px; color: var(--ink); }
+    #tour h2 { font-size: 22px; margin: 2px 0 12px; }
     #tour .row { display: flex; flex-wrap: wrap; gap: 8px; }
     #tour .row button { flex: 1 1 auto; min-height: 48px; border: 0; border-radius: 10px; padding: 10px 14px;
       font-size: 17px; background: rgba(244, 241, 234, .16); }
     #tour .row #tourpause { background: #c8a46a; color: #1b1a18; font-weight: 600; }
-    #tour .more { display: none; border: 0; background: none; padding: 0 0 8px; margin-top: -8px;
-      font-size: 15px; color: #c8a46a; }
     /* phones: a lower panel, so more of the room stays in view. Title and step
-       share a line, the text is held to three lines ("Lees meer" for the rest)
-       and hidden while walking, and the four buttons fit on one row */
+       share a line and the four buttons fit on one row */
     @media (max-width: 560px), (max-height: 500px) {
       #tour { bottom: 10px; width: calc(100% - 20px); padding: 10px 12px 12px; }
-      #tour .head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+      #tour .head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
       #tour h2 { order: -1; flex: 1 1 auto; min-width: 0; font-size: 19px; margin: 0;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       #tour .step { flex: none; }
-      #tour p { font-size: 16px; line-height: 1.35; margin-bottom: 10px; }
-      #tour p.clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-      #tour .more { display: block; min-height: 32px; }
       #tour .row { flex-wrap: nowrap; gap: 6px; }
       #tour .row button { flex: 1 1 0; min-width: 0; min-height: 54px; padding: 6px 2px; font-size: 13px;
         display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
@@ -100,8 +93,6 @@
       <div class="step" id="tourstep"></div>
       <h2 id="tourtitle"></h2>
     </div>
-    <p id="tourtext"></p>
-    <button id="tourmore" class="more" hidden aria-expanded="false">Lees meer ▾</button>
     <div class="row">
       <button id="tourprev"><span class="ic">←</span> <span>Vorige</span></button>
       <button id="tourpause"><span class="ic">❚❚</span> <span>Pauze</span></button>

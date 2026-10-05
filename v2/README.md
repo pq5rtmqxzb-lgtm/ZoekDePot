@@ -187,10 +187,10 @@ is a build output (~40 MB of model and lightmaps): rebuild it with
   *Rondleiding* button (bottom right) starts it again, and `?tour=1` starts it
   straight away (a link to send). The camera walks by itself through the hal,
   both bathrooms, both bedrooms, the woonkamer, eethoek and keuken to the
-  south balcony, stops in each room, looks slowly left and right and shows a
-  short caption. Big buttons: *Vorige*, *Pauze*, *Volgende*, *Stoppen*
+  south balcony, stops in each room, looks slowly left and right and shows
+  the room's name. Big buttons: *Vorige*, *Pauze*, *Volgende*, *Stoppen*
   (keyboard: Space pauses, Esc stops). Only the stops are written by hand
-  (`STOPS` in `src/tour.ts`: where to stand, where to look, the text); the
+  (`STOPS` in `src/tour.ts`: where to stand, where to look, the name); the
   walks between them are found on the collision data (A* on an 8 cm grid
   that keeps to the middle of doors and corridors, then straightened and
   rounded), so they follow a changed furniture layout. `npm test` checks
