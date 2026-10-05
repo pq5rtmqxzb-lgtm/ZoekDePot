@@ -139,6 +139,11 @@ const tourBtn = document.getElementById("tourbtn")!;
 const fade = document.getElementById("fade")!;
 const $ = (id: string) => document.getElementById(id)!;
 let tourEnded = false;                               // the panel stays up with "Nog een keer"
+// phones get a lower panel (see the CSS): a short step label, the text held
+// to three lines unless opened with "Lees meer", and no text while walking
+const compact = matchMedia("(max-width: 560px), (max-height: 500px)");
+let textOpen = false, textStop = -1;
+compact.addEventListener("change", () => renderTour());
 
 function hideHelp(): void {
   help.classList.add("hidden");
@@ -157,16 +162,37 @@ function renderTour(): void {
   tourBtn.hidden = on || !help.classList.contains("hidden");
   if (!on) return;
   const n = tour.stops.length, st = tour.stops[tour.index];
-  $("tourstep").textContent = tourEnded ? "Einde van de rondleiding"
-    : `Stap ${tour.index + 1} van ${n}${tour.phase === "walk" ? " · onderweg" : ""}${tour.paused ? " · gepauzeerd" : ""}`;
+  const small = compact.matches;
+  const walking = !tourEnded && tour.phase === "walk" && !tour.paused;
+  const status = walking ? "onderweg" : tour.paused && !tourEnded ? "gepauzeerd" : "";
+  $("tourstep").textContent = tourEnded ? (small ? "Einde" : "Einde van de rondleiding")
+    : (small ? `${tour.index + 1}/${n}` : `Stap ${tour.index + 1} van ${n}`) + (status ? ` · ${status}` : "");
   $("tourtitle").textContent = st.title;
-  $("tourtext").textContent = st.text;
+  if (textStop !== tour.index) { textOpen = false; textStop = tour.index; }
+  const text = $("tourtext"), more = $("tourmore");
+  text.textContent = st.text;
+  text.hidden = small && walking;
+  text.classList.toggle("clamp", small && !textOpen);
+  // "Lees meer" only when the three lines cut the text off
+  more.hidden = !small || text.hidden || !(textOpen || text.scrollHeight > text.clientHeight + 1);
+  more.textContent = textOpen ? "Minder ▴" : "Lees meer ▾";
+  more.setAttribute("aria-expanded", String(textOpen));
   $("tourprev").hidden = tourEnded;
   $("tournext").hidden = tourEnded;
   ($("tourprev") as HTMLButtonElement).disabled = tour.index === 0;
   ($("tournext") as HTMLButtonElement).disabled = tour.index === n - 1;
-  $("tourpause").textContent = tourEnded ? "↺ Nog een keer" : tour.paused ? "▶\uFE0E Verder" : "❚❚ Pauze";
-  $("tourstop").textContent = tourEnded ? "Zelf rondlopen" : "✕ Stoppen";
+  if (tourEnded) { label("tourpause", "↺", "Nog een keer"); label("tourstop", "", "Zelf rondlopen"); }
+  else {
+    if (tour.paused) label("tourpause", "▶\uFE0E", "Verder"); else label("tourpause", "❚❚", "Pauze");
+    label("tourstop", "✕", "Stoppen");
+  }
+}
+
+/** Sets a tour button's icon and word (on phones the icon sits above the word). */
+function label(id: string, icon: string, word: string): void {
+  const [ic, w] = $(id).children;
+  ic.textContent = icon;
+  w.textContent = word;
 }
 tour.onChange = renderTour;
 tour.onEnd = () => { tourEnded = true; walker.enabled = true; renderTour(); };
@@ -196,6 +222,7 @@ press("startfree", hideHelp);
 press("tourbtn", startTour);
 press("tourpause", () => (tourEnded ? startTour() : tour.setPaused(!tour.paused)));
 press("tourstop", stopTour);
+press("tourmore", () => { textOpen = !textOpen; renderTour(); });
 press("tourprev", () => fadeTo(() => tour.jump(tour.index - 1)));      // walking: back to the room just left
 press("tournext", () => fadeTo(() => tour.jump(tour.index + (tour.phase === "walk" ? 0 : 1))));   // walking: arrive now
 addEventListener("keydown", (e) => {
