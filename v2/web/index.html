@@ -31,6 +31,7 @@
       box-sizing: border-box; padding: 16px 18px; border-radius: 14px; background: rgba(24, 22, 20, .72);
       backdrop-filter: blur(8px); pointer-events: auto; }
     #tour[hidden], #tourbtn[hidden] { display: none; }
+    #tour [hidden] { display: none !important; }
     #tour .step { font-size: 14px; color: var(--dim); }
     #tour h2 { font-size: 22px; margin: 2px 0 4px; }
     #tour p { font-size: 17px; margin: 0 0 12px; color: var(--ink); }
@@ -38,6 +39,26 @@
     #tour .row button { flex: 1 1 auto; min-height: 48px; border: 0; border-radius: 10px; padding: 10px 14px;
       font-size: 17px; background: rgba(244, 241, 234, .16); }
     #tour .row #tourpause { background: #c8a46a; color: #1b1a18; font-weight: 600; }
+    #tour .more { display: none; border: 0; background: none; padding: 0 0 8px; margin-top: -8px;
+      font-size: 15px; color: #c8a46a; }
+    /* phones: a lower panel, so more of the room stays in view. Title and step
+       share a line, the text is held to three lines ("Lees meer" for the rest)
+       and hidden while walking, and the four buttons fit on one row */
+    @media (max-width: 560px), (max-height: 500px) {
+      #tour { bottom: 10px; width: calc(100% - 20px); padding: 10px 12px 12px; }
+      #tour .head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+      #tour h2 { order: -1; flex: 1 1 auto; min-width: 0; font-size: 19px; margin: 0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #tour .step { flex: none; }
+      #tour p { font-size: 16px; line-height: 1.35; margin-bottom: 10px; }
+      #tour p.clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+      #tour .more { display: block; min-height: 32px; }
+      #tour .row { flex-wrap: nowrap; gap: 6px; }
+      #tour .row button { flex: 1 1 0; min-width: 0; min-height: 54px; padding: 6px 2px; font-size: 13px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+      #tour .row .ic { order: -1; font-size: 19px; line-height: 1; }
+      #tour .row .ic:empty { display: none; }
+    }
     body.touring #moods, body.touring #tourbtn { display: none; }
     #fade { inset: 0; background: #1b1a18; opacity: 0; transition: opacity .3s; }
     #help { top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 18px 22px;
@@ -75,14 +96,17 @@
   </div>
   <button id="tourbtn" class="hud big" hidden>▶&#xFE0E; Rondleiding</button>
   <div id="tour" class="hud" hidden role="region" aria-label="Rondleiding" aria-live="polite">
-    <div class="step" id="tourstep"></div>
-    <h2 id="tourtitle"></h2>
+    <div class="head">
+      <div class="step" id="tourstep"></div>
+      <h2 id="tourtitle"></h2>
+    </div>
     <p id="tourtext"></p>
+    <button id="tourmore" class="more" hidden aria-expanded="false">Lees meer ▾</button>
     <div class="row">
-      <button id="tourprev">◀&#xFE0E; Vorige</button>
-      <button id="tourpause">❚❚ Pauze</button>
-      <button id="tournext">Volgende ▶&#xFE0E;</button>
-      <button id="tourstop">✕ Stoppen</button>
+      <button id="tourprev"><span class="ic">←</span> <span>Vorige</span></button>
+      <button id="tourpause"><span class="ic">❚❚</span> <span>Pauze</span></button>
+      <button id="tournext"><span>Volgende</span> <span class="ic">→</span></button>
+      <button id="tourstop"><span class="ic">✕</span> <span>Stoppen</span></button>
     </div>
   </div>
   <div id="fade" class="hud"></div>
