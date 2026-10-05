@@ -1,5 +1,5 @@
 // Guided tour ("Rondleiding"): the camera walks by itself from room to room,
-// stops, looks around slowly and shows a caption — for visitors who find
+// stops, looks around slowly and names the room — for visitors who find
 // steering through a 3D world hard. Only the stops are written by hand; the
 // walking paths between them are found on the same collision data the
 // walker uses (A* on a grid, kept to the middle of corridors and doors, then
@@ -8,7 +8,6 @@ import { roomAt, type CollisionData } from "./collision";
 
 export interface Stop {
   title: string;
-  text: string;
   at: [number, number];      // where to stand (plan frame: x east, z south)
   look: [number, number];    // the point to face
   pitch?: number;            // degrees, negative = down
@@ -16,24 +15,15 @@ export interface Stop {
 }
 
 export const STOPS: Stop[] = [
-  { title: "De hal", at: [1.3, 8.75], look: [6.9, 8.75],
-    text: "Welkom in ons nieuwe huis! Dit is de hal met de voordeur. De rondleiding loopt vanzelf door alle kamers." },
-  { title: "De tweede badkamer", at: [3.25, 10.75], look: [0.9, 10.75],
-    text: "Een kleine badkamer met een inloopdouche, een dubbele wastafel en een hangtoilet." },
-  { title: "Slaapkamer 2", at: [3.0, 11.95], look: [1.2, 13.4],
-    text: "Met ons eigen bed (140 x 200), een grote kledingkast en een bureau in de nis." },
-  { title: "Slaapkamer 1", at: [3.4, 3.35], look: [0.9, 2.0], pitch: -10,
-    text: "De grote slaapkamer: ons eigen bed tegen de schuine wand, een kledingkast en een leesstoel. De schuifpui komt uit op het balkon aan de noordkant." },
-  { title: "De badkamer", at: [4.4, 5.6], look: [6.3, 5.3], pitch: -10,
-    text: "Een eigen ontwerp: wastafel met spiegel, douchetoilet en een inloopdouche met groene tegels en een regendouche uit het plafond." },
-  { title: "De woonkamer", at: [8.0, 5.6], look: [9.0, 1.8],
-    text: "De zithoek met de bank, fauteuils en de tv. Aan deze kant is ook een balkon." },
-  { title: "De eethoek", at: [10.1, 9.8], look: [8.0, 13.6],
-    text: "Onze eigen tafel (260 x 100) bij de grote schuifpui op het zuiden." },
-  { title: "De keuken", at: [7.3, 13.4], look: [5.0, 10.4], pitch: -12,
-    text: "Onze eigen SieMatic-keuken: een kookeiland met inductie en een hoge kastenwand met twee ovens en de koelkast." },
-  { title: "Het grote balkon", at: [7.3, 14.95], look: [9.3, 17.6],
-    text: "Het balkon op het zuiden (24 m²) met een loungebank en stoelen. Dit was de rondleiding — veel kijkplezier!" },
+  { title: "De hal", at: [1.3, 8.75], look: [6.9, 8.75] },
+  { title: "De tweede badkamer", at: [3.25, 10.75], look: [0.9, 10.75] },
+  { title: "Slaapkamer 2", at: [3.0, 11.95], look: [1.2, 13.4] },
+  { title: "Slaapkamer 1", at: [3.4, 3.35], look: [0.9, 2.0], pitch: -10 },
+  { title: "De badkamer", at: [4.4, 5.6], look: [6.3, 5.3], pitch: -10 },
+  { title: "De woonkamer", at: [8.0, 5.6], look: [9.0, 1.8] },
+  { title: "De eethoek", at: [10.1, 9.8], look: [8.0, 13.6] },
+  { title: "De keuken", at: [7.3, 13.4], look: [5.0, 10.4], pitch: -12 },
+  { title: "Het grote balkon", at: [7.3, 14.95], look: [9.3, 17.6] },
 ];
 
 const CELL = 0.08;           // A* grid, metres
