@@ -416,6 +416,23 @@
     "scale": 4.7312,
     "lite": "day_exterior-lite.webp"
    }
+  },
+  "evening": {
+   "shell": {
+    "file": "evening_shell.webp",
+    "scale": 0.8072,
+    "lite": "evening_shell-lite.webp"
+   },
+   "furniture": {
+    "file": "evening_furniture.webp",
+    "scale": 2.1342,
+    "lite": "evening_furniture-lite.webp"
+   },
+   "exterior": {
+    "file": "evening_exterior.webp",
+    "scale": 0.6034,
+    "lite": "evening_exterior-lite.webp"
+   }
   }
  }
 }
