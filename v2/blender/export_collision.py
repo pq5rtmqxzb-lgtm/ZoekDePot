@@ -20,7 +20,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from check_furniture import as_footprint  # noqa: E402
+from check_furniture import KITCHEN_BOXES, as_footprint  # noqa: E402
 from geom2d import pui_closed_span, seg_point  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -57,8 +57,8 @@ def main():
                 sx, sz0, sz1 = it["screen"]
                 walls.append({"x1": sx, "z1": sz0, "x2": sx, "z2": sz1, "r": 0.01, "kind": "glass"})
             if it["type"] == "kitchen_d":       # tall cabinet wall + island (see furniture.kitchen_d)
-                boxes.append({"id": "kitchen_tall", "x": 5.6935, "z": 9.95, "w": 2.587, "d": 0.62, "rot": 0})
-                boxes.append({"id": "kitchen_island", "x": 5.91, "z": 12.545, "w": 1.02, "d": 2.594, "rot": 0})
+                for kid, kx, kz, kw, kd in KITCHEN_BOXES:
+                    boxes.append({"id": kid, "x": kx, "z": kz, "w": kw, "d": kd, "rot": 0})
             continue
         box, fp = as_footprint(it)
         if fp is None:

@@ -20,9 +20,9 @@ export const STOPS: Stop[] = [
   { title: "Slaapkamer 2", at: [3.0, 11.95], look: [1.2, 13.4] },
   { title: "Slaapkamer 1", at: [3.4, 3.35], look: [0.9, 2.0], pitch: -10 },
   { title: "De badkamer", at: [4.4, 5.6], look: [6.3, 5.3], pitch: -10 },
-  { title: "De woonkamer", at: [8.0, 5.6], look: [9.0, 1.8] },
-  { title: "De eethoek", at: [10.1, 9.8], look: [8.0, 13.6] },
-  { title: "De keuken", at: [7.3, 13.4], look: [5.0, 10.4], pitch: -12 },
+  { title: "De woonkamer", at: [9.7, 3.2], look: [7.4, 1.2] },
+  { title: "De eethoek", at: [10.0, 10.9], look: [8.2, 7.4] },
+  { title: "De keuken", at: [7.3, 13.25], look: [4.9, 11.2], pitch: -12 },
   { title: "Het grote balkon", at: [7.3, 14.95], look: [9.3, 17.6] },
 ];
 
