@@ -30,10 +30,12 @@ OUT = ROOT / "v2" / "docs" / "renders"
 # lamps are on ("*" = all), mood.
 VIEWS = {
     "woonkamer": dict(eye=(9.25, 1.70, 13.45), target=(6.9, 1.25, 2.0)),
-    "eettafel":  dict(eye=(10.25, 1.70, 9.90), target=(7.4, 0.85, 5.0)),
-    "keuken":    dict(eye=(8.60, 1.70, 4.20), target=(5.4, 1.15, 14.5)),
+    "eettafel":  dict(eye=(10.15, 1.70, 10.90), target=(7.6, 0.85, 6.6)),
+    "keuken":    dict(eye=(8.60, 1.70, 4.20), target=(5.6, 1.15, 12.0)),
     "eiland":    dict(eye=(9.60, 1.70, 12.80), target=(5.2, 1.00, 10.9)),
-    "slx":       dict(eye=(4.62, 1.55, 13.75), target=(5.75, 0.70, 11.2)),
+    "slx":       dict(eye=(6.60, 1.60, 13.50), target=(4.7, 1.30, 11.4)),
+    "koffie":    dict(eye=(5.60, 1.55, 11.20), target=(6.1, 0.90, 9.85)),
+    "zithoek":   dict(eye=(10.10, 1.65, 4.30), target=(7.0, 0.80, 1.0)),
     "slaapk1":   dict(eye=(2.30, 1.70, 3.85), target=(5.4, 0.80, 1.2)),
     "slaapk2":   dict(eye=(3.20, 1.70, 11.75), target=(1.0, 0.90, 14.6)),
     "badkamer":  dict(eye=(4.10, 1.65, 4.85), target=(6.7, 0.80, 6.85), lamps={"badkamer"}),

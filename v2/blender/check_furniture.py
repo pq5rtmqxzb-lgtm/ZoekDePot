@@ -31,6 +31,9 @@ FOOTPRINT = {
     "dresser":      lambda it: (it.get("w", 1.2), it.get("d", 0.45), 0.0),
     "bookshelf":    lambda it: (it.get("w", 1.8), it.get("d", 0.32), 0.0),
     "tv_unit":      lambda it: (it.get("w", 1.8), 0.42, 0.0),
+    "tv_wall":      lambda it: (it.get("w", 1.72), 0.06, 0.0),
+    "organic_table": lambda it: (it.get("w", 0.85), it.get("d", 1.4), 0.0),
+    "bench":        lambda it: (it.get("w", 1.7), it.get("d", 0.5), 0.0),
     "side_table":   lambda it: (0.50, 0.50, 0.0),
     "bar_stool":    lambda it: (0.36, 0.36, 0.0),
     "counter_stool": lambda it: (0.40, 0.40, 0.0),
@@ -44,6 +47,11 @@ FOOTPRINT = {
     "vanity":       lambda it: (it.get("w", 1.0), 0.48, 0.0),
     "radiator":     lambda it: (it.get("w", 0.5), 0.10, 0.0),
 }
+# the kitchen is one item ("kitchen_d"); its blocks as plan boxes (id, x, z,
+# w along x, d along z), the same numbers as TALL / ISLAND in furniture.py
+KITCHEN_BOXES = [("kitchen_tall", 4.71, 11.83, 0.62, 2.629),       # tall wall against the slaapk2 wall
+                 ("kitchen_island", 7.47, 11.83, 2.614, 1.14),     # island incl. worktop overhang
+                 ("kitchen_island_end", 9.077, 11.83, 0.62, 1.14)]  # the 60 cm row at its east end
 # built-ins given as an axis-aligned box x1..x2, z1..z2
 AXIS_BOXES = {"voorzetwand", "tiled_bench", "niche_wall"}
 

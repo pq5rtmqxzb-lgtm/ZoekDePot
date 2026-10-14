@@ -47,10 +47,10 @@ another piece, or leaves its room.
 
 | Room | Pieces |
 |---|---|
-| Woonkamer, zithoek | 3-zitsbank 240x95 (linnen), bouclé fauteuil, salontafel 120x60 eiken, tv-meubel 180 + 65" tv, boekenkast 180x210, vloerkleed 300x250, vloerlamp, plant |
-| Woonkamer, eethoek (zuid) | **eigen tafel 260x100** bij de grote zuidpui, 8 eiken stoelen met linnen zitkussen, 2 hanglampen |
-| Keuken | **eigen keuken: SieMatic SLX** volgens de keukentekeningen (greeploos, mat gelakte fronten licht greige, bronskleurige greepkanalen), werkblad **Caesarstone 4230 Shitake**. Hoge kastenwand 2,57 m tot aan het plafond (extra rij kasten) met twee zwarte Siemens-ovens en de Siemens inbouwkoelkast; kookeiland 2574 x 1000 x 950 met Siemens inductie + afzuiging, Franke Maris spoelbak + Lina XL kraan in Coffee, vaatwasser, twee krukken in het midden; 2 hanglampen |
-| Woonkamer, midden | 2 linnen fauteuils + bijzettafel naar de zithoek gericht, vloerkleed, vloerlamp; dressoir 120x45 met tafellamp tegen het badkamerblok |
+| Woonkamer, noordpui | kleine eettafel 140x85 met organische vorm (eiken) in de avondzon, gestoffeerde bank 170x50 tegen de oostwand + 2 stoelen, hanglamp; zithoek: 3-zitsbank 240x95 (linnen) die naar de pui kijkt, bouclé fauteuil, salontafel 120x60 eiken, boekenkast 180x210 tegen de wand van slaapkamer 1, vloerkleed 260x220, leeslamp, plant |
+| Woonkamer, tv-hoek | relaxbank 220x100 tegen het badkamerblok, grote platte tv (77") aan de oostwand (woningscheidende wand) met soundbar, bijzettafel, vloerlamp, vloerkleed |
+| Woonkamer, eethoek | **eigen tafel 260x100** in het midden van de woonkamer, tussen de tv-hoek en het kookeiland, 8 eiken stoelen met linnen zitkussen, 2 hanglampen |
+| Keuken | **eigen keuken: SieMatic SLX**, nieuwe opstelling (greeploos, mat gelakte fronten licht greige, bronskleurige greepkanalen met LED-strips), werkblad **Caesarstone 4230 Shitake**. Hoge kastenwand 2,63 m tot aan het plafond tegen de wand van slaapkamer 2: twee zwarte Siemens-ovens tussen twee verlichte verticale greeplijsten, Siemens inbouwkoelkast; kookeiland dwars, 2594 x 1120 x 950: Franke Maris spoelbak + Lina XL kraan in Coffee, vaatwasser en Siemens inductie + afzuiging aan de zuidkant, 150 cm beenruimte met twee krukken aan de noordkant, aan de oostkant een rij kastjes van 60 cm; 2 hanglampen. Dressoir tegen de gangwand als koffiehoek met de eigen ECM-espressomachine en Eureka Mignon-molen |
 | Woonkamer, zuid | planten, vitrage |
 | Slaapkamer 1 | **eigen bed 140x200** met gestoffeerd hoofdbord tegen de lange schuine wand, 2 nachtkastjes + lampen, kledingkast 160x60x230, leesstoel + lamp tegen de oostwand, verduisterend linnen |
 | Slaapkamer 2 | **eigen bed 140x200**, 2 nachtkastjes, kledingkast 200x60x230, bureau 120x60 met stoel in de nis |

@@ -16,7 +16,9 @@ export class Walker {
     addEventListener("keyup", (e) => this.keys.delete(e.code));
     addEventListener("blur", () => this.keys.clear());
     el.addEventListener("click", () => {
-      if (this.enabled && matchMedia("(pointer: fine)").matches) el.requestPointerLock?.();
+      // the browser may refuse the lock (headless, iframe); walking still works
+      if (this.enabled && matchMedia("(pointer: fine)").matches)
+        Promise.resolve(el.requestPointerLock?.()).catch(() => {});
       this.onFirstInput();
     });
     addEventListener("mousemove", (e) => {

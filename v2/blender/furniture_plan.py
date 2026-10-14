@@ -12,13 +12,13 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from check_furniture import as_footprint
+from check_furniture import KITCHEN_BOXES, as_footprint
 
 ROOT = Path(__file__).resolve().parents[2]
 PX, X0, Z0 = 113.4, 306, 347            # floorplan-pdf.png: col = X0 + PX x, row = Z0 + PX z
 CROP = (40, 150, 1600, 2420)
-# the kitchen is one item ("kitchen_d"); draw its two blocks (as export_collision.py)
-KITCHEN = [("kitchen: kastenwand", 5.6935, 9.95, 2.587, 0.62), ("kitchen: eiland", 5.91, 12.545, 1.02, 2.594)]
+# the kitchen is one item ("kitchen_d"); draw its blocks (as export_collision.py)
+KITCHEN = [(name.replace("_", ": ", 1), x, z, w, d) for name, x, z, w, d in KITCHEN_BOXES]
 
 
 def px(x, z):
