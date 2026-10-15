@@ -24,6 +24,7 @@ FOOTPRINT = {
     "nightstand":   lambda it: (0.45, 0.40, 0.0),
     "wardrobe":     lambda it: (it.get("w", 1.6), it.get("d", 0.6), 0.0),
     "sofa":         lambda it: (it.get("w", 2.4), it.get("d", 0.95), 0.0),
+    "sofa_box":     lambda it: (it["w"], it["d"], 0.0),                    # a leg of a corner_sofa (expand)
     "armchair":     lambda it: (0.80, 0.80, 0.0),
     "coffee_table": lambda it: (it.get("w", 1.2), it.get("d", 0.6), 0.0),
     "dining_table": lambda it: (it.get("w", 1.0) + 2 * 0.40, it.get("d", 2.6), 0.0),   # incl. chairs
@@ -56,6 +57,26 @@ KITCHEN_BOXES = [("kitchen_tall", 4.71, 11.83, 0.62, 2.629),       # tall wall a
 AXIS_BOXES = {"voorzetwand", "tiled_bench", "niche_wall"}
 
 
+def expand(items):
+    """Items with an L-shaped footprint (corner_sofa) as one plain box per
+    leg (ids `<id>` and `<id>.leg`), so every check and the collision see
+    the real outline instead of its bounding box."""
+    for it in items:
+        if it["type"] != "corner_sofa":
+            yield it
+            continue
+        w, d, leg = it.get("w", 2.6), it.get("d", 0.95), it.get("leg", 2.2)
+        side = -1 if it.get("leg_side") == "-x" else 1
+        ry = math.radians(it.get("rot", 0))
+        c, s = math.cos(ry), math.sin(ry)
+        # leg: the part beyond the main seat's front, at the `side` end
+        lx, lz, lw, ld = side * (w / 2 - d / 2), d / 2 + (leg - d) / 2, d, leg - d
+        yield dict(it, type="sofa_box", w=w, d=d)
+        # the leg's own frame faces where its seats face (the main's -side end)
+        yield dict(it, id=it["id"] + ".leg", type="sofa_box", w=ld, d=lw, rot=it.get("rot", 0) - side * 90,
+                   x=it["x"] + c * lx + s * lz, z=it["z"] - s * lx + c * lz)
+
+
 def as_footprint(it):
     """(item with x, z, rot, footprint fn) for any piece with a footprint."""
     if it["type"] in AXIS_BOXES:
@@ -72,7 +93,7 @@ def main():
     for r in rooms:
         r.setdefault("polys", [])
     walls = [g for g in model["geom"] if g["kind"] in SOLID or g["kind"] in ("railing", "screen")]
-    items = json.loads((ROOT / "v2" / "data" / "furniture.json").read_text())["items"]
+    items = list(expand(json.loads((ROOT / "v2" / "data" / "furniture.json").read_text())["items"]))
     ids = [it["id"] for it in items]
     problems = [f"duplicate id {i!r}" for i in set(ids) if ids.count(i) > 1]
     checked = 0

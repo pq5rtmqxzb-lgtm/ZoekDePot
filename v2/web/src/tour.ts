@@ -17,10 +17,10 @@ export interface Stop {
 export const STOPS: Stop[] = [
   { title: "De hal", at: [1.3, 8.75], look: [6.9, 8.75] },
   { title: "De tweede badkamer", at: [3.25, 10.75], look: [0.9, 10.75] },
-  { title: "Slaapkamer 2", at: [3.0, 11.95], look: [1.2, 13.4] },
+  { title: "Slaapkamer 2", at: [3.0, 11.95], look: [1.6, 14.2] },
   { title: "Slaapkamer 1", at: [3.4, 3.35], look: [0.9, 2.0], pitch: -10 },
   { title: "De badkamer", at: [4.4, 5.6], look: [6.3, 5.3], pitch: -10 },
-  { title: "De woonkamer", at: [9.7, 3.2], look: [7.4, 1.2] },
+  { title: "De woonkamer", at: [10.0, 7.1], look: [7.6, 4.6] },
   { title: "De eethoek", at: [10.0, 10.9], look: [8.2, 7.4] },
   { title: "De keuken", at: [7.3, 13.25], look: [4.9, 11.2], pitch: -12 },
   { title: "Het grote balkon", at: [7.3, 14.95], look: [9.3, 17.6] },

@@ -20,7 +20,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
-from check_furniture import KITCHEN_BOXES, as_footprint  # noqa: E402
+from check_furniture import KITCHEN_BOXES, as_footprint, expand  # noqa: E402
 from geom2d import pui_closed_span, seg_point  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -33,7 +33,7 @@ NO_COLLIDE = {"rug", "curtains", "pendant", "downlight", "kitchen_d", "techniek"
 
 def main():
     model = json.loads((ROOT / "data" / "model.json").read_text())
-    items = json.loads((ROOT / "v2" / "data" / "furniture.json").read_text())["items"]
+    items = list(expand(json.loads((ROOT / "v2" / "data" / "furniture.json").read_text())["items"]))
     walls = []
     for g in model["geom"]:
         k, t = g["kind"], g.get("t", 0.20)
