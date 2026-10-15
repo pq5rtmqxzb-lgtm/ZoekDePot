@@ -10,3 +10,6 @@ v2/assets/cache/
 # v2 web viewer: generated assets + build output
 v2/web/public/assets/
 v2/web/dist/
+
+# local Python venv (laptop bake)
+.venv/
