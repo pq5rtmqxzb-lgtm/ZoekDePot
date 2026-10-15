@@ -47,6 +47,7 @@ KIND_STYLE = {
     "railing": {"color": "#8b3fc0", "lw": 2.0, "label": "balcony railing"},
     "screen":  {"color": "#8b3fc0", "lw": 2.0, "label": "privacy screen"},
     "sidelight": {"color": "#00b8c4", "lw": 3.0, "label": "fixed glass (side light)"},
+    "fixed":   {"color": "#00b8c4", "lw": 3.0, "label": "fixed glass (vaste pui)"},
 }
 
 

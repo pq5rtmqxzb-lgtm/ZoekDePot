@@ -17,8 +17,8 @@ from mathutils import Vector  # after common: the pip bpy module must load first
 
 COLL = "furniture"
 BOOKS = ["book_red", "book_blue", "book_ochre", "book_green", "book_cream", "book_plum", "book_black"]
-RUG = {"oat": "rug_oat", "stone": "rug_stone", "taupe": "rug_taupe"}
-FABRIC = {"linen": "linen", "boucle": "boucle", "oat": "linen_oat", "outdoor": "outdoor"}
+RUG = {"oat": "rug_oat", "stone": "rug_stone", "taupe": "rug_taupe", "green_pine": "rug_moor"}
+FABRIC = {"linen": "linen", "boucle": "boucle", "oat": "linen_oat", "outdoor": "outdoor", "charcoal": "fabric_charcoal"}
 
 
 class F:
@@ -235,6 +235,49 @@ def chair(f, it, seat_pad=True):
         f.box(0.40, 0.04, 0.40, "linen_oat", 0, 0.49, 0.01, soft=True)
 
 
+def _rounded(pts, r=0.045, k=4):
+    """Polyline through model points with every inner corner rounded
+    (bent tube): each corner becomes a short quadratic curve."""
+    out = [pts[0]]
+    for a, b, c in zip(pts, pts[1:], pts[2:]):
+        va, vc = Vector(a) - Vector(b), Vector(c) - Vector(b)
+        ra, rc = min(r, va.length / 2), min(r, vc.length / 2)
+        p0, p2 = Vector(b) + va.normalized() * ra, Vector(b) + vc.normalized() * rc
+        for i in range(k + 1):
+            t = i / k
+            out.append(tuple(p0 * (1 - t) ** 2 + Vector(b) * 2 * t * (1 - t) + p2 * t * t))
+    out.append(pts[-1])
+    return out
+
+
+def sled_armchair(f, it):
+    """The owners' dining chairs: mustard woven upholstery (seat + back),
+    a sled frame of yellow powder-coated tube that runs on into the arms,
+    black armrest pads. About 56 x 55 cm, seat 46, arms 66, back 88 cm."""
+    def p(ox, y, oz):
+        x, z = f.w(ox, oz)
+        return (x, y, z)
+    r = 0.009
+    for sx in (-1, 1):                                    # side loop: runner, front leg, arm, rear leg
+        x = sx * 0.255
+        tube(f, _rounded([p(x, r, 0.0), p(x, r, 0.24), p(x, 0.665, 0.20), p(x, 0.665, -0.21),
+                          p(x, r, -0.25), p(x, r, -0.01)]), r, "powder_yellow")
+        f.box(0.042, 0.022, 0.30, "armpad", x, 0.665 + r + 0.011, 0.02)
+    for oz in (0.17, -0.19):                              # cross tubes under the seat
+        tube(f, [p(-0.255, 0.40, oz), p(0.255, 0.40, oz)], r, "powder_yellow")
+    tube(f, [p(-0.255, r, -0.24), p(0.255, r, -0.24)], r, "powder_yellow")
+    f.box(0.48, 0.065, 0.46, "fabric_mustard", 0, 0.4425, 0.0, soft=True)     # seat 0.41..0.475
+    # back: upholstered panel between the arms, leaning back 5 cm
+    base = [f.w(-0.235, -0.27), f.w(0.235, -0.27), f.w(0.235, -0.215), f.w(-0.235, -0.215)]
+    top = [f.w(-0.235, -0.32), f.w(0.235, -0.32), f.w(0.235, -0.265), f.w(-0.235, -0.265)]
+    f.ms.prism(f.name(True), COLL, "fabric_mustard", base, 0.50, 0.885, f.props, top=top)
+
+
+CHAIRS = {"oak": chair, "sled_arm": sled_armchair}
+# how far a dining chair's centre stands out from the table edge
+CHAIR_OUT = {"oak": 0.16, "sled_arm": 0.22}
+
+
 def dining_table(f, it):
     w, d = it.get("w", 1.0), it.get("d", 2.6)
     f.box(w, 0.04, d, "oak", 0, 0.74, 0)
@@ -248,11 +291,12 @@ def dining_table(f, it):
     b = f.cyl(0.16, 0.76, 0.82, "oak_dark", oz=-d * 0.25, r_top=0.18)
     f.ms.hollow_top(f.name(False), b, 0.012, 0.05)
     n = it.get("chairs", 8) // 2
+    model = it.get("chair", "oak")
     for side, rot in ((-1, 90), (1, -90)):
         for i in range(n):
             oz = -d / 2 + d * (i + 0.5) / n
-            cx, cz = f.w(side * (w / 2 + 0.16), oz)
-            chair(F(f.ms, it, f.lights, cx, cz, math.degrees(f.ry) + rot, suffix=f".chair{side}{i}"), {})
+            cx, cz = f.w(side * (w / 2 + CHAIR_OUT[model]), oz)
+            CHAIRS[model](F(f.ms, it, f.lights, cx, cz, math.degrees(f.ry) + rot, suffix=f".chair{side}{i}"), {})
 
 
 def bar_stool(f, it):
@@ -469,6 +513,29 @@ def downlight(f, it, ceil=WALL_HEIGHT):
     f.cyl(0.045, ceil - 0.006, ceil - 0.001, "bulb", n=20)
     f.cyl(0.055, ceil - 0.004, ceil - 0.0005, "plinth", n=20)
     f.light(0, ceil - 0.03, 0, 12, kind="SPOT", spot_deg=100, radius=0.03)
+
+
+def track(f, it, ceil=WALL_HEIGHT):
+    """Rectangular black ceiling track (x1..x2, z1..z2, surface-mounted)
+    with spots hanging from it: `spots` per long side, one on each short
+    side, every head pointing straight down."""
+    g = F(f.ms, it, f.lights, 0.0, 0.0, 0.0)
+    x1, z1, x2, z2 = it["x1"], it["z1"], it["x2"], it["z2"]
+    pw, ph = 0.035, 0.045                                    # profile
+    y = ceil - ph / 2
+    for zz in (z1, z2):
+        g.box(x2 - x1 + pw, ph, pw, "black", (x1 + x2) / 2, y, zz)
+    for xx in (x1, x2):
+        g.box(pw, ph, z2 - z1 - pw, "black", xx, y, (z1 + z2) / 2)
+    n = it.get("spots", 8)
+    heads = [(xx, z1 + (z2 - z1) * (i + 0.5) / n) for xx in (x1, x2) for i in range(n)]
+    heads += [((x1 + x2) / 2, zz) for zz in (z1, z2)]
+    for hx, hz in heads:
+        g.box(0.03, 0.03, 0.06, "black", hx, ceil - ph - 0.015, hz)             # adapter in the track
+        g.cyl(0.012, ceil - ph - 0.09, ceil - ph - 0.03, "black", ox=hx, oz=hz, n=10)
+        g.cyl(0.032, ceil - ph - 0.21, ceil - ph - 0.09, "black", ox=hx, oz=hz, n=24)   # head
+        g.cyl(0.024, ceil - ph - 0.212, ceil - ph - 0.205, "bulb", ox=hx, oz=hz, n=20)
+        g.light(hx, ceil - ph - 0.22, hz, 10, kind="SPOT", spot_deg=60, radius=0.02)
 
 
 def desk(f, it):
@@ -985,7 +1052,7 @@ BUILDERS = {
     "wall_toilet": wall_toilet, "vanity": vanity, "fontein": fontein, "radiator": radiator,
     "techniek": techniek, "tiled_bench": tiled_bench, "niche_wall": niche_wall,
     "counter_stool": counter_stool, "corner_sofa": corner_sofa, "tv_wall": tv_wall, "bench": bench, "organic_table": organic_table,
-    "espresso_machine": espresso_machine, "grinder": grinder,
+    "espresso_machine": espresso_machine, "grinder": grinder, "track": track,
 }
 
 
@@ -999,7 +1066,7 @@ def build_items(mats, items, rooms):
         if fn is None:
             raise SystemExit(f"furniture.json: unknown type {it['type']!r} ({it['id']})")
         f = F(ms, it, lights)
-        if it["type"] in ("pendant", "downlight"):
+        if it["type"] in ("pendant", "downlight", "track"):
             fn(f, it, ceil=ceil.get(it.get("room"), WALL_HEIGHT))
         elif it["type"] == "walkin_shower":
             fn(f, dict(it, _ceil=ceil.get(it.get("room"), WALL_HEIGHT)))

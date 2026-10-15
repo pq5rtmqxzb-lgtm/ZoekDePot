@@ -57,6 +57,7 @@
     "pui.3",
     "pui.69",
     "pui.73",
+    "pui.74",
     "pui.76",
     "wall.badkamer.19",
     "wall.badkamer.24",
@@ -180,6 +181,7 @@
     "wall.woonkamer.76",
     "wall.woonkamer.78",
     "wall.woonkamer.79",
+    "wall.woonkamer.99",
     "wall.woonkamer.x"
    ]
   },
@@ -225,26 +227,17 @@
     "furn.floorlamp_south",
     "furn.fontein",
     "furn.grinder",
-    "furn.hoekbank",
-    "furn.hoekbank.soft",
     "furn.kitchen.island",
     "furn.kitchen.tall",
     "furn.niche_bk",
     "furn.nightstand1",
     "furn.nightstand1b",
     "furn.nightstand2a",
-    "furn.nook_bench",
-    "furn.nook_bench.soft",
     "furn.nook_chair_a",
     "furn.nook_chair_a.soft",
     "furn.nook_chair_b",
     "furn.nook_chair_b.soft",
     "furn.nook_table",
-    "furn.pendant_dining_a",
-    "furn.pendant_dining_b",
-    "furn.pendant_island_a",
-    "furn.pendant_island_b",
-    "furn.pendant_nook",
     "furn.plant1",
     "furn.plant1.blob",
     "furn.plant2",
@@ -264,6 +257,8 @@
     "furn.shower_bk",
     "furn.shower_k",
     "furn.sidetable_s",
+    "furn.sofa",
+    "furn.sofa.soft",
     "furn.spot_berging",
     "furn.spot_berging1",
     "furn.spot_bk_1",
@@ -279,6 +274,7 @@
     "furn.techniek",
     "furn.toilet_bk",
     "furn.toilet_wc",
+    "furn.track",
     "furn.tv",
     "furn.vanity_bk",
     "furn.vanity_k",
@@ -387,35 +383,18 @@
   "day": {
    "shell": {
     "file": "day_shell.webp",
-    "scale": 1.9065,
+    "scale": 1.8724,
     "lite": "day_shell-lite.webp"
    },
    "furniture": {
     "file": "day_furniture.webp",
-    "scale": 1.4999,
+    "scale": 1.5562,
     "lite": "day_furniture-lite.webp"
    },
    "exterior": {
     "file": "day_exterior.webp",
-    "scale": 4.7309,
+    "scale": 4.7287,
     "lite": "day_exterior-lite.webp"
-   }
-  },
-  "evening": {
-   "shell": {
-    "file": "evening_shell.webp",
-    "scale": 0.7966,
-    "lite": "evening_shell-lite.webp"
-   },
-   "furniture": {
-    "file": "evening_furniture.webp",
-    "scale": 2.96,
-    "lite": "evening_furniture-lite.webp"
-   },
-   "exterior": {
-    "file": "evening_exterior.webp",
-    "scale": 0.6033,
-    "lite": "evening_exterior-lite.webp"
    }
   }
  }

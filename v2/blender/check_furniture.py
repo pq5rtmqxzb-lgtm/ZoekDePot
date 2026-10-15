@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SOLID = {"wall", "door", "sidelight", "sliding", "window"}
+SOLID = {"wall", "door", "sidelight", "sliding", "fixed", "window"}
 
 # type -> footprint (w, d, local z offset of its centre) from the item's size
 FOOTPRINT = {
@@ -27,7 +27,8 @@ FOOTPRINT = {
     "sofa_box":     lambda it: (it["w"], it["d"], 0.0),                    # a leg of a corner_sofa (expand)
     "armchair":     lambda it: (0.80, 0.80, 0.0),
     "coffee_table": lambda it: (it.get("w", 1.2), it.get("d", 0.6), 0.0),
-    "dining_table": lambda it: (it.get("w", 1.0) + 2 * 0.40, it.get("d", 2.6), 0.0),   # incl. chairs
+    "dining_table": lambda it: (it.get("w", 1.0) + 2 * (0.50 if it.get("chair") == "sled_arm" else 0.40),
+                                it.get("d", 2.6), 0.0),                              # incl. chairs
     "desk":         lambda it: (it.get("w", 1.2), it.get("d", 0.6), 0.0),
     "dresser":      lambda it: (it.get("w", 1.2), it.get("d", 0.45), 0.0),
     "bookshelf":    lambda it: (it.get("w", 1.8), it.get("d", 0.32), 0.0),

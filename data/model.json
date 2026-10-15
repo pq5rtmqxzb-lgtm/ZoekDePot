@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_doc": "3D-model bron voor type R3.sp (bouwnummer 25). geom = muur-hartlijnen {kind: wall|door|sidelight|sliding|window|railing|screen, x1,z1,x2,z2, t? (dikte, default 0.20), open_to? [x,z] (deuren: het punt waar het blad naartoe openzwaait; x1,z1 = scharnierzijde), entrance/closet (deurtype), note/section = documentatie}. rooms = vloervlakken per kamer, ceil? = plafondhoogte (default 2.80; badkamers en verkeersruimten 2.55 volgens de Technische Omschrijving). Gelezen door de v2 Blender-scripts (v2/blender) en tools/{plan-overlay,compare-to-pdf,pdf-overlay}.py. Maatvoering + deurdraairichtingen geverifieerd tegen de vectoren van plans/YP_bouwnummer_25.pdf.",
+  "_doc": "3D-model bron voor type R3.sp (bouwnummer 25). geom = muur-hartlijnen {kind: wall|door|sidelight|sliding|fixed|window|railing|screen, x1,z1,x2,z2, t? (dikte, default 0.20), open_to? [x,z] (deuren: het punt waar het blad naartoe openzwaait; x1,z1 = scharnierzijde), entrance/closet (deurtype), note/section = documentatie}. rooms = vloervlakken per kamer, ceil? = plafondhoogte (default 2.80; badkamers en verkeersruimten 2.55 volgens de Technische Omschrijving). Gelezen door de v2 Blender-scripts (v2/blender) en tools/{plan-overlay,compare-to-pdf,pdf-overlay}.py. Maatvoering + deurdraairichtingen geverifieerd tegen de vectoren van plans/YP_bouwnummer_25.pdf.",
   "geom": [
     {
       "kind": "wall",
@@ -758,12 +758,12 @@
       "slide": "x2"
     },
     {
-      "kind": "wall",
+      "kind": "fixed",
       "x1": 6.62,
-      "z1": 13.9,
+      "z1": 14.0,
       "x2": 6.62,
-      "z2": 15.74,
-      "note": "keukenbaai | zuid-balkon partition (x 6.52..6.72)",
+      "z2": 15.4,
+      "note": "keukenbaai | zuid-balkon: vaste pui (glas in houten kozijn, PDF dubbele lijn z 14.08..15.38) tussen de hoek van de woonkamerpui en het penant",
       "section": "SOUTH FACADE slaapk2 + keuken: window piers at inner z=15.41,"
     },
     {
@@ -956,6 +956,24 @@
       "x2": 1.12,
       "z2": 15.8,
       "section": "ZUID BALKON"
+    },
+    {
+      "kind": "wall",
+      "x1": 6.62,
+      "z1": 13.9,
+      "x2": 6.62,
+      "z2": 14.0,
+      "note": "keukenbaai | zuid-balkon: hoekstuk bij de woonkamerpui (x 6.52..6.72)",
+      "section": "SOUTH FACADE slaapk2 + keuken: window piers at inner z=15.41,"
+    },
+    {
+      "kind": "wall",
+      "x1": 6.62,
+      "z1": 15.4,
+      "x2": 6.62,
+      "z2": 15.74,
+      "note": "keukenbaai | zuid-balkon: penant ten zuiden van de vaste pui (PDF z 15.40..15.76)",
+      "section": "SOUTH FACADE slaapk2 + keuken: window piers at inner z=15.41,"
     }
   ],
   "rooms": [

@@ -48,7 +48,7 @@ _spec.loader.exec_module(render_floorplan)
 
 KIND_STYLE = {"wall": "#0a64ff", "door": "#ff8000", "sliding": "#13c24b",
               "window": "#00b8c4", "railing": "#9b30d0", "screen": "#9b30d0",
-              "sidelight": "#00b8c4"}
+              "sidelight": "#00b8c4", "fixed": "#00b8c4"}
 
 
 def parse_geom():
