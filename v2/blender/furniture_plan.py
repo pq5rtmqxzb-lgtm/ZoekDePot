@@ -12,7 +12,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from check_furniture import KITCHEN_BOXES, as_footprint
+from check_furniture import KITCHEN_BOXES, as_footprint, expand
 
 ROOT = Path(__file__).resolve().parents[2]
 PX, X0, Z0 = 113.4, 306, 347            # floorplan-pdf.png: col = X0 + PX x, row = Z0 + PX z
@@ -33,7 +33,7 @@ def main():
         font = ImageFont.truetype("DejaVuSans.ttf", 15)
     except OSError:
         font = ImageFont.load_default()
-    items = json.loads((ROOT / "v2" / "data" / "furniture.json").read_text())["items"]
+    items = list(expand(json.loads((ROOT / "v2" / "data" / "furniture.json").read_text())["items"]))
     boxes = [(name, x, z, w, d, 0.0, 0.0, True) for name, x, z, w, d in KITCHEN]
     for it in items:
         it2, fp = as_footprint(it)
@@ -52,7 +52,12 @@ def main():
         draw.polygon(pts, fill=colour + (45,), outline=colour + (255,))
         # front edge (local +z) thicker: which way the piece faces
         draw.line([pts[2], pts[3]], fill=colour + (255,), width=4)
-        labels.append((name, px(x + s * oz0, z + c * oz0), colour))
+        if not name.endswith(".leg"):                    # one label per corner sofa
+            labels.append((name, px(x + s * oz0, z + c * oz0), colour))
+    for it in items:                                     # shower glass (no footprint)
+        if it["type"] == "walkin_shower":
+            sx, sz0, sz1 = it["screen"]
+            draw.line([px(sx, sz0), px(sx, sz1)], fill=(20, 150, 190, 255), width=5)
     for name, (cx, cy), colour in labels:
         l, t, r, b = draw.textbbox((0, 0), name, font=font)
         tx, ty = cx - (r - l) / 2, cy - (b - t) / 2

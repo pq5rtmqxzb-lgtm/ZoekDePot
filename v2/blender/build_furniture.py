@@ -53,8 +53,12 @@ def make_light(spec, coll):
     if kind == "SPOT":
         ld.spot_size = math.radians(spec["spot"] or 90)
         ld.spot_blend = 0.6
+    if kind == "AREA":                         # e.g. an LED strip: a long thin rectangle
+        ld.shape = "RECTANGLE"
+        ld.size, ld.size_y = spec["size"]
     ob = bpy.data.objects.new(f"light.{spec['id']}", ld)
-    ob.location = P(*spec["pos"])              # spots point down (-Z) by default
+    ob.location = P(*spec["pos"])              # spots and area lights point down (-Z) by default
+    ob.rotation_euler = (0.0, 0.0, spec.get("yaw", 0.0))
     ob["room"] = spec["room"]
     ob["part"] = "light"
     coll.objects.link(ob)
