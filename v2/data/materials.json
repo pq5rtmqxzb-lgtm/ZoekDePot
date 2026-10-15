@@ -294,6 +294,43 @@
       "glaze": 0.0006,
       "pillow": 0.0008,
       "note": "Douche: Grespania Rambla (Icon collection) 7,5x30, groen, glanzend handgemaakt-look, staand verwerkt"
+    },
+    "toilet_patchwork": {
+      "kind": "patchwork",
+      "across": 0.2,
+      "cols": 6,
+      "rows": 6,
+      "ground": "#ECE5D8",
+      "grout": 0.002,
+      "grout_color": "#B9B4AA",
+      "variation": 0.03,
+      "roughness": 0.5,
+      "seed": 11,
+      "note": "Toilet: patchworktegel (cementtegel-look), zeshoeken ~20 cm, elke tegel een eigen motief in blauw, oker, oranje, zwart, grijs en roze op crème (naar de 3D-tekening van de badkamerzaak); vloer en de hele achterwand achter het toilet"
+    },
+    "fabric_mustard": {
+      "kind": "scan",
+      "source": "rough_linen",
+      "tint": "#B39D24",
+      "detail": 1.0,
+      "roughness": 0.95,
+      "note": "Eetkamerstoelen: mosterdgele grove weefstof met zwarte spikkel (foto van de eigenaren)"
+    },
+    "rug_moor": {
+      "kind": "scan",
+      "source": "rough_linen",
+      "tint": "#33503F",
+      "detail": 0.7,
+      "roughness": 0.8,
+      "note": "Eigen vloerkleed &Tradition The Moor AP7, Green Pine, 200x300: handgeweven wol/viscose, effen dennengroen met een lichte glans"
+    },
+    "fabric_charcoal": {
+      "kind": "scan",
+      "source": "rough_linen",
+      "tint": "#4D4E50",
+      "detail": 0.8,
+      "roughness": 0.95,
+      "note": "2-zitsbank: donkergrijs linnen"
     }
   },
   "rooms": {
@@ -362,6 +399,18 @@
       ],
       "default": "plaster",
       "_note": "Alleen de deurwand (west) en de muur boven het toiletreservoir zijn wit gestuukt; het reservoir zelf (voorzetwand) is betegeld"
+    },
+    "toilet": {
+      "floor": "toilet_patchwork",
+      "walls": [
+        {
+          "wall": "east",
+          "material": "toilet_patchwork",
+          "note": "achterwand achter het toilet, tot aan het plafond"
+        }
+      ],
+      "default": "plaster",
+      "_note": "Vloer en de achterwand (oost, achter het toilet) in patchworktegels; de andere wanden wit gestuukt"
     }
   }
 }

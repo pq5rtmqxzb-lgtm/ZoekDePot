@@ -47,15 +47,16 @@ another piece, or leaves its room.
 
 | Room | Pieces |
 |---|---|
-| Woonkamer, noordpui | kleine eettafel 140x85 met organische vorm (eiken) in de avondzon, gestoffeerde bank 170x50 tegen de oostwand + 2 stoelen, hanglamp; de rest van de noordhoek blijft leeg |
-| Woonkamer, tv-hoek | hoekbank (relax) 260 + 235: lange zijde tegen het badkamerblok naar de tv, hoekdeel langs de noordkant; grote platte tv (77") aan de oostwand (woningscheidende wand) met soundbar, bijzettafel, leeslamp, vloerkleed |
-| Woonkamer, eethoek | **eigen tafel 260x100** in het midden van de woonkamer, tussen de tv-hoek en het kookeiland, 8 eiken stoelen met linnen zitkussen, 2 hanglampen |
-| Keuken | **eigen keuken: SieMatic SLX**, nieuwe opstelling (greeploos, mat gelakte fronten licht greige, bronskleurige greepkanalen met LED-strips), werkblad **Caesarstone 4230 Shitake**. Hoge kastenwand 2,63 m tot aan het plafond tegen de wand van slaapkamer 2: twee zwarte Siemens-ovens tussen twee verticale greeplijsten, Siemens inbouwkoelkast (greeplijsten brons, zonder LED); kookeiland dwars, 2594 x 1120 x 950: Franke Maris spoelbak + Lina XL kraan in Coffee, vaatwasser en Siemens inductie + afzuiging aan de zuidkant, aan de noordkant kasten over de volle lengte (deur, laden, laden, deur; geen bar), aan de oostkant een rij kastjes van 60 cm; LED in de greeplijst onder het werkblad rondom, ook langs de korte kanten, met een schuine bovenkant van de fronten (het blad lijkt te zweven); 2 hanglampen. Dressoir tegen de gangwand als koffiehoek met de eigen ECM-espressomachine en Eureka Mignon-molen |
+| Woonkamer, noordpui | tweede tafel, klein: 110x65 met organische vorm (eiken), lange kant langs de pui, oostelijk van het open deel; 2 stoelen die naar buiten kijken |
+| Woonkamer, tv-hoek | 2-zitsbank 190, donkergrijs, tegen het badkamerblok naar de tv, met de bijzettafel in het midden ervoor (de looproute noord-zuid blijft vrij); grote platte tv (77") aan de oostwand (woningscheidende wand) met soundbar, bijzettafel, leeslamp, **eigen vloerkleed &Tradition The Moor AP7, Green Pine, 200x300** |
+| Woonkamer, eethoek | **eigen tafel 260x100** in het midden van de woonkamer, tussen de tv-hoek en het kookeiland, **8 eigen stoelen**: armstoel met een sledeframe van geel gepoedercoate buis, zitting en rug in mosterdgele weefstof, zwarte armleggers |
+| Woonkamer, plafond | rechthoekige zwarte rail (opbouw) tussen de noord- en de zuidpui met 18 spotjes; geen hanglampen in de woonkamer en keuken |
+| Keuken | **eigen keuken: SieMatic SLX**, nieuwe opstelling (greeploos, mat gelakte fronten licht greige, bronskleurige greepkanalen met LED-strips), werkblad **Caesarstone 4230 Shitake**. Hoge kastenwand 2,63 m tot aan het plafond tegen de wand van slaapkamer 2: twee zwarte Siemens-ovens tussen twee verticale greeplijsten, Siemens inbouwkoelkast (greeplijsten brons, zonder LED); kookeiland dwars, 2594 x 1120 x 950: Franke Maris spoelbak + Lina XL kraan in Coffee, vaatwasser en Siemens inductie + afzuiging aan de zuidkant, aan de noordkant kasten over de volle lengte (deur, laden, laden, deur; geen bar), aan de oostkant een rij kastjes van 60 cm; LED in de greeplijst onder het werkblad rondom, ook langs de korte kanten, met een schuine bovenkant van de fronten (het blad lijkt te zweven); licht van de spotjes aan de rail. Dressoir tegen de gangwand als koffiehoek met de eigen ECM-espressomachine en Eureka Mignon-molen |
 | Woonkamer, zuid | planten, vitrage |
 | Slaapkamer 1 | **eigen bed 140x200** met gestoffeerd hoofdbord tegen de lange schuine wand, 2 nachtkastjes + lampen, kledingkast 160x60x230, leesstoel + lamp tegen de oostwand, verduisterend linnen |
 | Slaapkamer 2 | **eigen bed 140x200** met het hoofdeinde tegen de kleine badkamer en een lange zijde tegen de wand naar de buren, 1 nachtkastje; bureau 180x90 (eettafelformaat) midden voor de schuifpui, kijkend naar buiten, met een 34" scherm voor de laptop en stoel; loopruimte langs de oostwand en voor de pui naar het open deel |
-| Badkamer (nieuwe indeling) | **eigen ontwerp**: wastafel met spiegel + radiator op de noordwand; douchetoilet op een voorzetwand (toiletgedeelte); inloopdouche met wandje met nis tegen de kolom, glazen douchewand, regendouche uit het plafond, douchegoot en getegeld bankje. Tegels: vloer + toiletgedeelte lichte beige steenlook 60x60, noord- en oostwand grijze reliëftegel, douche Grespania Rambla 7,5x30 groen (staand) |
-| Kleine badkamer, toilet | inloopdouche met een glazen schuifwand over het hele douchedeel, dubbele wastafel, designradiator; hangtoilet op voorzetwand, fontein |
+| Badkamer (nieuwe indeling) | **eigen ontwerp**: wastafel met spiegel + radiator op de noordwand; douchetoilet op een voorzetwand (toiletgedeelte); inloopdouche met wandje met nis tegen de kolom (tot aan het plafond), glazen douchewand, regendouche uit het plafond, douchegoot en getegeld bankje. Tegels: vloer + toiletgedeelte lichte beige steenlook 60x60, noord- en oostwand grijze reliëftegel, douche Grespania Rambla 7,5x30 groen (staand) |
+| Kleine badkamer, toilet | inloopdouche met een glazen schuifwand over het hele douchedeel, dubbele wastafel, designradiator; toilet: hangtoilet op voorzetwand, fontein, **patchworktegels** (zeshoek, cementtegel-look) op de vloer en over de hele achterwand |
 | Gang, berging | kapstok + schoenenbank, loper, inbouwspots; WTW, boiler, verdeler, wasmachine + droger |
 | Balkons | noord: bistroset + plantenbak; zuid: loungebank, 2 stoelen, tafel, planten |
 
@@ -74,6 +75,7 @@ not committed) and writes the final maps to `v2/build/textures/`.
 | Finish | How |
 |---|---|
 | **Vloer: eiken lamel, onbehandeld** | composed plank by plank from two raw-oak scans (`oak_veneer_03`, `silver_oak_veneer_01`): 19 cm wide, 1.0–2.2 m long, staggered, fine V-groove, matt (roughness 0.70), running north–south. Colour `#D5C2A2`. |
+| Toilet: patchworktegels | drawn, not scanned (`kind: patchwork`): hexagons 20 cm across the flats, every tile its own motif (rosette, star, cross, quatrefoil, concentric, corner lilies) in blue, ochre, orange, black, grey and pink on cream, turned at random, with grout, bevel and slight wear; after the bathroom shop's 3D drawing |
 | Badkamertegels | composed from a height map (grout recess, bevels, relief, glaze waves): main bathroom per the owners' samples — beige stone look 60x60 with speckles (floor, toilet section), grey-beige relief tile (north + east wall, hexagon relief approximated), Grespania Rambla 7.5x30 glossy green with handmade undulation (shower); other wet rooms 60x60 floor, 30x60 wall |
 
 Per-room finishes live under `"rooms"` in `materials.json`: the floor
@@ -259,7 +261,7 @@ NW corner of the north facade. The `.glb` lands in exactly that frame (see
 | `facade.<geom>` | Outside skin (gevelbekleding) | `part=facade` |
 | `floor.<room>` / `ceil.<room>` | One merged outline per room, tucked up to 5 cm under the walls (never into a neighbouring room); thresholds 2 mm proud | `part`, `room`, `finish` |
 | `frame.<geom>` / `dorpel.<geom>` | Nestelkozijnen (white), voordeur (hardwood), kunststeen dorpel at wet rooms | `geom` |
-| `pui.<geom>` | Hef-schuifpui: fixed + sliding pane, open where v1's walkable gap is | `geom` |
+| `pui.<geom>` | Hef-schuifpui: fixed + sliding pane, open where v1's walkable gap is; `kind: fixed` = vaste pui (one fixed pane, same frame and height), e.g. between the keukenerker and the south balcony | `geom` |
 | `railing.<geom>` / `screen.<geom>` | Balkonhek, privacy screens, slab edges | `geom` |
 | `glass.*` | All glazing (alpha-blended) | `part=glass` |
 | `slab.upper` / `slab.lower` | Structural slabs that seal the voids; never visible | `bake=false` |

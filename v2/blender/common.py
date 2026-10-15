@@ -34,7 +34,7 @@ SLIDE_HEAD = 0.08
 BALCONY_CEIL = 2.85    # underside of the balcony above
 MASS_Y0, MASS_Y1 = -0.30, 3.15   # wall mass runs slab-to-slab
 
-SOLID_KINDS = {"wall", "door", "sidelight", "sliding", "window"}
+SOLID_KINDS = {"wall", "door", "sidelight", "sliding", "fixed", "window"}
 OUTSIDE = {"balkon_n", "balkon_z", "corridor"}
 WET = {"badkamer", "badkklein", "toilet"}
 
@@ -142,6 +142,12 @@ MATERIALS = {
     "rug_oat":      dict(color=0xD3CAB9, rough=1.00),
     "rug_stone":    dict(color=0xA9A398, rough=1.00),
     "rug_taupe":    dict(color=0x8A7F72, rough=1.00),
+    "rug_moor":     dict(color=0x33503F, rough=0.80),    # &Tradition The Moor AP7, Green Pine (own)
+    "fabric_mustard": dict(color=0xB39D24, rough=0.95),  # dining chairs (own)
+    "fabric_charcoal": dict(color=0x4D4E50, rough=1.00),  # 2-zitsbank, donkergrijs
+    "powder_yellow": dict(color=0xD6A52B, rough=0.45),   # dining chairs: powder-coated tube
+    "armpad":       dict(color=0x1E1C1B, rough=0.40),
+    "toilet_patchwork": dict(color=0xC9B9A0, rough=0.50),
     "black":        dict(color=0x1F2022, rough=0.45, metal=0.7),
     "chrome":       dict(color=0xD2D4D6, rough=0.12, metal=1.0),
     "stone_light":  dict(color=0xD8D0C3, rough=0.35),

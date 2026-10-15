@@ -58,6 +58,14 @@ def main():
         if it["type"] == "walkin_shower":
             sx, sz0, sz1 = it["screen"]
             draw.line([px(sx, sz0), px(sx, sz1)], fill=(20, 150, 190, 255), width=5)
+        if it["type"] == "track":                        # ceiling track + its spots
+            x1, z1, x2, z2, n = it["x1"], it["z1"], it["x2"], it["z2"], it.get("spots", 8)
+            draw.rectangle([px(x1, z1), px(x2, z2)], outline=(30, 30, 30, 200), width=3)
+            heads = [(xx, z1 + (z2 - z1) * (i + 0.5) / n) for xx in (x1, x2) for i in range(n)]
+            for hx, hz in heads + [((x1 + x2) / 2, zz) for zz in (z1, z2)]:
+                cx, cy = px(hx, hz)
+                draw.ellipse([cx - 5, cy - 5, cx + 5, cy + 5], fill=(30, 30, 30, 230))
+            labels.append(("track (plafond)", px((x1 + x2) / 2, z1 + 2.4), (30, 30, 30)))
     for name, (cx, cy), colour in labels:
         l, t, r, b = draw.textbbox((0, 0), name, font=font)
         tx, ty = cx - (r - l) / 2, cy - (b - t) / 2

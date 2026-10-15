@@ -102,7 +102,7 @@ def main():
     # 2. openings
     for g in model["geom"]:
         k = g["kind"]
-        if k not in ("door", "sidelight", "sliding"):
+        if k not in ("door", "sidelight", "sliding", "fixed"):
             continue
         _, _, _, L = seg_frame(g)
         cx, cz = seg_point(g, L / 2, 0.0)
@@ -117,7 +117,7 @@ def main():
         loc, *_ = tree.ray_cast(Vector(P(cx, 1.0, cz)), Vector((0, 0, 1)))
         if loc is None or abs(loc.z - top) > TOL:
             fails.append(f"{k} #{g['index']} lintel at {None if loc is None else round(loc.z, 3)}, expected {top:.3f}")
-    print(f"[2] openings checked: {sum(1 for g in model['geom'] if g['kind'] in ('door', 'sidelight', 'sliding'))}")
+    print(f"[2] openings checked: {sum(1 for g in model['geom'] if g['kind'] in ('door', 'sidelight', 'sliding', 'fixed'))}")
 
     # 3. rooms + placement
     for r in model["rooms"]:

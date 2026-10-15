@@ -14,6 +14,8 @@ kinds
           from a random spot of a random source, gets its own slight tone,
           and the rows are staggered; edges get a fine V-groove. Tileable.
 - tiles:  tiles with grout lines on a fine surface scan, slight tone per tile.
+- patchwork: hexagonal patchwork tiles (cement-tile look), every hexagon its
+          own random motif in a fixed palette; drawn, no scan needed.
 Needs numpy + Pillow (both come with the bpy wheel / requirements.txt).
 """
 import io
@@ -288,7 +290,125 @@ def make_tiles(name, spec, res, ppm=1024):
     return {"size": [W / ppm, H / ppm], "rot": spec.get("rot", 0)}
 
 
-KINDS = {"scan": make_scan, "planks": make_planks, "tiles": make_tiles}
+def _hex_cells(u, v, R):
+    """Pointy-top hex grid (cell radius R, centre (0, 0) at u = v = 0):
+    per point the cell's offset coordinates (col, row) and the point
+    relative to the cell centre (pu, pv), all in metres."""
+    q = (np.sqrt(3) / 3 * u - v / 3) / R
+    r = (2 / 3 * v) / R
+    x, z = q, r
+    y = -x - z
+    rx, ry, rz = np.round(x), np.round(y), np.round(z)
+    dx, dy, dz = np.abs(rx - x), np.abs(ry - y), np.abs(rz - z)
+    fix_x = (dx > dy) & (dx > dz)
+    fix_z = ~fix_x & ~(dy > dz)
+    rx = np.where(fix_x, -ry - rz, rx)
+    rz = np.where(fix_z, -rx - ry, rz)
+    pu, pv = u - R * np.sqrt(3) * (rx + rz / 2), v - R * 1.5 * rz
+    row = rz.astype(np.int64)
+    col = (rx + (rz - (row & 1)) / 2).astype(np.int64)
+    return col, row, pu, pv
+
+
+def _motif(kind, pu, pv, a, rng):
+    """One patchwork motif as [(mask, ink index), ...], painted in order,
+    for points (pu, pv) relative to the hex centre; a = apothem."""
+    s = np.hypot(pu, pv) / a
+    th = np.arctan2(pv, pu) + rng.integers(6) * np.pi / 3
+    hd = np.maximum(np.abs(pu), np.maximum(np.abs(pu / 2 + pv * np.sqrt(3) / 2),
+                                           np.abs(pu / 2 - pv * np.sqrt(3) / 2))) / a
+    c = rng.permutation(len(PATCH_INK))
+    out = [(hd > 0.86, c[0])]                                       # border band
+    if kind == 0:                                                   # rosette
+        n = rng.choice([4, 6, 8])
+        out += [(s < 0.78 * np.abs(np.cos(n * th / 2)) ** 0.7, c[1]),
+                (s < 0.45 * np.abs(np.cos(n * th / 2)) ** 0.7, c[2]),
+                (s < 0.13, c[3])]
+    elif kind == 1:                                                 # star in a ring
+        n = rng.choice([6, 8])
+        tri = np.abs(((th * n / (2 * np.pi)) % 1) - 0.5) * 2
+        out += [((s > 0.62) & (s < 0.72), c[1]), (s < 0.30 + 0.30 * tri, c[2]),
+                (np.abs(pu) / a + np.abs(pv) / a < 0.22, c[3])]
+    elif kind == 2:                                                 # cross with a diamond
+        w = 0.13
+        out += [((np.abs(pu) / a < w) | (np.abs(pv) / a < w), c[1]),
+                (np.abs(pu) / a + np.abs(pv) / a < 0.46, c[2]),
+                (np.abs(pu) / a + np.abs(pv) / a < 0.24, c[3]),
+                ((np.abs(np.abs(pu) / a - 0.5) < 0.12) & (np.abs(np.abs(pv) / a - 0.5) < 0.12), c[3])]
+    elif kind == 3:                                                 # quatrefoil
+        k = np.zeros_like(s, bool)
+        for i in range(4):
+            ang = i * np.pi / 2 + np.pi / 4
+            k |= np.hypot(pu / a - 0.30 * np.cos(ang), pv / a - 0.30 * np.sin(ang)) < 0.27
+        out += [(k, c[1]), (s < 0.30, c[2]), (s < 0.12, c[0])]
+    elif kind == 4:                                                 # concentric hexagons
+        out += [((hd > 0.62) & (hd < 0.74), c[1]), ((hd > 0.36) & (hd < 0.50), c[2]), (hd < 0.18, c[3])]
+    else:                                                           # corner lilies
+        k = np.zeros_like(s, bool)
+        for i in range(6):
+            ang = i * np.pi / 3 + np.pi / 6
+            vx, vy = np.cos(ang) * 1.155, np.sin(ang) * 1.155         # hex vertex (in apothems)
+            k |= np.hypot(pu / a - vx, pv / a - vy) < 0.42
+        out += [(k & (hd <= 0.86), c[1]), (s < 0.40 * np.abs(np.cos(2 * th)) ** 0.5 + 0.08, c[2]),
+                (s < 0.10, c[3])]
+    return out
+
+
+PATCH_INK = ["#2B2A28", "#7E9DBE", "#4F6E91", "#E2A84A", "#C8642F", "#9A9893", "#D8A6A0", "#C9C3B7"]
+
+
+def make_patchwork(name, spec, res, ppm=1024):
+    """Hexagonal patchwork tiles (cement-tile look): every hexagon gets a
+    random motif (rosette, star, cross, quatrefoil, concentric, corner
+    lilies) in 3-4 colours on a cream ground, a random turn, slight tone
+    variation and wear; grout and bevels from the hex outline. Tileable.
+    `across` = width across the flats (m)."""
+    rng = np.random.default_rng(spec.get("seed", 11))
+    across = spec.get("across", 0.20)
+    R = across / np.sqrt(3)
+    a = across / 2
+    nc, nr = spec.get("cols", 6), spec.get("rows", 6)                # nr even: rows repeat in pairs
+    W, H = round(nc * across * ppm), round(nr * 1.5 * R * ppm)
+    ss = 2                                                           # supersample the motifs
+    yy, xx = np.mgrid[0:H * ss, 0:W * ss].astype(np.float64)
+    u, v = (xx + 0.5) / (ppm * ss), (yy + 0.5) / (ppm * ss)
+    col, row, pu, pv = _hex_cells(u, v, R)
+    cid = (col % nc) * nr + (row % nr)
+    ink = np.stack([hex_rgb(h) for h in PATCH_INK])
+    ground = hex_rgb(spec.get("ground", "#ECE5D8"))
+    color = np.broadcast_to(ground, (H * ss, W * ss, 3)).copy().astype(np.float32)
+    for k in range(nc * nr):
+        m = cid == k
+        if not m.any():
+            continue
+        crng = np.random.default_rng((spec.get("seed", 11), k))
+        for mask, ci in _motif(crng.integers(6), pu[m], pv[m], a, crng):
+            sel = np.zeros_like(m)
+            sel[m] = mask
+            color[sel] = ink[ci]
+        color[m] *= np.float32(1.0 + crng.normal(0, spec.get("variation", 0.03)))
+    color = resize(np.clip(color, 0, 1), W, H)
+    # grout + bevel from the distance to the hex outline (full resolution)
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float64)
+    _, _, pu, pv = _hex_cells((xx + 0.5) / ppm, (yy + 0.5) / ppm, R)
+    hd = np.maximum(np.abs(pu), np.maximum(np.abs(pu / 2 + pv * np.sqrt(3) / 2), np.abs(pu / 2 - pv * np.sqrt(3) / 2)))
+    d = (a - hd) * ppm                                               # px to the outline
+    half = spec.get("grout", 0.002) * ppm / 2
+    gm = np.clip(half + 1 - d, 0, 1).astype(np.float32)
+    height = (-0.0012 * np.clip(1 - (d - half) / (1.2e-3 * ppm), 0, 1)).astype(np.float32)
+    # wear: soft mottling of the cement face, a few pale specks
+    color *= (1 + 0.05 * _smooth_noise(rng, H, W, 40))[..., None]
+    color *= (1 + 0.04 * (rng.random((H, W)) - 0.5))[..., None].astype(np.float32)
+    color = color * (1 - gm[..., None]) + hex_rgb(spec.get("grout_color", "#B9B4AA"))[None, None, :] * gm[..., None]
+    rough = np.full((H, W), spec.get("roughness", 0.5), np.float32) * (1 - gm) + 0.85 * gm
+    gy, gx = np.gradient(height * ppm)
+    n = np.stack([-gx, gy, np.ones_like(gx)], -1)
+    n /= np.linalg.norm(n, axis=-1, keepdims=True)
+    save(name, color, rough, n * 0.5 + 0.5)
+    return {"size": [W / ppm, H / ppm], "rot": spec.get("rot", 0)}
+
+
+KINDS = {"scan": make_scan, "planks": make_planks, "tiles": make_tiles, "patchwork": make_patchwork}
 
 
 def main():

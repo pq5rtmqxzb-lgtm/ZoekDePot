@@ -72,7 +72,7 @@ def opening_cut(g):
         return -JAMB, L + JAMB, 0.0, DOOR_H + JAMB
     if k == "sidelight":
         return 0.0, L, 0.0, DOOR_H + JAMB
-    if k == "sliding":
+    if k in ("sliding", "fixed"):
         return 0.0, L, 0.0, SLIDE_TOP + SLIDE_HEAD
     if k == "window":
         return 0.0, L, 0.85, WALL_HEIGHT - 0.30
@@ -476,6 +476,24 @@ def build_sliding(ms, g, out):
     panel(fixed_a + slide_end * pw * PUI_OVERLAP, inn * 0.03, True)   # export_collision: pui_closed_span
 
 
+def build_fixed(ms, g):
+    """Vaste pui (Red Grandis): one fixed pane in a hardwood frame, as high
+    as the schuifpuien; the sill spans the wall so the opening has no gap."""
+    _, _, _, L = seg_frame(g)
+    t = g.get("t", WALL_THICK)
+    name = f"pui.{g['index']}"
+    props = {"part": "fixed", "geom": g["index"]}
+    jamb, head, sill, fd = PUI_JAMB, SLIDE_HEAD, 0.03, 0.12
+    top = SLIDE_TOP
+    ms.seg_box(name, "frames", "frame_wood", g, 0.0, jamb, -fd / 2, fd / 2, 0.0, top + head, props)
+    ms.seg_box(name, "frames", "frame_wood", g, L - jamb, L, -fd / 2, fd / 2, 0.0, top + head, props)
+    ms.seg_box(name, "frames", "frame_wood", g, jamb, L - jamb, -fd / 2, fd / 2, top, top + head, props)
+    ms.seg_box(name, "frames", "frame_wood", g, 0.0, L, -t / 2, t / 2, 0.0, sill, props)
+    ms.seg_box(name, "frames", "frame_wood", g, jamb, L - jamb, -fd / 2, fd / 2, sill, sill + 0.08, props)
+    ms.seg_plane("glass.exterior", "glazing", "glass", g, jamb, L - jamb, 0.0, sill + 0.08, top,
+                 {"part": "glass", "closed": False})
+
+
 def build_railing(ms, g):
     """Balkonhek: glass between aluminium clamps, hardwood handrail, steel
     balusters ~1.2 m apart, plus the slab edges below and above."""
@@ -557,6 +575,8 @@ def main():
             build_sidelight(ms, g)
         elif k == "sliding":
             build_sliding(ms, g, outdoor_sign(rooms, g))
+        elif k == "fixed":
+            build_fixed(ms, g)
         elif k == "railing":
             build_railing(ms, g)
         elif k == "screen":
