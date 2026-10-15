@@ -24,7 +24,7 @@ by Netlify) lets people walk through it. How everything works is in
 - State the assumptions you made (estimated sizes, a pattern you could not
   see, a height you guessed) in your reply, so they can correct them.
 - Changes are collected and baked in one go on the laptop (below), because a
-  final bake takes ~85 minutes. Say at the end that a bake is needed.
+  final bake takes ~45 minutes per mood. Say at the end that a bake is needed.
 
 ## Real furniture (the owners' own pieces)
 
@@ -83,7 +83,9 @@ only to check something.
 ## Final bake (owners' laptop, MacBook with Apple M5, Metal GPU)
 
 Started from a suggested-task card or by hand, on the branch with the
-changes. Moods: **day and evening only** (the site has no night button).
+changes. Moods: **day only** unless the owners ask for evening too
+(their choice, 2026-10-15). The viewer shows only the baked moods: with day
+alone the Dag/Avond buttons disappear until evening is baked again.
 
 ```sh
 source .venv/bin/activate               # Python 3.11 venv with v2/blender/requirements.txt
@@ -91,11 +93,11 @@ python v2/blender/textures.py
 python v2/blender/build_shell.py && python v2/blender/check_glb.py
 python v2/blender/check_furniture.py
 python v2/blender/build_furniture.py && python v2/blender/export_collision.py
-python v2/blender/bake.py --quality final --moods day,evening   # ~85 min; first line names the GPU
+python v2/blender/bake.py --quality final --moods day   # ~45 min (day + evening ~85); first line names the GPU
 cd v2/web && npm install && npm run assets && npm test && npm run site
 ```
 
 Run the bake in the background and wait for it; it prints one line per map.
 Commit `v2/site/` and the `v2/docs/renders/web_*.png` screenshots from
-`npm test` as `Final bake (dag + avond): <what changed>`, with the time per
+`npm test` as `Final bake (dag): <what changed>`, with the time per
 map in the body, and push to the same branch.
